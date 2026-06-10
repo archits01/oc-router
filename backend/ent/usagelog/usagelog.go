@@ -94,6 +94,8 @@ const (
 	FieldImageSizeBreakdown = "image_size_breakdown"
 	// FieldCacheTTLOverridden holds the string denoting the cache_ttl_overridden field in the database.
 	FieldCacheTTLOverridden = "cache_ttl_overridden"
+	// FieldMetadataUserID holds the string denoting the metadata_user_id field in the database.
+	FieldMetadataUserID = "metadata_user_id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -188,6 +190,7 @@ var Columns = []string{
 	FieldImageSizeSource,
 	FieldImageSizeBreakdown,
 	FieldCacheTTLOverridden,
+	FieldMetadataUserID,
 	FieldCreatedAt,
 }
 
@@ -262,6 +265,8 @@ var (
 	ImageSizeSourceValidator func(string) error
 	// DefaultCacheTTLOverridden holds the default value on creation for the "cache_ttl_overridden" field.
 	DefaultCacheTTLOverridden bool
+	// MetadataUserIDValidator is a validator for the "metadata_user_id" field. It is called by the builders before save.
+	MetadataUserIDValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
@@ -467,6 +472,11 @@ func ByImageSizeSource(opts ...sql.OrderTermOption) OrderOption {
 // ByCacheTTLOverridden orders the results by the cache_ttl_overridden field.
 func ByCacheTTLOverridden(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCacheTTLOverridden, opts...).ToFunc()
+}
+
+// ByMetadataUserID orders the results by the metadata_user_id field.
+func ByMetadataUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMetadataUserID, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

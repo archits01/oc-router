@@ -19,18 +19,23 @@ type Announcement struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
+	// announcement title
 	Title string `json:"title,omitempty"`
-	//
+	// announcement content (supports Markdown)
 	Content string `json:"content,omitempty"`
-	//
+	// status: draft, active, archived
 	Status string `json:"status,omitempty"`
-	// (), popup()
+	// notification mode: silent (bell icon only), popup (popup alert)
 	NotifyMode string `json:"notify_mode,omitempty"`
-	//
+	// display conditions (JSON rules)
 	Targeting domain.AnnouncementTargeting `json:"targeting,omitempty"`
+	// display start time (empty means effective immediately)
 	StartsAt *time.Time `json:"starts_at,omitempty"`
+	// display end time (empty means permanently effective)
 	EndsAt *time.Time `json:"ends_at,omitempty"`
+	// creator user ID (admin)
 	CreatedBy *int64 `json:"created_by,omitempty"`
+	// updater user ID (admin)
 	UpdatedBy *int64 `json:"updated_by,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`

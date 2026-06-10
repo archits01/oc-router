@@ -161,6 +161,9 @@ type UsageLog struct {
 	// Cache TTL Override
 	CacheTTLOverridden bool
 
+	// MetadataUserID stores the raw metadata.user_id from the request body.
+	MetadataUserID *string
+
 	ImageCount         int
 	ImageSize          *string
 	ImageInputSize     *string

@@ -47,10 +47,11 @@ type Group struct {
 	MonthlyLimitUsd *float64 `json:"monthly_limit_usd,omitempty"`
 	// DefaultValidityDays holds the value of the "default_validity_days" field.
 	DefaultValidityDays int `json:"default_validity_days,omitempty"`
+	// whether this group is allowed to use image generation
 	AllowImageGeneration bool `json:"allow_image_generation,omitempty"`
-	//
+	// whether image generation uses an independent rate multiplier; false means sharing the group rate multiplier
 	ImageRateIndependent bool `json:"image_rate_independent,omitempty"`
-	// =true
+	// independent image generation rate multiplier, only effective when image_rate_independent=true
 	ImageRateMultiplier float64 `json:"image_rate_multiplier,omitempty"`
 	// ImagePrice1k holds the value of the "image_price_1k" field.
 	ImagePrice1k *float64 `json:"image_price_1k,omitempty"`
@@ -58,31 +59,35 @@ type Group struct {
 	ImagePrice2k *float64 `json:"image_price_2k,omitempty"`
 	// ImagePrice4k holds the value of the "image_price_4k" field.
 	ImagePrice4k *float64 `json:"image_price_4k,omitempty"`
-	//
+	// whether to allow only Claude Code clients
 	ClaudeCodeOnly bool `json:"claude_code_only,omitempty"`
-	//
+	// fallback group ID for non-Claude Code requests
 	FallbackGroupID *int64 `json:"fallback_group_id,omitempty"`
+	// fallback group ID for invalid requests
 	FallbackGroupIDOnInvalidRequest *int64 `json:"fallback_group_id_on_invalid_request,omitempty"`
-	// >
+	// model routing configuration: model pattern -> preferred account ID list
 	ModelRouting map[string][]int64 `json:"model_routing,omitempty"`
+	// whether model routing configuration is enabled
 	ModelRoutingEnabled bool `json:"model_routing_enabled,omitempty"`
-	//
+	// whether to inject MCP XML invocation protocol prompt (antigravity platform only)
 	McpXMLInject bool `json:"mcp_xml_inject,omitempty"`
-	//
+	// supported model families: claude, gemini_text, gemini_image
 	SupportedModelScopes []string `json:"supported_model_scopes,omitempty"`
+	// group display sort order, lower value means higher position
 	SortOrder int `json:"sort_order,omitempty"`
-	//
+	// whether to allow /v1/messages dispatching to this OpenAI group
 	AllowMessagesDispatch bool `json:"allow_messages_dispatch,omitempty"`
-	//
+	// only allow non-apikey type accounts to be associated with this group
 	RequireOauthOnly bool `json:"require_oauth_only,omitempty"`
-	//
+	// only allow accounts with privacy successfully set during scheduling
 	RequirePrivacySet bool `json:"require_privacy_set,omitempty"`
+	// default mapped model ID, used when account-level mapping is not found
 	DefaultMappedModel string `json:"default_mapped_model,omitempty"`
-	// OpenAI Messages
+	// OpenAI Messages dispatch model configuration: maps Claude family/exact model to target GPT model
 	MessagesDispatchModelConfig domain.OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config,omitempty"`
-	//
+	// custom /v1/models display list configuration; only affects model list response, does not affect scheduling
 	ModelsListConfig domain.GroupModelsListConfig `json:"models_list_config,omitempty"`
-	//
+	// group RPM limit, 0 means no limit; when set, takes over rate limiting for users of this group
 	RpmLimit int `json:"rpm_limit,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.

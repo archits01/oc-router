@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )
 
@@ -535,6 +536,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 		// ForceCacheBilling
 		forceCacheBilling := fs.ForceCacheBilling
 		quotaPlatform := service.QuotaPlatform(c.Request.Context(), apiKey)
+		metadataUserID := strings.TrimSpace(gjson.GetBytes(body, "metadata.user_id").String())
 		h.submitUsageRecordTask(c.Request.Context(), func(ctx context.Context) {
 			if err := h.gatewayService.RecordUsageWithLongContext(ctx, &service.RecordUsageLongContextInput{
 				Result:                result,
@@ -548,6 +550,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 				UserAgent:             userAgent,
 				IPAddress:             clientIP,
 				RequestPayloadHash:    requestPayloadHash,
+				MetadataUserID:        metadataUserID,
 				LongContextThreshold:  200000, // Gemini 200K threshold
 				LongContextMultiplier: 2.0,    // double billing for excess
 				ForceCacheBilling:     forceCacheBilling,

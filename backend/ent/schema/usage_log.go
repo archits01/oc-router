@@ -149,6 +149,13 @@ func (UsageLog) Fields() []ent.Field {
 		field.Bool("cache_ttl_overridden").
 			Default(false),
 
+		// MetadataUserID stores the raw metadata.user_id value from the Anthropic API request body.
+		// Used for tracking per-external-user usage (e.g. OC platform user IDs).
+		field.String("metadata_user_id").
+			MaxLen(512).
+			Optional().
+			Nillable(),
+
 		//
 		field.Time("created_at").
 			Default(time.Now).
@@ -202,5 +209,6 @@ func (UsageLog) Indexes() []ent.Index {
 		index.Fields("api_key_id", "created_at"),
 		//
 		index.Fields("group_id", "created_at"),
+		index.Fields("metadata_user_id"),
 	}
 }

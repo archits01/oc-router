@@ -5703,9 +5703,10 @@ type OpenAIRecordUsageInput struct {
 	Subscription       *UserSubscription
 	InboundEndpoint    string
 	UpstreamEndpoint   string
-	UserAgent          string // 请求的 User-Agent
-	IPAddress          string // 请求的客户端 IP 地址
+	UserAgent          string // User-Agent header
+	IPAddress          string // Client IP address
 	RequestPayloadHash string
+	MetadataUserID     string // metadata.user_id from request body (for external user tracking)
 	APIKeyService      APIKeyQuotaUpdater
 	ChannelUsageFields
 }
@@ -5880,15 +5881,15 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		billingMode := string(BillingModeToken)
 		usageLog.BillingMode = &billingMode
 	}
-	//
 	if input.UserAgent != "" {
 		usageLog.UserAgent = &input.UserAgent
 	}
 
-	//
 	if input.IPAddress != "" {
 		usageLog.IPAddress = &input.IPAddress
 	}
+
+	usageLog.MetadataUserID = optionalTrimmedStringPtr(input.MetadataUserID)
 
 	if apiKey.GroupID != nil {
 		usageLog.GroupID = apiKey.GroupID

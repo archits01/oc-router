@@ -512,6 +512,9 @@ type AdminUsageLog struct {
 	// IPAddress
 	IPAddress *string `json:"ip_address,omitempty"`
 
+	// MetadataUserID is the raw metadata.user_id from the request body.
+	MetadataUserID *string `json:"metadata_user_id,omitempty"`
+
 	// Account
 	Account *AccountSummary `json:"account,omitempty"`
 }

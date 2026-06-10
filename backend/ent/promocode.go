@@ -17,14 +17,19 @@ type PromoCode struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
+	// promo code
 	Code string `json:"code,omitempty"`
+	// bonus balance amount
 	BonusAmount float64 `json:"bonus_amount,omitempty"`
+	// max usage count, 0 means unlimited
 	MaxUses int `json:"max_uses,omitempty"`
+	// current usage count
 	UsedCount int `json:"used_count,omitempty"`
-	//
+	// status: active, disabled
 	Status string `json:"status,omitempty"`
-	//
+	// expiry time, null means never expires
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	// notes
 	Notes *string `json:"notes,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`

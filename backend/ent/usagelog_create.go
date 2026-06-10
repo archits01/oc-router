@@ -539,6 +539,20 @@ func (_c *UsageLogCreate) SetNillableCacheTTLOverridden(v *bool) *UsageLogCreate
 	return _c
 }
 
+// SetMetadataUserID sets the "metadata_user_id" field.
+func (_c *UsageLogCreate) SetMetadataUserID(v string) *UsageLogCreate {
+	_c.mutation.SetMetadataUserID(v)
+	return _c
+}
+
+// SetNillableMetadataUserID sets the "metadata_user_id" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableMetadataUserID(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetMetadataUserID(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *UsageLogCreate) SetCreatedAt(v time.Time) *UsageLogCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -820,6 +834,11 @@ func (_c *UsageLogCreate) check() error {
 	if _, ok := _c.mutation.CacheTTLOverridden(); !ok {
 		return &ValidationError{Name: "cache_ttl_overridden", err: errors.New(`ent: missing required field "UsageLog.cache_ttl_overridden"`)}
 	}
+	if v, ok := _c.mutation.MetadataUserID(); ok {
+		if err := usagelog.MetadataUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "metadata_user_id", err: fmt.Errorf(`ent: validator failed for field "UsageLog.metadata_user_id": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "UsageLog.created_at"`)}
 	}
@@ -998,6 +1017,10 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)
 		_node.CacheTTLOverridden = value
+	}
+	if value, ok := _c.mutation.MetadataUserID(); ok {
+		_spec.SetField(usagelog.FieldMetadataUserID, field.TypeString, value)
+		_node.MetadataUserID = &value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(usagelog.FieldCreatedAt, field.TypeTime, value)
@@ -1839,6 +1862,24 @@ func (u *UsageLogUpsert) SetCacheTTLOverridden(v bool) *UsageLogUpsert {
 // UpdateCacheTTLOverridden sets the "cache_ttl_overridden" field to the value that was provided on create.
 func (u *UsageLogUpsert) UpdateCacheTTLOverridden() *UsageLogUpsert {
 	u.SetExcluded(usagelog.FieldCacheTTLOverridden)
+	return u
+}
+
+// SetMetadataUserID sets the "metadata_user_id" field.
+func (u *UsageLogUpsert) SetMetadataUserID(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldMetadataUserID, v)
+	return u
+}
+
+// UpdateMetadataUserID sets the "metadata_user_id" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateMetadataUserID() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldMetadataUserID)
+	return u
+}
+
+// ClearMetadataUserID clears the value of the "metadata_user_id" field.
+func (u *UsageLogUpsert) ClearMetadataUserID() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldMetadataUserID)
 	return u
 }
 
@@ -2703,6 +2744,27 @@ func (u *UsageLogUpsertOne) SetCacheTTLOverridden(v bool) *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) UpdateCacheTTLOverridden() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateCacheTTLOverridden()
+	})
+}
+
+// SetMetadataUserID sets the "metadata_user_id" field.
+func (u *UsageLogUpsertOne) SetMetadataUserID(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMetadataUserID(v)
+	})
+}
+
+// UpdateMetadataUserID sets the "metadata_user_id" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateMetadataUserID() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMetadataUserID()
+	})
+}
+
+// ClearMetadataUserID clears the value of the "metadata_user_id" field.
+func (u *UsageLogUpsertOne) ClearMetadataUserID() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMetadataUserID()
 	})
 }
 
@@ -3733,6 +3795,27 @@ func (u *UsageLogUpsertBulk) SetCacheTTLOverridden(v bool) *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) UpdateCacheTTLOverridden() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateCacheTTLOverridden()
+	})
+}
+
+// SetMetadataUserID sets the "metadata_user_id" field.
+func (u *UsageLogUpsertBulk) SetMetadataUserID(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMetadataUserID(v)
+	})
+}
+
+// UpdateMetadataUserID sets the "metadata_user_id" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateMetadataUserID() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMetadataUserID()
+	})
+}
+
+// ClearMetadataUserID clears the value of the "metadata_user_id" field.
+func (u *UsageLogUpsertBulk) ClearMetadataUserID() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMetadataUserID()
 	})
 }
 

@@ -1765,8 +1765,12 @@ func init() {
 	usagelogDescCacheTTLOverridden := usagelogFields[39].Descriptor()
 	// usagelog.DefaultCacheTTLOverridden holds the default value on creation for the cache_ttl_overridden field.
 	usagelog.DefaultCacheTTLOverridden = usagelogDescCacheTTLOverridden.Default.(bool)
+	// usagelogDescMetadataUserID is the schema descriptor for metadata_user_id field.
+	usagelogDescMetadataUserID := usagelogFields[40].Descriptor()
+	// usagelog.MetadataUserIDValidator is a validator for the "metadata_user_id" field. It is called by the builders before save.
+	usagelog.MetadataUserIDValidator = usagelogDescMetadataUserID.Validators[0].(func(string) error)
 	// usagelogDescCreatedAt is the schema descriptor for created_at field.
-	usagelogDescCreatedAt := usagelogFields[40].Descriptor()
+	usagelogDescCreatedAt := usagelogFields[41].Descriptor()
 	// usagelog.DefaultCreatedAt holds the default value on creation for the created_at field.
 	usagelog.DefaultCreatedAt = usagelogDescCreatedAt.Default.(func() time.Time)
 	userMixin := schema.User{}.Mixin()

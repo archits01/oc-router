@@ -825,6 +825,26 @@ func (_u *UsageLogUpdate) SetNillableCacheTTLOverridden(v *bool) *UsageLogUpdate
 	return _u
 }
 
+// SetMetadataUserID sets the "metadata_user_id" field.
+func (_u *UsageLogUpdate) SetMetadataUserID(v string) *UsageLogUpdate {
+	_u.mutation.SetMetadataUserID(v)
+	return _u
+}
+
+// SetNillableMetadataUserID sets the "metadata_user_id" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableMetadataUserID(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetMetadataUserID(*v)
+	}
+	return _u
+}
+
+// ClearMetadataUserID clears the value of the "metadata_user_id" field.
+func (_u *UsageLogUpdate) ClearMetadataUserID() *UsageLogUpdate {
+	_u.mutation.ClearMetadataUserID()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *UsageLogUpdate) SetUser(v *User) *UsageLogUpdate {
 	return _u.SetUserID(v.ID)
@@ -977,6 +997,11 @@ func (_u *UsageLogUpdate) check() error {
 	if v, ok := _u.mutation.ImageSizeSource(); ok {
 		if err := usagelog.ImageSizeSourceValidator(v); err != nil {
 			return &ValidationError{Name: "image_size_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.image_size_source": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.MetadataUserID(); ok {
+		if err := usagelog.MetadataUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "metadata_user_id", err: fmt.Errorf(`ent: validator failed for field "UsageLog.metadata_user_id": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -1212,6 +1237,12 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.MetadataUserID(); ok {
+		_spec.SetField(usagelog.FieldMetadataUserID, field.TypeString, value)
+	}
+	if _u.mutation.MetadataUserIDCleared() {
+		_spec.ClearField(usagelog.FieldMetadataUserID, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -2171,6 +2202,26 @@ func (_u *UsageLogUpdateOne) SetNillableCacheTTLOverridden(v *bool) *UsageLogUpd
 	return _u
 }
 
+// SetMetadataUserID sets the "metadata_user_id" field.
+func (_u *UsageLogUpdateOne) SetMetadataUserID(v string) *UsageLogUpdateOne {
+	_u.mutation.SetMetadataUserID(v)
+	return _u
+}
+
+// SetNillableMetadataUserID sets the "metadata_user_id" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableMetadataUserID(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetMetadataUserID(*v)
+	}
+	return _u
+}
+
+// ClearMetadataUserID clears the value of the "metadata_user_id" field.
+func (_u *UsageLogUpdateOne) ClearMetadataUserID() *UsageLogUpdateOne {
+	_u.mutation.ClearMetadataUserID()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *UsageLogUpdateOne) SetUser(v *User) *UsageLogUpdateOne {
 	return _u.SetUserID(v.ID)
@@ -2336,6 +2387,11 @@ func (_u *UsageLogUpdateOne) check() error {
 	if v, ok := _u.mutation.ImageSizeSource(); ok {
 		if err := usagelog.ImageSizeSourceValidator(v); err != nil {
 			return &ValidationError{Name: "image_size_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.image_size_source": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.MetadataUserID(); ok {
+		if err := usagelog.MetadataUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "metadata_user_id", err: fmt.Errorf(`ent: validator failed for field "UsageLog.metadata_user_id": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -2588,6 +2644,12 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if value, ok := _u.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.MetadataUserID(); ok {
+		_spec.SetField(usagelog.FieldMetadataUserID, field.TypeString, value)
+	}
+	if _u.mutation.MetadataUserIDCleared() {
+		_spec.ClearField(usagelog.FieldMetadataUserID, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

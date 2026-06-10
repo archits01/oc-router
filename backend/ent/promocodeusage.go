@@ -19,9 +19,13 @@ type PromoCodeUsage struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
+	// promo code ID
 	PromoCodeID int64 `json:"promo_code_id,omitempty"`
+	// user ID who used the code
 	UserID int64 `json:"user_id,omitempty"`
+	// actual bonus amount
 	BonusAmount float64 `json:"bonus_amount,omitempty"`
+	// usage time
 	UsedAt time.Time `json:"used_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PromoCodeUsageQuery when eager-loading is set.

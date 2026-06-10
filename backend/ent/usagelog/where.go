@@ -250,6 +250,11 @@ func CacheTTLOverridden(v bool) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldCacheTTLOverridden, v))
 }
 
+// MetadataUserID applies equality check predicate on the "metadata_user_id" field. It's identical to MetadataUserIDEQ.
+func MetadataUserID(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMetadataUserID, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldCreatedAt, v))
@@ -2158,6 +2163,81 @@ func CacheTTLOverriddenEQ(v bool) predicate.UsageLog {
 // CacheTTLOverriddenNEQ applies the NEQ predicate on the "cache_ttl_overridden" field.
 func CacheTTLOverriddenNEQ(v bool) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNEQ(FieldCacheTTLOverridden, v))
+}
+
+// MetadataUserIDEQ applies the EQ predicate on the "metadata_user_id" field.
+func MetadataUserIDEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDNEQ applies the NEQ predicate on the "metadata_user_id" field.
+func MetadataUserIDNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDIn applies the In predicate on the "metadata_user_id" field.
+func MetadataUserIDIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldMetadataUserID, vs...))
+}
+
+// MetadataUserIDNotIn applies the NotIn predicate on the "metadata_user_id" field.
+func MetadataUserIDNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldMetadataUserID, vs...))
+}
+
+// MetadataUserIDGT applies the GT predicate on the "metadata_user_id" field.
+func MetadataUserIDGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDGTE applies the GTE predicate on the "metadata_user_id" field.
+func MetadataUserIDGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDLT applies the LT predicate on the "metadata_user_id" field.
+func MetadataUserIDLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDLTE applies the LTE predicate on the "metadata_user_id" field.
+func MetadataUserIDLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDContains applies the Contains predicate on the "metadata_user_id" field.
+func MetadataUserIDContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDHasPrefix applies the HasPrefix predicate on the "metadata_user_id" field.
+func MetadataUserIDHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDHasSuffix applies the HasSuffix predicate on the "metadata_user_id" field.
+func MetadataUserIDHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDIsNil applies the IsNil predicate on the "metadata_user_id" field.
+func MetadataUserIDIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldMetadataUserID))
+}
+
+// MetadataUserIDNotNil applies the NotNil predicate on the "metadata_user_id" field.
+func MetadataUserIDNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldMetadataUserID))
+}
+
+// MetadataUserIDEqualFold applies the EqualFold predicate on the "metadata_user_id" field.
+func MetadataUserIDEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldMetadataUserID, v))
+}
+
+// MetadataUserIDContainsFold applies the ContainsFold predicate on the "metadata_user_id" field.
+func MetadataUserIDContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldMetadataUserID, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
