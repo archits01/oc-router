@@ -1669,7 +1669,7 @@
             </div>
           </div>
 
-          <!-- LinuxDo Connect OAuth 登录 -->
+          <!-- LinuxDo Connect OAuth Login -->
           <div class="card">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
@@ -1787,18 +1787,18 @@
             </div>
           </div>
 
-          <!-- GitHub / Google 邮箱快捷登录 -->
+          <!-- GitHub / Google Email Quick Login -->
           <div class="card">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ localText("邮箱快捷登录", "Email OAuth Sign-in") }}
+                {{ localText("Email Quick Login", "Email OAuth Sign-in") }}
               </h2>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {{
                   localText(
-                    "开启 GitHub 或 Google 邮箱授权登录后，系统会读取已验证邮箱，存在则直接登录，不存在则自动注册。",
+                    "After enabling GitHub or Google email OAuth login, the system reads verified email - logs in directly if it exists, or auto-registers if not.",
                     "After GitHub or Google email OAuth is enabled, the system reads a verified email, signs in matching users, and auto-registers missing users.",
                   )
                 }}
@@ -1815,7 +1815,7 @@
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {{
                           localText(
-                            "GitHub OAuth App 需要 read:user user:email 权限，回调地址填写下方后端地址。",
+                            "GitHub OAuth App requires read:user user:email permissions, fill in the backend callback URL below.",
                             "GitHub OAuth App needs read:user user:email scopes. Use the backend callback URL below.",
                           )
                         }}
@@ -1827,7 +1827,7 @@
                   <div v-if="form.github_oauth_enabled" class="mt-4 space-y-4">
                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
                       <template v-if="isZhLocale">
-                        开通引导：GitHub Settings → Developer settings →
+                        Setup guide: GitHub Settings -> Developer settings ->
                         <a
                           data-testid="github-oauth-apps-guide-link"
                           href="https://github.com/settings/developers"
@@ -1835,7 +1835,7 @@
                           rel="noopener noreferrer"
                           class="font-medium text-primary-600 hover:underline dark:text-primary-400"
                         >OAuth Apps</a>
-                        → New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址。
+                        -> New OAuth App; Homepage URL is your site domain, Authorization callback URL is the backend callback URL below.
                       </template>
                       <template v-else>
                         Setup guide: GitHub Settings → Developer settings →
@@ -1868,7 +1868,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             form.github_oauth_client_secret_configured
-                              ? localText('密钥已配置，留空以保留当前值。', 'Secret configured. Leave empty to keep the current value.')
+                              ? localText('Secret configured. Leave empty to keep the current value.', 'Secret configured. Leave empty to keep the current value.')
                               : 'GitHub OAuth Client Secret'
                           "
                         />
@@ -1877,7 +1877,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("后端回调地址", "Backend Callback URL") }}
+                        {{ localText("Backend Callback URL", "Backend Callback URL") }}
                       </label>
                       <input
                         v-model="form.github_oauth_redirect_url"
@@ -1891,7 +1891,7 @@
                           class="btn btn-secondary btn-sm w-fit"
                           @click="setAndCopyEmailOAuthRedirectUrl('github')"
                         >
-                          {{ localText("生成并复制", "Generate and copy") }}
+                          {{ localText("Generate and copy", "Generate and copy") }}
                         </button>
                         <code
                           v-if="githubOAuthRedirectUrlSuggestion"
@@ -1904,7 +1904,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("前端回跳地址", "Frontend Callback URL") }}
+                        {{ localText("Frontend Callback URL", "Frontend Callback URL") }}
                       </label>
                       <input
                         v-model="form.github_oauth_frontend_redirect_url"
@@ -1925,7 +1925,7 @@
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {{
                           localText(
-                            "Google OAuth 客户端需要 openid email profile 范围，并在凭据里登记后端回调地址。",
+                            "Google OAuth client requires openid email profile scope, and register the backend callback URL in credentials.",
                             "Google OAuth client needs openid email profile scopes and the backend callback URL registered in credentials.",
                           )
                         }}
@@ -1938,7 +1938,7 @@
                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
                       {{
                         localText(
-                          "开通引导：Google Cloud Console → APIs & Services → OAuth consent screen 完成同意屏幕；Credentials → Create Credentials → OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs。",
+                          "Setup guide: Google Cloud Console -> APIs & Services -> OAuth consent screen to complete consent screen; Credentials -> Create Credentials -> OAuth client ID, select Web application type, and add the URL below to Authorized redirect URIs.",
                           "Setup guide: Google Cloud Console → APIs & Services → OAuth consent screen, then Credentials → Create Credentials → OAuth client ID, choose Web application, and add the URL below to Authorized redirect URIs.",
                         )
                       }}
@@ -1962,7 +1962,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             form.google_oauth_client_secret_configured
-                              ? localText('密钥已配置，留空以保留当前值。', 'Secret configured. Leave empty to keep the current value.')
+                              ? localText('Secret configured. Leave empty to keep the current value.', 'Secret configured. Leave empty to keep the current value.')
                               : 'Google OAuth Client Secret'
                           "
                         />
@@ -1971,7 +1971,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("后端回调地址", "Backend Callback URL") }}
+                        {{ localText("Backend Callback URL", "Backend Callback URL") }}
                       </label>
                       <input
                         v-model="form.google_oauth_redirect_url"
@@ -1985,7 +1985,7 @@
                           class="btn btn-secondary btn-sm w-fit"
                           @click="setAndCopyEmailOAuthRedirectUrl('google')"
                         >
-                          {{ localText("生成并复制", "Generate and copy") }}
+                          {{ localText("Generate and copy", "Generate and copy") }}
                         </button>
                         <code
                           v-if="googleOAuthRedirectUrlSuggestion"
@@ -1998,7 +1998,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("前端回跳地址", "Frontend Callback URL") }}
+                        {{ localText("Frontend Callback URL", "Frontend Callback URL") }}
                       </label>
                       <input
                         v-model="form.google_oauth_frontend_redirect_url"
@@ -2013,7 +2013,7 @@
             </div>
           </div>
 
-          <!-- WeChat Connect OAuth 登录 -->
+          <!-- WeChat Connect OAuth Login -->
           <div class="card">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
@@ -2052,12 +2052,12 @@
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <h3 class="font-medium text-gray-900 dark:text-white">
-                          {{ localText("PC 应用", "PC App") }}
+                          {{ localText("PC App", "PC App") }}
                         </h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {{
                             localText(
-                              "桌面浏览器通过微信开放平台扫码登录。可与公众号或移动应用同时存在。",
+                              "Desktop browser login via WeChat Open Platform QR code scan. Can coexist with Official Account or mobile app.",
                               "Desktop browsers sign in through WeChat Open Platform QR login. This can coexist with Official Account or Mobile App.",
                             )
                           }}
@@ -2086,7 +2086,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             localText(
-                              '微信开放平台 PC 应用 AppID',
+                              'WeChat Open Platform PC App AppID',
                               'WeChat Open Platform PC App ID',
                             )
                           "
@@ -2106,11 +2106,11 @@
                           :placeholder="
                             form.wechat_connect_open_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值。',
+                                  'Secret configured. Leave empty to keep the current value.',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
-                                  '微信开放平台 PC 应用 AppSecret',
+                                  'WeChat Open Platform PC App AppSecret',
                                   'WeChat Open Platform PC App Secret',
                                 )
                           "
@@ -2125,12 +2125,12 @@
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <h3 class="font-medium text-gray-900 dark:text-white">
-                          {{ localText("公众号", "Official Account") }}
+                          {{ localText("Official Account", "Official Account") }}
                         </h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {{
                             localText(
-                              "仅在微信内浏览器可用；非微信环境下会显示不可用。",
+                              "Available only in WeChat in-app browser; shows unavailable in non-WeChat environments.",
                               "Only available inside the WeChat browser. It is shown as unavailable outside WeChat.",
                             )
                           }}
@@ -2150,7 +2150,7 @@
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{ localText("公众号 AppID", "Official Account App ID") }}
+                          {{ localText("Official Account AppID", "Official Account App ID") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mp_app_id"
@@ -2159,7 +2159,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             localText(
-                              '公众号 AppID',
+                              'Official Account AppID',
                               'Official Account App ID',
                             )
                           "
@@ -2171,7 +2171,7 @@
                         >
                           {{
                             localText(
-                              "公众号 AppSecret",
+                              "Official Account AppSecret",
                               "Official Account App Secret",
                             )
                           }}
@@ -2184,11 +2184,11 @@
                           :placeholder="
                             form.wechat_connect_mp_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值。',
+                                  'Secret configured. Leave empty to keep the current value.',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
-                                  '公众号 AppSecret',
+                                  'Official Account AppSecret',
                                   'Official Account App Secret',
                                 )
                           "
@@ -2257,7 +2257,7 @@
                           :placeholder="
                             form.wechat_connect_mobile_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值。',
+                                  'Secret configured. Leave empty to keep the current value.',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
@@ -2281,7 +2281,7 @@
                 >
                   {{
                     localText(
-                      "如果同时启用 PC 应用和公众号/移动应用，这些应用需要挂在同一个微信开放平台主体下，否则 UnionID 无法稳定归并账号。",
+                      "如果同时Enable PC App和Official Account/移动应用，这些应用需要挂在同一个微信开放平台主体下，No则 UnionID 无法稳定归并账号。",
                       "When PC App is enabled together with Official Account or Mobile App, they should belong to the same WeChat Open Platform account so UnionID can merge identities reliably.",
                     )
                   }}
@@ -2309,7 +2309,7 @@
                     <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                       {{
                         localText(
-                          "用于 PC 应用和公众号的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调。",
+                          "用于 PC App和Official Account的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调。",
                           "Used by PC App and Official Account browser callbacks. Native mobile SDK flows do not start from this browser callback directly.",
                         )
                       }}
@@ -2355,7 +2355,7 @@
             </div>
           </div>
 
-          <!-- DingTalk Connect OAuth 登录 -->
+          <!-- DingTalk Connect OAuth Login -->
           <div class="card">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
@@ -2583,7 +2583,7 @@
                         <input
                           v-model="form.dingtalk_connect_sync_corp_email_attr_name"
                           type="text"
-                          placeholder="钉钉企业邮箱"
+                          placeholder="钉钉企业Email"
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
@@ -2643,7 +2643,7 @@
             </div>
           </div>
 
-          <!-- Generic OIDC OAuth 登录 -->
+          <!-- Generic OIDC OAuth Login -->
           <div class="card">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
@@ -3949,7 +3949,7 @@
                 </p>
               </div>
 
-              <!-- 是否允许在 Claude Code 中使用 Codex 插件（全局开关） -->
+              <!-- YesNo允许在 Claude Code 中使用 Codex 插件（全局开关） -->
               <div class="flex items-center justify-between">
                 <div class="pr-4">
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -4986,12 +4986,12 @@
 	              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 	                <div>
 	                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-	                    {{ localText("登录条款确认", "Login agreement") }}
+	                    {{ localText("Login条款Confirm", "Login agreement") }}
 	                  </h2>
 	                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
 	                    {{
 	                      localText(
-	                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档。",
+	                        "控制Login页YesNo要求User先阅读并同意服务条款、隐私政策或其他 Markdown 文档。",
 	                        "Control whether the login page requires users to accept Markdown policy documents first.",
 	                      )
 	                    }}
@@ -4999,7 +4999,7 @@
 	                </div>
 	                <div class="flex items-center gap-3">
 	                  <span class="text-sm text-gray-600 dark:text-gray-300">
-	                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
+	                    {{ form.login_agreement_enabled ? localText("Enabled", "Enabled") : localText("未Enable", "Disabled") }}
 	                  </span>
 	                  <Toggle v-model="form.login_agreement_enabled" />
 	                </div>
@@ -5043,8 +5043,8 @@
                   <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                     {{
                       form.login_agreement_mode === "checkbox"
-                        ? localText("复选框会显示在登录按钮下方，未勾选前所有登录入口禁用。", "The checkbox appears below the login button and gates all login actions.")
-                        : localText("弹窗会在登录页打开，用户拒绝后所有登录入口保持禁用。", "The modal opens on the login page and gates all login actions until accepted.")
+                        ? localText("复选框会显示在Login按钮下方，未勾选前所有Login入口Disable。", "The checkbox appears below the login button and gates all login actions.")
+                        : localText("弹窗会在Login页打开，User拒绝后所有Login入口保持Disable。", "The modal opens on the login page and gates all login actions until accepted.")
                     }}
                   </p>
                 </div>
@@ -5059,7 +5059,7 @@
                     class="input"
                   />
                   <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    {{ localText("日期或文档内容变化后，用户需要重新同意。", "Changing the date or content requires fresh consent.") }}
+                    {{ localText("日期或文档内容变化后，User需要重新同意。", "Changing the date or content requires fresh consent.") }}
                   </p>
                 </div>
               </div>
@@ -5073,7 +5073,7 @@
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {{
                         localText(
-                          "文档名称可自定义，内容按 Markdown 保存。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款。",
+                          "文档名称可自定义，内容按 Markdown Save。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款。",
                           "Document titles are customizable and content is saved as Markdown.",
                         )
                       }}
@@ -5085,7 +5085,7 @@
                     @click="addLoginAgreementDocument"
                   >
                     <Icon name="plus" size="sm" />
-                    {{ localText("添加文档", "Add document") }}
+                    {{ localText("Add文档", "Add document") }}
                   </button>
                 </div>
 
@@ -5395,7 +5395,7 @@
                 </p>
               </div>
 
-              <!-- 专属用户管理 -->
+              <!-- 专属User Management -->
               <div class="border-t border-gray-100 pt-6 dark:border-dark-700">
                 <div class="mb-3 flex items-center justify-between">
                   <div>
@@ -5762,7 +5762,7 @@
                       v-model="form.payment_product_name_prefix"
                       type="text"
                       class="input"
-                      placeholder="Sub2API"
+                      placeholder="OC Router"
                     />
                   </div>
                   <div>
@@ -5784,7 +5784,7 @@
                       class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300"
                     >
                       {{
-                        (form.payment_product_name_prefix || "Sub2API") +
+                        (form.payment_product_name_prefix || "OC Router") +
                         " 100 " +
                         (form.payment_product_name_suffix || "CNY")
                       }}
@@ -6859,7 +6859,7 @@ const registrationEmailSuffixWhitelistTags = ref<string[]>([]);
 const registrationEmailSuffixWhitelistDraft = ref("");
 const tablePageSizeOptionsInput = ref("10, 20, 50, 100");
 
-// Admin API Key 状态
+// Admin API Key Status
 const adminApiKeyLoading = ref(true);
 const adminApiKeyExists = ref(false);
 const adminApiKeyMasked = ref("");
@@ -6867,7 +6867,7 @@ const adminApiKeyOperating = ref(false);
 const newAdminApiKey = ref("");
 const subscriptionGroups = ref<AdminGroup[]>([]);
 
-// Overload Cooldown (529) 状态
+// Overload Cooldown (529) Status
 const overloadCooldownLoading = ref(true);
 const overloadCooldownSaving = ref(false);
 const overloadCooldownForm = reactive({
@@ -6875,7 +6875,7 @@ const overloadCooldownForm = reactive({
   cooldown_minutes: 10,
 });
 
-// Rate Limit Cooldown (429) 状态
+// Rate Limit Cooldown (429) Status
 const rateLimit429CooldownLoading = ref(true);
 const rateLimit429CooldownSaving = ref(false);
 const rateLimit429CooldownForm = reactive({
@@ -6883,7 +6883,7 @@ const rateLimit429CooldownForm = reactive({
   cooldown_seconds: 5,
 });
 
-// Stream Timeout 状态
+// Stream Timeout Status
 const streamTimeoutLoading = ref(true);
 const streamTimeoutSaving = ref(false);
 const streamTimeoutForm = reactive({
@@ -6894,7 +6894,7 @@ const streamTimeoutForm = reactive({
   threshold_window_minutes: 10,
 });
 
-// Rectifier 状态
+// Rectifier Status
 const rectifierLoading = ref(true);
 const rectifierSaving = ref(false);
 const rectifierForm = reactive({
@@ -6905,7 +6905,7 @@ const rectifierForm = reactive({
   apikey_signature_patterns: [] as string[],
 });
 
-// Beta Policy 状态
+// Beta Policy Status
 const betaPolicyLoading = ref(true);
 const betaPolicySaving = ref(false);
 const betaPolicyForm = reactive({
@@ -6920,12 +6920,12 @@ const betaPolicyForm = reactive({
   }>,
 });
 
-// OpenAI Fast/Flex Policy 状态
+// OpenAI Fast/Flex Policy Status
 const openaiFastPolicyForm = reactive({
   rules: [] as OpenAIFastPolicyRule[],
 });
-// 标记 openai_fast_policy_settings 是否已成功从后端加载，
-// 避免后端 GET 出错或字段缺失时，保存把默认规则覆盖成空数组。
+// 标记 openai_fast_policy_settings YesNo已成功从后端加载，
+// 避免后端 GET 出错或字段缺失时，Save把默认规则覆盖成空数组。
 const openaiFastPolicyLoaded = ref(false);
 
 const tablePageSizeMin = 5;
@@ -7034,7 +7034,7 @@ const form = reactive<SettingsForm>({
   default_subscriptions: [],
   force_email_on_third_party_signup: false,
   default_user_rpm_limit: 0,
-  site_name: "Sub2API",
+  site_name: "OC Router",
   site_logo: "",
   site_subtitle: "Subscription to API Conversion Platform",
   api_base_url: "",
@@ -7095,13 +7095,13 @@ const form = reactive<SettingsForm>({
   turnstile_secret_key: "",
   turnstile_secret_key_configured: false,
   api_key_acl_trust_forwarded_ip: false,
-  // LinuxDo Connect OAuth 登录
+  // LinuxDo Connect OAuth Login
   linuxdo_connect_enabled: false,
   linuxdo_connect_client_id: "",
   linuxdo_connect_client_secret: "",
   linuxdo_connect_client_secret_configured: false,
   linuxdo_connect_redirect_url: "",
-  // DingTalk Connect OAuth 登录
+  // DingTalk Connect OAuth Login
   dingtalk_connect_enabled: false,
   dingtalk_connect_client_id: "",
   dingtalk_connect_client_secret: "",
@@ -7116,7 +7116,7 @@ const form = reactive<SettingsForm>({
   dingtalk_connect_sync_corp_email_attr_key: "dingtalk_email",
   dingtalk_connect_sync_display_name_attr_key: "dingtalk_name",
   dingtalk_connect_sync_dept_attr_key: "dingtalk_department",
-  dingtalk_connect_sync_corp_email_attr_name: "钉钉企业邮箱",
+  dingtalk_connect_sync_corp_email_attr_name: "钉钉企业Email",
   dingtalk_connect_sync_display_name_attr_name: "钉钉姓名",
   dingtalk_connect_sync_dept_attr_name: "钉钉部门",
   wechat_connect_enabled: false,
@@ -7139,7 +7139,7 @@ const form = reactive<SettingsForm>({
   wechat_connect_scopes: "snsapi_login",
   wechat_connect_redirect_url: "",
   wechat_connect_frontend_redirect_url: "/auth/wechat/callback",
-  // Generic OIDC OAuth 登录
+  // Generic OIDC OAuth Login
   oidc_connect_enabled: false,
   oidc_connect_provider_name: "OIDC",
   oidc_connect_client_id: "",
@@ -7163,7 +7163,7 @@ const form = reactive<SettingsForm>({
   oidc_connect_userinfo_email_path: "",
   oidc_connect_userinfo_id_path: "",
   oidc_connect_userinfo_username_path: "",
-  // GitHub / Google 邮箱快捷登录
+  // GitHub / Google Email Quick Login
   github_oauth_enabled: false,
   github_oauth_client_id: "",
   github_oauth_client_secret: "",
@@ -7193,7 +7193,6 @@ const form = reactive<SettingsForm>({
   // Claude Code version check
   min_claude_code_version: "",
   max_claude_code_version: "",
-  // 分组隔离
   allow_ungrouped_key_scheduling: false,
   openai_advanced_scheduler_enabled: false,
   // Gateway forwarding behavior
@@ -7205,7 +7204,6 @@ const form = reactive<SettingsForm>({
   antigravity_user_agent_version: "",
   openai_codex_user_agent: "",
   openai_allow_claude_code_codex_plugin: false,
-  // 余额、订阅到期与账号限额通知
   balance_low_notify_enabled: false,
   balance_low_notify_threshold: 0,
   balance_low_notify_recharge_url: "",
@@ -7252,7 +7250,7 @@ const authSourceDefaultsMeta = computed(() => [
     source: "github" as AuthSourceType,
     title: "GitHub",
     description: localText(
-      "通过 GitHub 已验证邮箱首次注册或首次绑定时应用。",
+      "通过 GitHub 已Verify Email首次Register或首次绑定时应用。",
       "Applied on first signup or first bind through a verified GitHub email.",
     ),
   },
@@ -7260,7 +7258,7 @@ const authSourceDefaultsMeta = computed(() => [
     source: "google" as AuthSourceType,
     title: "Google",
     description: localText(
-      "通过 Google 已验证邮箱首次注册或首次绑定时应用。",
+      "通过 Google 已Verify Email首次Register或首次绑定时应用。",
       "Applied on first signup or first bind through a verified Google email.",
     ),
   },
@@ -7268,7 +7266,7 @@ const authSourceDefaultsMeta = computed(() => [
     source: "dingtalk" as AuthSourceType,
     title: "钉钉",
     description: localText(
-      "通过钉钉首次注册或首次绑定时应用。",
+      "通过钉钉首次Register或首次绑定时应用。",
       "Applied on first signup or first bind through DingTalk.",
     ),
   },
@@ -7917,7 +7915,7 @@ async function loadSettings() {
     form.oidc_connect_client_secret = "";
 
     // Load OpenAI fast/flex policy rules from bulk settings.
-    // 仅当 payload 真的包含该字段时填充并标记为已加载；否则保持表单空值，
+    // 仅当 payload 真的包含该字段时填充并标记为已加载；No则保持表单空值，
     // 让 saveSettings 在未加载时跳过该字段，防止覆盖后端默认规则。
     if (
       settings.openai_fast_policy_settings &&
@@ -8054,7 +8052,7 @@ async function saveSettings() {
     if (form.login_agreement_enabled && normalizedLoginAgreementDocuments.length === 0) {
       appStore.showError(
         localText(
-          "启用登录条款确认时，至少需要保留一份文档。",
+          "EnableLogin条款Confirm时，至少需要保留一份文档。",
           "At least one document is required when login agreement is enabled.",
         ),
       );
@@ -8066,7 +8064,7 @@ async function saveSettings() {
     if (emptyTitleDocument) {
       appStore.showError(
         localText(
-          "登录条款文档名称不能为空。",
+          "Login条款文档名称不能为空。",
           "Login agreement document title cannot be empty.",
         ),
       );
@@ -8077,7 +8075,7 @@ async function saveSettings() {
     if (duplicateLoginAgreementDocumentId) {
       appStore.showError(
         localText(
-          `登录条款文档路由不能重复：/legal/${duplicateLoginAgreementDocumentId}`,
+          `Login条款文档路由不能重复：/legal/${duplicateLoginAgreementDocumentId}`,
           `Login agreement document routes cannot be duplicated: /legal/${duplicateLoginAgreementDocumentId}`,
         ),
       );
@@ -8126,7 +8124,7 @@ async function saveSettings() {
     if (form.wechat_connect_mp_enabled && form.wechat_connect_mobile_enabled) {
       appStore.showError(
         localText(
-          "公众号和移动应用不能同时启用。",
+          "Official Account和移动应用不能同时Enable。",
           "Official Account and Mobile App cannot be enabled at the same time.",
         ),
       );
@@ -8342,7 +8340,6 @@ async function saveSettings() {
         form.payment_cancel_rate_limit_window_mode,
       payment_alipay_force_qrcode: form.payment_alipay_force_qrcode,
       openai_advanced_scheduler_enabled: form.openai_advanced_scheduler_enabled,
-      // 余额、订阅到期与账号限额通知
       balance_low_notify_enabled: form.balance_low_notify_enabled,
       balance_low_notify_threshold:
         Number(form.balance_low_notify_threshold) || 0,
@@ -8366,7 +8363,6 @@ async function saveSettings() {
     };
 
     // 仅当 openai_fast_policy_settings 已成功从后端加载时才回写，
-    // 否则省略整个字段，让后端保留既有规则（含默认值）。
     if (openaiFastPolicyLoaded.value) {
       payload.openai_fast_policy_settings = {
         rules: openaiFastPolicyForm.rules.map((rule) => {
@@ -8708,7 +8704,7 @@ async function loadRectifierSettings() {
   try {
     const settings = await adminAPI.settings.getRectifierSettings();
     Object.assign(rectifierForm, settings);
-    // 确保 patterns 是数组（旧数据可能为 null）
+    // 确保 patterns Yes数组（旧数据可能为 null）
     if (!Array.isArray(rectifierForm.apikey_signature_patterns)) {
       rectifierForm.apikey_signature_patterns = [];
     }
@@ -9286,7 +9282,7 @@ onMounted(() => {
 });
 
 // =========================
-// Affiliate (邀请返利) 专属用户管理
+// Affiliate (邀请返利) 专属User Management
 // =========================
 
 interface AffiliateState {
@@ -9639,8 +9635,8 @@ watch(
 );
 
 // bypass_registration 与身份同步三开关仅在 internal_only 模式下生效。切换 policy 到其它值时，
-// 立即把相关字段重置为 false，避免保存请求里残留旧值。后端 admin handler 与
-// 配置加载层都有 coerce 兜底，这里是 UX 层的同步而非安全防线。
+// 立即把相关字段Reset为 false，避免Save请求里残留旧值。后端 admin handler 与
+// 配置加载层都有 coerce 兜底，这里Yes UX 层的同步而非安全防线。
 watch(
   () => form.dingtalk_connect_corp_restriction_policy,
   (policy) => {
@@ -9663,7 +9659,7 @@ watch(
   @apply h-[42px];
 }
 
-/* ============ 系统设置 Tab 导航 ============ */
+/* ============ System Settings Tab 导航 ============ */
 .settings-tabs-shell {
   @apply sticky z-20 -mx-1 rounded-2xl border border-white/80 bg-white/90 p-1.5 backdrop-blur-xl;
   top: 4.75rem;

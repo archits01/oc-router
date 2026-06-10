@@ -10,23 +10,22 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 )
 
-// ClaudeCodeValidator 验证请求是否来自 Claude Code 客户端
-// 完全学习自 claude-relay-service 项目的验证逻辑
+// ClaudeCodeValidator
+//
 type ClaudeCodeValidator struct{}
 
 var (
-	// User-Agent 匹配: claude-cli/x.x.x (仅支持官方 CLI，大小写不敏感)
+	// User-Agent ()
 	claudeCodeUAPattern = regexp.MustCompile(`(?i)^claude-cli/\d+\.\d+\.\d+`)
 
-	// 带捕获组的版本提取正则
 	claudeCodeUAVersionPattern = regexp.MustCompile(`(?i)^claude-cli/(\d+\.\d+\.\d+)`)
 
-	// System prompt 相似度阈值（默认 0.5，和 claude-relay-service 一致）
+	// System prompt
 	systemPromptThreshold = 0.5
 )
 
-// Claude Code 官方 System Prompt 模板
-// 从 claude-relay-service/src/utils/contents.js 提取
+// Claude Code
+//
 var claudeCodeSystemPrompts = []string{
 	// claudeOtherSystemPrompt1 - Primary
 	"You are Claude Code, Anthropic's official CLI for Claude.",
@@ -40,72 +39,72 @@ var claudeCodeSystemPrompts = []string{
 	// exploreAgentSystemPrompt
 	"You are a file search specialist for Claude Code, Anthropic's official CLI for Claude.",
 
-	// claudeOtherSystemPromptCompact - Compact (用于对话摘要)
+	// claudeOtherSystemPromptCompact - Compact ()
 	"You are a helpful AI assistant tasked with summarizing conversations.",
 
-	// claudeOtherSystemPrompt2 - Secondary (长提示词的关键部分)
+	// claudeOtherSystemPrompt2 - Secondary ()
 	"You are an interactive CLI tool that helps users",
 }
 
 const (
-	// claudeCodeBillingHeaderPrefix 是 Claude Code 在 system 数组首块注入的计费归因块前缀。
-	// 该块存在于所有真实 Claude Code CLI 请求中（含安全监视器等无身份 prose 的子请求），
-	// 格式固定、不随提示词改版漂移，是比身份 prose 更稳定的客户端标识。
-	// 生成见 gateway_billing_block.go；同类识别见 pkg/apicompat/anthropic_to_responses.go。
+	// claudeCodeBillingHeaderPrefix
+	//
+	//
+	//
 	claudeCodeBillingHeaderPrefix = "x-anthropic-billing-header"
-	// claudeCodeCLIEntrypointMarker 标识请求来自 Claude Code CLI 入口。
+	// claudeCodeCLIEntrypointMarker
 	claudeCodeCLIEntrypointMarker = "cc_entrypoint=cli"
 )
 
-// NewClaudeCodeValidator 创建验证器实例
+// NewClaudeCodeValidator
 func NewClaudeCodeValidator() *ClaudeCodeValidator {
 	return &ClaudeCodeValidator{}
 }
 
-// Validate 验证请求是否来自 Claude Code CLI
-// 采用与 claude-relay-service 完全一致的验证策略：
+// Validate
 //
-//	Step 1: User-Agent 检查 (必需) - 必须是 claude-cli/x.x.x
-//	Step 2: 对于非 messages 路径和 /messages/count_tokens，只要 UA 匹配就通过
-//	Step 3: 检查 max_tokens=1 + haiku 探测请求绕过（UA 已验证）
-//	Step 4: 对于 messages 路径，进行严格验证：
-//	        - System prompt 相似度检查
-//	        - X-App header 检查
-//	        - anthropic-beta header 检查
-//	        - anthropic-version header 检查
-//	        - metadata.user_id 格式验证
+//
+//	Step 1: User-Agent () -
+//	Step 2:
+//	Step 3: =1 + haiku
+//	Step 4:
+//	        - System prompt
+//	        - X-App header
+//	        - anthropic-beta header
+//	        - anthropic-version header
+//	        - metadata.user_id
 func (v *ClaudeCodeValidator) Validate(r *http.Request, body map[string]any) bool {
-	// Step 1: User-Agent 检查
+	// Step 1: User-Agent
 	ua := r.Header.Get("User-Agent")
 	if !claudeCodeUAPattern.MatchString(ua) {
 		return false
 	}
 
-	// Step 2: 非 messages 路径只要 UA 匹配就通过
+	// Step 2:
 	path := r.URL.Path
 	if !strings.Contains(path, "messages") {
 		return true
 	}
 
-	// count_tokens 是 Claude Code 官方辅助请求，通常不携带完整 messages system prompt。
+	// count_tokens
 	if isMessagesCountTokensPath(path) {
 		return true
 	}
 
-	// Step 3: 检查 max_tokens=1 + haiku 探测请求绕过
-	// 这类请求用于 Claude Code 验证 API 连通性，不携带 system prompt
+	// Step 3: =1 + haiku
+	//
 	if isMaxTokensOneHaiku, ok := IsMaxTokensOneHaikuRequestFromContext(r.Context()); ok && isMaxTokensOneHaiku {
-		return true // 绕过 system prompt 检查，UA 已在 Step 1 验证
+		return true // 绕过 system prompt 检查，UA 已在 Step 1 validation
 	}
 
-	// Step 4: messages 路径，进行严格验证
+	// Step 4: messages
 
-	// 4.1 检查 system prompt 相似度
+	// 4.1
 	if !v.hasClaudeCodeSystemPrompt(body) {
 		return false
 	}
 
-	// 4.2 检查必需的 headers（值不为空即可）
+	// 4.2
 	xApp := r.Header.Get("X-App")
 	if xApp == "" {
 		return false
@@ -121,7 +120,7 @@ func (v *ClaudeCodeValidator) Validate(r *http.Request, body map[string]any) boo
 		return false
 	}
 
-	// 4.3 验证 metadata.user_id
+	// 4.3
 	if body == nil {
 		return false
 	}
@@ -147,25 +146,25 @@ func isMessagesCountTokensPath(path string) bool {
 	return strings.HasSuffix(path, "/messages/count_tokens")
 }
 
-// hasClaudeCodeSystemPrompt 检查请求是否包含 Claude Code 系统提示词
-// 使用字符串相似度匹配（Dice coefficient）
+// hasClaudeCodeSystemPrompt
+//
 func (v *ClaudeCodeValidator) hasClaudeCodeSystemPrompt(body map[string]any) bool {
 	if body == nil {
 		return false
 	}
 
-	// 检查 model 字段
+	//
 	if _, ok := body["model"].(string); !ok {
 		return false
 	}
 
-	// 获取 system 字段
+	//
 	systemEntries, ok := body["system"].([]any)
 	if !ok {
 		return false
 	}
 
-	// 检查每个 system entry
+	//
 	for _, entry := range systemEntries {
 		entryMap, ok := entry.(map[string]any)
 		if !ok {
@@ -177,14 +176,13 @@ func (v *ClaudeCodeValidator) hasClaudeCodeSystemPrompt(body map[string]any) boo
 			continue
 		}
 
-		// 计费归因块识别（WHY 见 claudeCodeBillingHeaderPrefix 注释）。先于 Dice 检查，
-		// 大小写敏感：该块由 gateway_billing_block.go 固定小写生成。
+		//
+		//
 		if strings.HasPrefix(text, claudeCodeBillingHeaderPrefix) &&
 			strings.Contains(text, claudeCodeCLIEntrypointMarker) {
 			return true
 		}
 
-		// 计算与所有模板的最佳相似度
 		bestScore := v.bestSimilarityScore(text)
 		if bestScore >= systemPromptThreshold {
 			return true
@@ -194,7 +192,7 @@ func (v *ClaudeCodeValidator) hasClaudeCodeSystemPrompt(body map[string]any) boo
 	return false
 }
 
-// bestSimilarityScore 计算文本与所有 Claude Code 模板的最佳相似度
+// bestSimilarityScore
 func (v *ClaudeCodeValidator) bestSimilarityScore(text string) float64 {
 	normalizedText := normalizePrompt(text)
 	bestScore := 0.0
@@ -210,15 +208,14 @@ func (v *ClaudeCodeValidator) bestSimilarityScore(text string) float64 {
 	return bestScore
 }
 
-// normalizePrompt 标准化提示词文本（去除多余空白）
+// normalizePrompt
 func normalizePrompt(text string) string {
-	// 将所有空白字符替换为单个空格，并去除首尾空白
 	return strings.Join(strings.Fields(text), " ")
 }
 
-// diceCoefficient 计算两个字符串的 Dice 系数（Sørensen–Dice coefficient）
-// 这是 string-similarity 库使用的算法
-// 公式: 2 * |intersection| / (|bigrams(a)| + |bigrams(b)|)
+// diceCoefficient –Dice coefficient）
+//
+// * |intersection| / (|bigrams(a)| + |bigrams(b)|)
 func diceCoefficient(a, b string) float64 {
 	if a == b {
 		return 1.0
@@ -228,7 +225,7 @@ func diceCoefficient(a, b string) float64 {
 		return 0.0
 	}
 
-	// 生成 bigrams
+	//
 	bigramsA := getBigrams(a)
 	bigramsB := getBigrams(b)
 
@@ -236,7 +233,6 @@ func diceCoefficient(a, b string) float64 {
 		return 0.0
 	}
 
-	// 计算交集大小
 	intersection := 0
 	for bigram, countA := range bigramsA {
 		if countB, exists := bigramsB[bigram]; exists {
@@ -248,7 +244,7 @@ func diceCoefficient(a, b string) float64 {
 		}
 	}
 
-	// 计算总 bigram 数量
+	//
 	totalA := 0
 	for _, count := range bigramsA {
 		totalA += count
@@ -261,7 +257,7 @@ func diceCoefficient(a, b string) float64 {
 	return float64(2*intersection) / float64(totalA+totalB)
 }
 
-// getBigrams 获取字符串的所有 bigrams（相邻字符对）
+// getBigrams
 func getBigrams(s string) map[string]int {
 	bigrams := make(map[string]int)
 	runes := []rune(strings.ToLower(s))
@@ -274,18 +270,18 @@ func getBigrams(s string) map[string]int {
 	return bigrams
 }
 
-// ValidateUserAgent 仅验证 User-Agent（用于不需要解析请求体的场景）
+// ValidateUserAgent
 func (v *ClaudeCodeValidator) ValidateUserAgent(ua string) bool {
 	return claudeCodeUAPattern.MatchString(ua)
 }
 
-// IncludesClaudeCodeSystemPrompt 检查请求体是否包含 Claude Code 系统提示词
-// 只要存在匹配的系统提示词就返回 true（用于宽松检测）
+// IncludesClaudeCodeSystemPrompt
+//
 func (v *ClaudeCodeValidator) IncludesClaudeCodeSystemPrompt(body map[string]any) bool {
 	return v.hasClaudeCodeSystemPrompt(body)
 }
 
-// IsClaudeCodeClient 从 context 中获取 Claude Code 客户端标识
+// IsClaudeCodeClient
 func IsClaudeCodeClient(ctx context.Context) bool {
 	if v, ok := ctx.Value(ctxkey.IsClaudeCodeClient).(bool); ok {
 		return v
@@ -293,23 +289,23 @@ func IsClaudeCodeClient(ctx context.Context) bool {
 	return false
 }
 
-// SetClaudeCodeClient 将 Claude Code 客户端标识设置到 context 中
+// SetClaudeCodeClient
 func SetClaudeCodeClient(ctx context.Context, isClaudeCode bool) context.Context {
 	return context.WithValue(ctx, ctxkey.IsClaudeCodeClient, isClaudeCode)
 }
 
-// ExtractVersion 从 User-Agent 中提取 Claude Code 版本号
-// 返回 "2.1.22" 形式的版本号，如果不匹配返回空字符串
+// ExtractVersion
+// "2.1.22"
 func (v *ClaudeCodeValidator) ExtractVersion(ua string) string {
 	return ExtractCLIVersion(ua)
 }
 
-// SetClaudeCodeVersion 将 Claude Code 版本号设置到 context 中
+// SetClaudeCodeVersion
 func SetClaudeCodeVersion(ctx context.Context, version string) context.Context {
 	return context.WithValue(ctx, ctxkey.ClaudeCodeVersion, version)
 }
 
-// GetClaudeCodeVersion 从 context 中获取 Claude Code 版本号
+// GetClaudeCodeVersion
 func GetClaudeCodeVersion(ctx context.Context) string {
 	if v, ok := ctx.Value(ctxkey.ClaudeCodeVersion).(string); ok {
 		return v
@@ -317,8 +313,8 @@ func GetClaudeCodeVersion(ctx context.Context) string {
 	return ""
 }
 
-// CompareVersions 比较两个 semver 版本号
-// 返回: -1 (a < b), 0 (a == b), 1 (a > b)
+// CompareVersions
+// (a < b), 0 (a == b), 1 (a > b)
 func CompareVersions(a, b string) int {
 	aParts := parseSemver(a)
 	bParts := parseSemver(b)
@@ -333,7 +329,7 @@ func CompareVersions(a, b string) int {
 	return 0
 }
 
-// parseSemver 解析 semver 版本号为 [major, minor, patch]
+// parseSemver [major, minor, patch]
 func parseSemver(v string) [3]int {
 	v = strings.TrimPrefix(v, "v")
 	parts := strings.Split(v, ".")

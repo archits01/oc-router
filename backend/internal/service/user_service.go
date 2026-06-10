@@ -78,15 +78,15 @@ type UserListFilters struct {
 	// For large datasets this can be expensive; admin list pages should enable it on demand.
 	// nil means not specified (default: load subscriptions for backward compatibility).
 	IncludeSubscriptions *bool
-	// IncludeDeleted 为 true 时绕过软删除过滤，返回含已删除（deleted_at 非空）的用户。
-	// 仅供 /admin/usage 的 SearchUsers 端点使用，其他列表调用方不要设置。
+	// IncludeDeleted
+	//
 	IncludeDeleted bool
 }
 
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	GetByID(ctx context.Context, id int64) (*User, error)
-	// GetByIDIncludeDeleted 绕过软删除过滤按 ID 取用户（含已删）。仅供管理员审计/usage 点击使用。
+	// GetByIDIncludeDeleted
 	GetByIDIncludeDeleted(ctx context.Context, id int64) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetFirstAdmin(ctx context.Context) (*User, error)
@@ -109,14 +109,14 @@ type UserRepository interface {
 	BatchAddConcurrency(ctx context.Context, userIDs []int64, delta int) (int, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	RemoveGroupFromAllowedGroups(ctx context.Context, groupID int64) (int64, error)
-	// AddGroupToAllowedGroups 将指定分组增量添加到用户的 allowed_groups（幂等，冲突忽略）
+	// AddGroupToAllowedGroups
 	AddGroupToAllowedGroups(ctx context.Context, userID int64, groupID int64) error
-	// RemoveGroupFromUserAllowedGroups 移除单个用户的指定分组权限
+	// RemoveGroupFromUserAllowedGroups
 	RemoveGroupFromUserAllowedGroups(ctx context.Context, userID int64, groupID int64) error
 	ListUserAuthIdentities(ctx context.Context, userID int64) ([]UserAuthIdentityRecord, error)
 	UnbindUserAuthProvider(ctx context.Context, userID int64, provider string) error
 
-	// TOTP 双因素认证
+	// TOTP
 	UpdateTotpSecret(ctx context.Context, userID int64, encryptedSecret *string) error
 	EnableTotp(ctx context.Context, userID int64) error
 	DisableTotp(ctx context.Context, userID int64) error
@@ -175,7 +175,7 @@ const (
 	userIdentityNoteBindAnotherBeforeUnbind = "profile.authBindings.notes.bindAnotherBeforeUnbind"
 )
 
-// UpdateProfileRequest 更新用户资料请求
+// UpdateProfileRequest
 type UpdateProfileRequest struct {
 	Email                  *string  `json:"email"`
 	Username               *string  `json:"username"`
@@ -207,13 +207,13 @@ type userProfileIdentityTxRunner interface {
 	WithUserProfileIdentityTx(ctx context.Context, fn func(txCtx context.Context) error) error
 }
 
-// ChangePasswordRequest 修改密码请求
+// ChangePasswordRequest
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
 }
 
-// UserService 用户服务
+// UserService
 type UserService struct {
 	userRepo             UserRepository
 	settingRepo          SettingRepository
@@ -223,7 +223,7 @@ type UserService struct {
 	lastActiveTouchSF    singleflight.Group
 }
 
-// NewUserService 创建用户服务实例
+// NewUserService
 func NewUserService(userRepo UserRepository, settingRepo SettingRepository, authCacheInvalidator APIKeyAuthCacheInvalidator, billingCache BillingCache) *UserService {
 	return &UserService{
 		userRepo:             userRepo,
@@ -233,7 +233,7 @@ func NewUserService(userRepo UserRepository, settingRepo SettingRepository, auth
 	}
 }
 
-// GetFirstAdmin 获取首个管理员用户（用于 Admin API Key 认证）
+// GetFirstAdmin
 func (s *UserService) GetFirstAdmin(ctx context.Context) (*User, error) {
 	admin, err := s.userRepo.GetFirstAdmin(ctx)
 	if err != nil {
@@ -242,7 +242,7 @@ func (s *UserService) GetFirstAdmin(ctx context.Context) (*User, error) {
 	return admin, nil
 }
 
-// GetProfile 获取用户资料
+// GetProfile
 func (s *UserService) GetProfile(ctx context.Context, userID int64) (*User, error) {
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
@@ -389,7 +389,7 @@ func (s *UserService) UnbindUserAuthProviderWithResult(ctx context.Context, user
 	return updatedUser, true, nil
 }
 
-// UpdateProfile 更新用户资料
+// UpdateProfile
 func (s *UserService) UpdateProfile(ctx context.Context, userID int64, req UpdateProfileRequest) (*User, error) {
 	if txRunner, ok := s.userRepo.(userProfileIdentityTxRunner); ok {
 		var (
@@ -426,9 +426,7 @@ func (s *UserService) updateProfile(ctx context.Context, userID int64, req Updat
 	}
 	oldConcurrency := user.Concurrency
 
-	// 更新字段
 	if req.Email != nil {
-		// 检查新邮箱是否已被使用
 		exists, err := s.userRepo.ExistsByEmail(ctx, *req.Email)
 		if err != nil {
 			return nil, oldConcurrency, fmt.Errorf("check email exists: %w", err)
@@ -932,7 +930,7 @@ func maskOpaqueIdentity(value string) string {
 	}
 }
 
-// ChangePassword 修改密码
+// ChangePassword
 // Security: Increments TokenVersion to invalidate all existing JWT tokens
 func (s *UserService) ChangePassword(ctx context.Context, userID int64, req ChangePasswordRequest) error {
 	user, err := s.userRepo.GetByID(ctx, userID)
@@ -940,7 +938,6 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, req Chan
 		return fmt.Errorf("get user: %w", err)
 	}
 
-	// 验证当前密码
 	if !user.CheckPassword(req.CurrentPassword) {
 		return ErrPasswordIncorrect
 	}
@@ -960,7 +957,7 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, req Chan
 	return nil
 }
 
-// GetByID 根据ID获取用户（管理员功能）
+// GetByID
 func (s *UserService) GetByID(ctx context.Context, id int64) (*User, error) {
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
@@ -981,8 +978,7 @@ func normalizeLoadedUserTokenVersion(user *User) {
 	user.TokenVersionResolved = true
 }
 
-// TouchLastActive 通过防抖更新 users.last_active_at，减少鉴权热路径写放大。
-// 该操作为尽力而为，不应中断正常请求。
+// TouchLastActive
 func (s *UserService) TouchLastActive(ctx context.Context, userID int64) {
 	if s == nil || s.userRepo == nil || userID <= 0 {
 		return
@@ -996,7 +992,7 @@ func (s *UserService) TouchLastActive(ctx context.Context, userID int64) {
 	s.TouchLastActiveForUser(ctx, user)
 }
 
-// TouchLastActiveForUser 使用已加载的用户信息更新 last_active_at，避免重复读取数据库。
+// TouchLastActiveForUser
 func (s *UserService) TouchLastActiveForUser(ctx context.Context, user *User) {
 	if s == nil || s.userRepo == nil || user == nil || user.ID <= 0 {
 		return
@@ -1054,7 +1050,7 @@ func (s *UserService) hydrateUserAvatar(ctx context.Context, user *User) error {
 	return nil
 }
 
-// List 获取用户列表（管理员功能）
+// List
 func (s *UserService) List(ctx context.Context, params pagination.PaginationParams) ([]User, *pagination.PaginationResult, error) {
 	users, pagination, err := s.userRepo.List(ctx, params)
 	if err != nil {
@@ -1063,7 +1059,7 @@ func (s *UserService) List(ctx context.Context, params pagination.PaginationPara
 	return users, pagination, nil
 }
 
-// UpdateBalance 更新用户余额（管理员功能）
+// UpdateBalance
 func (s *UserService) UpdateBalance(ctx context.Context, userID int64, amount float64) error {
 	if err := s.userRepo.UpdateBalance(ctx, userID, amount); err != nil {
 		return fmt.Errorf("update balance: %w", err)
@@ -1088,7 +1084,7 @@ func (s *UserService) UpdateBalance(ctx context.Context, userID int64, amount fl
 	return nil
 }
 
-// UpdateConcurrency 更新用户并发数（管理员功能）
+// UpdateConcurrency
 func (s *UserService) UpdateConcurrency(ctx context.Context, userID int64, concurrency int) error {
 	if err := s.userRepo.UpdateConcurrency(ctx, userID, concurrency); err != nil {
 		return fmt.Errorf("update concurrency: %w", err)
@@ -1099,7 +1095,7 @@ func (s *UserService) UpdateConcurrency(ctx context.Context, userID int64, concu
 	return nil
 }
 
-// UpdateStatus 更新用户状态（管理员功能）
+// UpdateStatus
 func (s *UserService) UpdateStatus(ctx context.Context, userID int64, status string) error {
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
@@ -1118,7 +1114,7 @@ func (s *UserService) UpdateStatus(ctx context.Context, userID int64, status str
 	return nil
 }
 
-// Delete 删除用户（管理员功能）
+// Delete
 func (s *UserService) Delete(ctx context.Context, userID int64) error {
 	if s.authCacheInvalidator != nil {
 		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
@@ -1215,7 +1211,7 @@ func (s *UserService) sendNotifyVerifyEmail(ctx context.Context, emailService *E
 			slog.Warn("template notification email verification failed; falling back to built-in body", "recipient_hash", notificationEmailHash(email), "err", err.Error())
 		}
 	}
-	subject := fmt.Sprintf("[%s] 通知邮箱验证码 / Notification Email Verification", siteName)
+	subject := fmt.Sprintf("[%s] 通知邮箱validation码 / Notification Email Verification", siteName)
 	body := buildNotifyVerifyEmailBody(code, siteName)
 	return emailService.SendEmail(ctx, email, subject, body)
 }
@@ -1352,14 +1348,14 @@ const notifyVerifyEmailTemplate = `<!DOCTYPE html>
             <h1>%s</h1>
         </div>
         <div class="content">
-            <p style="font-size: 18px; color: #333;">通知邮箱验证码 / Notification Email Verification</p>
+            <p style="font-size: 18px; color: #333;">通知邮箱validation码 / Notification Email Verification</p>
             <div class="code">%s</div>
             <div class="info">
-                <p>您正在添加额外的通知邮箱，请输入此验证码完成验证。</p>
+                <p>您正在添加额外的通知邮箱，请输入此validation码完成validation。</p>
                 <p>You are adding an extra notification email. Please enter this code to verify.</p>
-                <p>此验证码将在 <strong>15 分钟</strong>后失效。</p>
+                <p>此validation码将在 <strong>15 minutes</strong>后失效。</p>
                 <p>This code will expire in <strong>15 minutes</strong>.</p>
-                <p>如果您没有请求此验证码，请忽略此邮件。</p>
+                <p>如果您没有请求此validation码，请忽略此邮件。</p>
                 <p>If you did not request this code, please ignore this email.</p>
             </div>
         </div>

@@ -132,7 +132,6 @@ async function fetchMonitors(id: number) {
   try {
     const { items } = await adminAPI.channelMonitorTemplate.listAssociatedMonitors(id)
     monitors.value = items
-    // 默认全选
     selectedIds.value = items.map((m) => m.id)
   } catch (err: unknown) {
     appStore.showError(extractApiErrorMessage(err, t('common.error')))

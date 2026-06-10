@@ -1,7 +1,7 @@
 <template>
   <BaseDialog :show="show" :title="t('admin.users.groupConfig')" width="wide" @close="$emit('close')">
     <div v-if="user" class="space-y-6">
-      <!-- 用户信息头部 -->
+      <!-- User信息头部 -->
       <div class="flex items-center gap-4 rounded-2xl bg-gradient-to-r from-primary-50 to-primary-100 p-5 dark:from-primary-900/30 dark:to-primary-800/20">
         <div class="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm dark:bg-dark-700">
           <span class="text-2xl font-semibold text-primary-600 dark:text-primary-400">{{ user.email.charAt(0).toUpperCase() }}</span>
@@ -12,7 +12,7 @@
         </div>
       </div>
 
-      <!-- 加载状态 -->
+      <!-- 加载Status -->
       <div v-if="loading" class="flex justify-center py-12">
         <svg class="h-10 w-10 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -107,7 +107,7 @@
               class="relative overflow-hidden rounded-xl border-2 border-green-200 bg-green-50/50 p-4 dark:border-green-800/50 dark:bg-green-900/10"
             >
               <div class="flex items-center gap-4">
-                <!-- 复选框（禁用状态） -->
+                <!-- 复选框（DisableStatus） -->
                 <div class="flex-shrink-0">
                   <div class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-green-400 bg-green-500 dark:border-green-600 dark:bg-green-600">
                     <svg class="h-full w-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -204,11 +204,10 @@ const appStore = useAppStore()
 
 const groups = ref<Group[]>([])
 const groupConfigs = ref<GroupRateConfig[]>([])
-const originalGroupRates = ref<Record<number, number>>({}) // 记录原始专属倍率，用于检测删除
+const originalGroupRates = ref<Record<number, number>>({}) // 记录原始专属倍率，用于检测Delete
 const loading = ref(false)
 const submitting = ref(false)
 
-// 分离专属分组和公开分组
 const exclusiveGroups = computed(() => groups.value.filter((g) => g.is_exclusive))
 const publicGroups = computed(() => groups.value.filter((g) => !g.is_exclusive))
 
@@ -228,14 +227,11 @@ const load = async () => {
   loading.value = true
   try {
     const res = await adminAPI.groups.list(1, 1000)
-    // 只显示标准类型且活跃的分组
     groups.value = res.items.filter((g) => g.subscription_type === 'standard' && g.status === 'active')
 
-    // 初始化配置
     const userAllowedGroups = props.user?.allowed_groups || []
     const userGroupRates = props.user?.group_rates || {}
 
-    // 保存原始专属倍率，用于检测删除操作
     originalGroupRates.value = { ...userGroupRates }
 
     groupConfigs.value = groups.value.map((g) => ({
@@ -245,8 +241,7 @@ const load = async () => {
       isExclusive: g.is_exclusive,
       defaultRate: g.rate_multiplier,
       customRate: userGroupRates[g.id] ?? null,
-      // 专属分组：检查是否在 allowed_groups 中
-      // 公开分组：始终选中
+      // 专属分组：检查YesNo在 allowed_groups 中
       isSelected: g.is_exclusive ? userAllowedGroups.includes(g.id) : true,
     }))
   } catch (error) {
@@ -284,17 +279,15 @@ const handleSave = async () => {
     const allowedGroups = groupConfigs.value.filter((c) => c.isExclusive && c.isSelected).map((c) => c.groupId)
 
     // 构建 group_rates
-    // - 有新专属倍率: 设置为该值
-    // - 原本有专属倍率但现在被清空: 设置为 null（表示删除）
+    // - 有新专属倍率: Settings为该值
+    // - 原本有专属倍率但现在被清空: Settings为 null（表示Delete）
     const groupRates: Record<number, number | null> = {}
     for (const c of groupConfigs.value) {
       const hadOriginalRate = originalGroupRates.value[c.groupId] !== undefined
 
       if (c.customRate !== null) {
-        // 有专属倍率
         groupRates[c.groupId] = c.customRate
       } else if (hadOriginalRate) {
-        // 原本有专属倍率，现在被清空，需要显式删除
         groupRates[c.groupId] = null
       }
     }

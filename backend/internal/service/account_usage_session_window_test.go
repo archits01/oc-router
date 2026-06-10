@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// sessionWindowSyncRepo 记录 syncActiveToPassive 触发的所有写操作。
+// sessionWindowSyncRepo
 type sessionWindowSyncRepo struct {
 	AccountRepository
 

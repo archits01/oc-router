@@ -16,7 +16,7 @@ describe('useModelWhitelist', () => {
     expect(models).toContain('codex-auto-review')
   })
 
-  it('openai 模型列表不再暴露已下线的 ChatGPT 登录 Codex 模型', () => {
+  it('openai 模型列表不再暴露已下线的 ChatGPT Login Codex 模型', () => {
     const models = getModelsByPlatform('openai')
 
     expect(models).not.toContain('gpt-5')

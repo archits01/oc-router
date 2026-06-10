@@ -8,29 +8,29 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-// digestSessionTTL 摘要会话默认 TTL
+// digestSessionTTL
 const digestSessionTTL = 5 * time.Minute
 
-// sessionEntry flat cache 条目
+// sessionEntry flat cache
 type sessionEntry struct {
 	uuid      string
 	accountID int64
 }
 
-// DigestSessionStore 内存摘要会话存储（flat cache 实现）
+// DigestSessionStore
 // key: "{groupID}:{prefixHash}|{digestChain}" → *sessionEntry
 type DigestSessionStore struct {
 	cache *gocache.Cache
 }
 
-// NewDigestSessionStore 创建内存摘要会话存储
+// NewDigestSessionStore
 func NewDigestSessionStore() *DigestSessionStore {
 	return &DigestSessionStore{
 		cache: gocache.New(digestSessionTTL, time.Minute),
 	}
 }
 
-// Save 保存摘要会话。oldDigestChain 为 Find 返回的 matchedChain，用于删旧 key。
+// Save
 func (s *DigestSessionStore) Save(groupID int64, prefixHash, digestChain, uuid string, accountID int64, oldDigestChain string) {
 	if digestChain == "" {
 		return
@@ -42,7 +42,7 @@ func (s *DigestSessionStore) Save(groupID int64, prefixHash, digestChain, uuid s
 	}
 }
 
-// Find 查找摘要会话，从完整 chain 逐段截断，返回最长匹配及对应 matchedChain。
+// Find
 func (s *DigestSessionStore) Find(groupID int64, prefixHash, digestChain string) (uuid string, accountID int64, matchedChain string, found bool) {
 	if digestChain == "" {
 		return "", 0, "", false
@@ -63,7 +63,7 @@ func (s *DigestSessionStore) Find(groupID int64, prefixHash, digestChain string)
 	}
 }
 
-// buildNS 构建 namespace 前缀
+// buildNS
 func buildNS(groupID int64, prefixHash string) string {
 	return strconv.FormatInt(groupID, 10) + ":" + prefixHash + "|"
 }

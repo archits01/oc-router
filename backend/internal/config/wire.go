@@ -2,12 +2,12 @@ package config
 
 import "github.com/google/wire"
 
-// ProviderSet 提供配置层的依赖
+// ProviderSet
 var ProviderSet = wire.NewSet(
 	ProvideConfig,
 )
 
-// ProvideConfig 提供应用配置
+// ProvideConfig
 func ProvideConfig() (*Config, error) {
 	return LoadForBootstrap()
 }

@@ -20,13 +20,13 @@ import (
 	"golang.org/x/net/http2"
 )
 
-// ProviderSet 提供服务器层的依赖
+// ProviderSet
 var ProviderSet = wire.NewSet(
 	ProvideRouter,
 	ProvideHTTPServer,
 )
 
-// ProvideRouter 提供路由器
+// ProvideRouter
 func ProvideRouter(
 	cfg *config.Config,
 	handlers *handler.Handlers,
@@ -97,18 +97,18 @@ func ProvideRouter(
 	return SetupRouter(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg, redisClient)
 }
 
-// ProvideHTTPServer 提供 HTTP 服务器
+// ProvideHTTPServer
 func ProvideHTTPServer(cfg *config.Config, router *gin.Engine) *http.Server {
 	httpHandler := http.Handler(router)
 	server := &http.Server{
 		Addr:    cfg.Server.Address(),
 		Handler: httpHandler,
-		// ReadHeaderTimeout: 读取请求头的超时时间，防止慢速请求头攻击
+		// ReadHeaderTimeout:
 		ReadHeaderTimeout: time.Duration(cfg.Server.ReadHeaderTimeout) * time.Second,
-		// IdleTimeout: 空闲连接超时时间，释放不活跃的连接资源
+		// IdleTimeout:
 		IdleTimeout: time.Duration(cfg.Server.IdleTimeout) * time.Second,
-		// 注意：不设置 WriteTimeout，因为流式响应可能持续十几分钟
-		// 不设置 ReadTimeout，因为大请求体可能需要较长时间读取
+		//
+		//
 	}
 
 	globalMaxSize := cfg.Server.MaxRequestBodySize
@@ -120,7 +120,7 @@ func ProvideHTTPServer(cfg *config.Config, router *gin.Engine) *http.Server {
 		log.Printf("Global max request body size: %d bytes (%.2f MB)", globalMaxSize, float64(globalMaxSize)/(1<<20))
 	}
 
-	// 根据配置决定是否启用 H2C
+	//
 	if cfg.Server.H2C.Enabled {
 		h2cConfig := cfg.Server.H2C
 		if err := http2.ConfigureServer(server, &http2.Server{

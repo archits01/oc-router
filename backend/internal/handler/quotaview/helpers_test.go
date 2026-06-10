@@ -8,7 +8,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-// TestNextMonthlyResetTimeFrom_FromStart 验证：start 已知时返回 start+30d，不随 now 漂移。
+// TestNextMonthlyResetTimeFrom_FromStart +30d，
 func TestNextMonthlyResetTimeFrom_FromStart(t *testing.T) {
 	t0 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	now := t0.Add(15 * 24 * time.Hour)  // t0 + 15d
@@ -20,7 +20,7 @@ func TestNextMonthlyResetTimeFrom_FromStart(t *testing.T) {
 	}
 }
 
-// TestNextMonthlyResetTimeFrom_NilStart 验证：start=nil 时退化为 now+30d（不 panic）。
+// TestNextMonthlyResetTimeFrom_NilStart =nil +30d（
 func TestNextMonthlyResetTimeFrom_NilStart(t *testing.T) {
 	now := time.Date(2024, 3, 15, 12, 0, 0, 0, time.UTC)
 	want := now.Add(30 * 24 * time.Hour)
@@ -31,9 +31,9 @@ func TestNextMonthlyResetTimeFrom_NilStart(t *testing.T) {
 	}
 }
 
-// TestLazyZeroQuotaForResponse_MonthlyResetsAt_NotDrifting 验证：
-// 连续两次以不同 now 调用、但 MonthlyWindowStart 相同的 record，
-// monthly_window_resets_at 始终等于 windowStart+30d，不随 now 漂移。
+// TestLazyZeroQuotaForResponse_MonthlyResetsAt_NotDrifting
+//
+// monthly_window_resets_at +30d，
 func TestLazyZeroQuotaForResponse_MonthlyResetsAt_NotDrifting(t *testing.T) {
 	windowStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	wantResetsAt := windowStart.Add(30 * 24 * time.Hour).Format(time.RFC3339)
@@ -44,7 +44,7 @@ func TestLazyZeroQuotaForResponse_MonthlyResetsAt_NotDrifting(t *testing.T) {
 		MonthlyWindowStart: &windowStart,
 	}
 
-	// 第一次调用：now = windowStart + 5d
+	// = windowStart + 5d
 	now1 := windowStart.Add(5 * 24 * time.Hour)
 	out1 := LazyZeroQuotaForResponse(r, now1, false)
 	resetsAt1, ok1 := out1["monthly_window_resets_at"]
@@ -59,7 +59,7 @@ func TestLazyZeroQuotaForResponse_MonthlyResetsAt_NotDrifting(t *testing.T) {
 		t.Errorf("first call: want %s, got %s", wantResetsAt, *s1)
 	}
 
-	// 第二次调用：now = windowStart + 10d（不同 now，但 resetsAt 应不变）
+	// = windowStart + 10d（
 	now2 := windowStart.Add(10 * 24 * time.Hour)
 	out2 := LazyZeroQuotaForResponse(r, now2, false)
 	resetsAt2, ok2 := out2["monthly_window_resets_at"]
@@ -74,36 +74,35 @@ func TestLazyZeroQuotaForResponse_MonthlyResetsAt_NotDrifting(t *testing.T) {
 		t.Errorf("second call: want %s, got %s", wantResetsAt, *s2)
 	}
 
-	// 两次结果必须相等
 	if *s1 != *s2 {
 		t.Errorf("resetsAt drifted between calls: %s vs %s", *s1, *s2)
 	}
 }
 
-// TestNeedsDailyReset_FollowsServerTimezone 验证日窗口过期判断按全局时区（北京 0 点）而非 UTC。
+// TestNeedsDailyReset_FollowsServerTimezone
 func TestNeedsDailyReset_FollowsServerTimezone(t *testing.T) {
 	if err := timezone.Init("Asia/Shanghai"); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
 	t.Cleanup(func() { _ = timezone.Init("UTC") })
 
-	// now = 2026-05-25 23:00 UTC = 2026-05-26 07:00 +08（北京 5/26）
+	// now = 2026-05-25 23:00 UTC = 2026-05-26 07:00 +08（
 	now := time.Date(2026, 5, 25, 23, 0, 0, 0, time.UTC)
 
-	// start = 2026-05-25 10:00 UTC = 2026-05-25 18:00 +08（北京 5/25）→ 应判定为过期
+	// start = 2026-05-25 10:00 UTC = 2026-05-25 18:00 +08（→
 	startPrevBeijingDay := time.Date(2026, 5, 25, 10, 0, 0, 0, time.UTC)
 	if !NeedsDailyReset(&startPrevBeijingDay, now) {
 		t.Error("上一个北京日的窗口应判定为过期")
 	}
 
-	// start = 2026-05-25 20:00 UTC = 2026-05-26 04:00 +08（北京 5/26 同日）→ 不应过期
+	// start = 2026-05-25 20:00 UTC = 2026-05-26 04:00 +08（→
 	startSameBeijingDay := time.Date(2026, 5, 25, 20, 0, 0, 0, time.UTC)
 	if NeedsDailyReset(&startSameBeijingDay, now) {
 		t.Error("同一北京日的窗口不应判定为过期")
 	}
 }
 
-// TestNextDailyResetTime_FollowsServerTimezone 验证下次日重置 = 次日北京 0 点。
+// TestNextDailyResetTime_FollowsServerTimezone =
 func TestNextDailyResetTime_FollowsServerTimezone(t *testing.T) {
 	if err := timezone.Init("Asia/Shanghai"); err != nil {
 		t.Fatalf("Init: %v", err)
@@ -117,14 +116,14 @@ func TestNextDailyResetTime_FollowsServerTimezone(t *testing.T) {
 	}
 }
 
-// TestNextWeeklyResetTime_FollowsServerTimezone 验证下次周重置 = 下周一北京 0 点。
+// TestNextWeeklyResetTime_FollowsServerTimezone =
 func TestNextWeeklyResetTime_FollowsServerTimezone(t *testing.T) {
 	if err := timezone.Init("Asia/Shanghai"); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
 	t.Cleanup(func() { _ = timezone.Init("UTC") })
 
-	// 北京 2026-05-26（周二）→ 下周一是 2026-06-01
+	// →
 	now := time.Date(2026, 5, 25, 23, 0, 0, 0, time.UTC) // 北京 5/26 07:00 周二
 	want := time.Date(2026, 6, 1, 0, 0, 0, 0, timezone.Location())
 	if got := nextWeeklyResetTime(now); !got.Equal(want) {

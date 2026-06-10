@@ -13,7 +13,7 @@ func NewGeminiTokenRefresher(geminiOAuthService *GeminiOAuthService) *GeminiToke
 	return &GeminiTokenRefresher{geminiOAuthService: geminiOAuthService}
 }
 
-// CacheKey 返回用于分布式锁的缓存键
+// CacheKey
 func (r *GeminiTokenRefresher) CacheKey(account *Account) string {
 	return GeminiTokenCacheKey(account)
 }

@@ -22,7 +22,6 @@ const concurrency = ref<OpsConcurrencyStatsResponse | null>(null)
 const availability = ref<OpsAccountAvailabilityStatsResponse | null>(null)
 const userConcurrency = ref<OpsUserConcurrencyStatsResponse | null>(null)
 
-// 用户视图开关
 const showByUser = ref(false)
 
 const realtimeEnabled = computed(() => {
@@ -33,7 +32,6 @@ function safeNumber(n: unknown): number {
   return typeof n === 'number' && Number.isFinite(n) ? n : 0
 }
 
-// 计算显示维度
 const displayDimension = computed<'platform' | 'group' | 'account' | 'user'>(() => {
   if (showByUser.value) {
     return 'user'
@@ -47,37 +45,30 @@ const displayDimension = computed<'platform' | 'group' | 'account' | 'user'>(() 
   return 'platform'
 })
 
-// 平台/分组汇总行数据
 interface SummaryRow {
   key: string
   name: string
   platform?: string
-  // 账号统计
   total_accounts: number
   available_accounts: number
   rate_limited_accounts: number
   error_accounts: number
-  // 并发统计
   total_concurrency: number
   used_concurrency: number
   waiting_in_queue: number
-  // 计算字段
   availability_percentage: number
   concurrency_percentage: number
 }
 
-// 账号详细行数据
 interface AccountRow {
   key: string
   name: string
   platform: string
   group_name: string
-  // 并发
   current_in_use: number
   max_capacity: number
   waiting_in_queue: number
   load_percentage: number
-  // 状态
   is_available: boolean
   is_rate_limited: boolean
   rate_limit_remaining_sec?: number
@@ -87,7 +78,6 @@ interface AccountRow {
   error_message?: string
 }
 
-// 用户行数据
 interface UserRow {
   key: string
   user_id: number
@@ -99,7 +89,6 @@ interface UserRow {
   load_percentage: number
 }
 
-// 平台维度汇总
 const platformRows = computed((): SummaryRow[] => {
   const concStats = concurrency.value?.platform || {}
   const availStats = availability.value?.platform || {}
@@ -132,7 +121,6 @@ const platformRows = computed((): SummaryRow[] => {
   }).sort((a, b) => b.concurrency_percentage - a.concurrency_percentage)
 })
 
-// 分组维度汇总
 const groupRows = computed((): SummaryRow[] => {
   const concStats = concurrency.value?.group || {}
   const availStats = availability.value?.group || {}
@@ -144,7 +132,6 @@ const groupRows = computed((): SummaryRow[] => {
       const conc = concStats[gid] || {}
       const avail = availStats[gid] || {}
 
-      // 只显示匹配的平台
       if (props.platformFilter && conc.platform !== props.platformFilter && avail.platform !== props.platformFilter) {
         return null
       }
@@ -175,7 +162,6 @@ const groupRows = computed((): SummaryRow[] => {
   return rows.sort((a, b) => b.concurrency_percentage - a.concurrency_percentage)
 })
 
-// 账号维度详细
 const accountRows = computed((): AccountRow[] => {
   const concStats = concurrency.value?.account || {}
   const availStats = availability.value?.account || {}
@@ -187,7 +173,6 @@ const accountRows = computed((): AccountRow[] => {
       const conc = concStats[aid] || {}
       const avail = availStats[aid] || {}
 
-      // 只显示匹配的分组
       if (typeof props.groupIdFilter === 'number' && props.groupIdFilter > 0) {
         if (conc.group_id !== props.groupIdFilter && avail.group_id !== props.groupIdFilter) {
           return null
@@ -215,15 +200,12 @@ const accountRows = computed((): AccountRow[] => {
     .filter((row): row is NonNullable<typeof row> => row !== null)
 
   return rows.sort((a, b) => {
-    // 优先显示异常账号
     if (a.has_error !== b.has_error) return a.has_error ? -1 : 1
     if (a.is_rate_limited !== b.is_rate_limited) return a.is_rate_limited ? -1 : 1
-    // 然后按负载排序
     return b.load_percentage - a.load_percentage
   })
 })
 
-// 用户维度详细
 const userRows = computed((): UserRow[] => {
   const userStats = userConcurrency.value?.user || {}
 
@@ -244,7 +226,6 @@ const userRows = computed((): UserRow[] => {
     .sort((a, b) => b.current_in_use - a.current_in_use || b.load_percentage - a.load_percentage)
 })
 
-// 根据维度选择数据
 const displayRows = computed(() => {
   if (displayDimension.value === 'user') return userRows.value
   if (displayDimension.value === 'account') return accountRows.value
@@ -264,11 +245,9 @@ async function loadData() {
   errorMessage.value = ''
   try {
     if (showByUser.value) {
-      // 用户视图模式只加载用户并发数据
       const userData = await opsAPI.getUserConcurrencyStats()
       userConcurrency.value = userData
     } else {
-      // 常规模式加载账号/平台/分组数据
       const [concData, availData] = await Promise.all([
         opsAPI.getConcurrencyStats(props.platformFilter, props.groupIdFilter),
         opsAPI.getAccountAvailabilityStats(props.platformFilter, props.groupIdFilter)
@@ -284,7 +263,7 @@ async function loadData() {
   }
 }
 
-// 刷新节奏由父组件统一控制（OpsDashboard Header 的刷新状态/倒计时）
+// Refresh节奏由父组件统一控制（OpsDashboard Header 的RefreshStatus/倒计时）
 watch(
   () => props.refreshToken,
   () => {
@@ -293,7 +272,6 @@ watch(
   }
 )
 
-// 切换用户视图时重新加载数据
 watch(
   () => showByUser.value,
   () => {
@@ -351,7 +329,7 @@ watch(
         {{ t('admin.ops.concurrency.title') }}
       </h3>
       <div class="flex items-center gap-2">
-        <!-- 用户视图切换按钮 -->
+        <!-- User视图切换按钮 -->
         <button
           class="flex items-center justify-center rounded-lg px-2 py-1 transition-colors"
           :class="showByUser
@@ -364,7 +342,7 @@ watch(
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </button>
-        <!-- 刷新按钮 -->
+        <!-- Refresh按钮 -->
         <button
           class="flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-dark-700 dark:text-gray-300 dark:hover:bg-dark-600"
           :disabled="loading"
@@ -383,7 +361,7 @@ watch(
       {{ errorMessage }}
     </div>
 
-    <!-- 禁用状态 -->
+    <!-- DisableStatus -->
     <div
       v-if="!realtimeEnabled"
       class="flex flex-1 items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-500 dark:border-dark-700 dark:text-gray-400"
@@ -403,15 +381,15 @@ watch(
         </span>
       </div>
 
-      <!-- 空状态 -->
+      <!-- 空Status -->
       <div v-if="displayRows.length === 0" class="flex flex-1 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
         {{ t('admin.ops.concurrency.empty') }}
       </div>
 
-      <!-- 用户视图 -->
+      <!-- User视图 -->
       <div v-else-if="displayDimension === 'user'" class="custom-scrollbar max-h-[360px] flex-1 space-y-2 overflow-y-auto p-3">
         <div v-for="row in (displayRows as UserRow[])" :key="row.key" class="rounded-lg bg-gray-50 p-2.5 dark:bg-dark-900">
-          <!-- 用户信息和并发 -->
+          <!-- User信息和并发 -->
           <div class="mb-1.5 flex items-center justify-between gap-2">
             <div class="flex min-w-0 flex-1 items-center gap-1.5">
               <span class="truncate text-[11px] font-bold text-gray-900 dark:text-white" :title="row.username || row.user_email">
@@ -496,7 +474,7 @@ watch(
               {{ t('admin.ops.concurrency.rateLimited', { count: row.rate_limited_accounts }) }}
             </span>
 
-            <!-- 异常账号 -->
+            <!-- Error账号 -->
             <span
               v-if="row.error_accounts > 0"
               class="rounded-full bg-red-100 px-1.5 py-0.5 font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400"
@@ -531,7 +509,7 @@ watch(
             <div class="flex shrink-0 items-center gap-2">
               <!-- 并发使用 -->
               <span class="font-mono text-[11px] font-bold text-gray-900 dark:text-white"> {{ row.current_in_use }}/{{ row.max_capacity }} </span>
-              <!-- 状态徽章 -->
+              <!-- Status徽章 -->
               <span
                 v-if="row.is_available"
                 class="inline-flex items-center gap-1 rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"

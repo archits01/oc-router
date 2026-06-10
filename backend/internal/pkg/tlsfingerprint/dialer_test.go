@@ -154,10 +154,10 @@ func TestJA3Fingerprint(t *testing.T) {
 
 func skipNetworkTest(t *testing.T) {
 	if testing.Short() {
-		t.Skip("跳过网络测试（short 模式）")
+		t.Skip("skip network test (short mode)")
 	}
 	if os.Getenv("TLSFINGERPRINT_NETWORK_TESTS") != "1" {
-		t.Skip("跳过网络测试（需要设置 TLSFINGERPRINT_NETWORK_TESTS=1）")
+		t.Skip("skip network test (requires TLSFINGERPRINT_NETWORK_TESTS=1)")
 	}
 }
 

@@ -12,12 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ChannelMonitorRequestTemplateHandler 请求模板管理后台 handler。
+// ChannelMonitorRequestTemplateHandler
 type ChannelMonitorRequestTemplateHandler struct {
 	templateService *service.ChannelMonitorRequestTemplateService
 }
 
-// NewChannelMonitorRequestTemplateHandler 创建 handler。
+// NewChannelMonitorRequestTemplateHandler
 func NewChannelMonitorRequestTemplateHandler(templateService *service.ChannelMonitorRequestTemplateService) *ChannelMonitorRequestTemplateHandler {
 	return &ChannelMonitorRequestTemplateHandler{templateService: templateService}
 }
@@ -81,7 +81,7 @@ func (h *ChannelMonitorRequestTemplateHandler) toResponse(c *gin.Context, t *ser
 	}
 }
 
-// parseTemplateID 提取并校验 :id。
+// parseTemplateID
 func parseTemplateID(c *gin.Context) (int64, bool) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {
@@ -187,13 +187,13 @@ func (h *ChannelMonitorRequestTemplateHandler) Delete(c *gin.Context) {
 }
 
 type channelMonitorTemplateApplyRequest struct {
-	// MonitorIDs 必填、非空：用户在 picker 里勾选的要被覆盖的监控 ID 列表。
-	// 仅当对应监控当前 template_id == :id 时才会真的被覆盖。
+	// MonitorIDs
+	// == :id
 	MonitorIDs []int64 `json:"monitor_ids" binding:"required,min=1"`
 }
 
 // Apply POST /api/v1/admin/channel-monitor-templates/:id/apply
-// 把模板当前配置覆盖到 monitor_ids 列表里的关联监控（picker 选中的子集）。
+//
 func (h *ChannelMonitorRequestTemplateHandler) Apply(c *gin.Context) {
 	id, ok := parseTemplateID(c)
 	if !ok {
@@ -221,7 +221,7 @@ type associatedMonitorBriefResponse struct {
 }
 
 // AssociatedMonitors GET /api/v1/admin/channel-monitor-templates/:id/monitors
-// 列出关联监控（picker 弹窗用）。
+//
 func (h *ChannelMonitorRequestTemplateHandler) AssociatedMonitors(c *gin.Context) {
 	id, ok := parseTemplateID(c)
 	if !ok {

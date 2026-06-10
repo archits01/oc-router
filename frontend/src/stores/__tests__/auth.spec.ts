@@ -66,7 +66,7 @@ describe('useAuthStore', () => {
   // --- login ---
 
   describe('login', () => {
-    it('成功登录后设置 token 和 user', async () => {
+    it('成功Login后Settings token 和 user', async () => {
       mockLogin.mockResolvedValue(fakeAuthResponse)
       const store = useAuthStore()
 
@@ -79,7 +79,7 @@ describe('useAuthStore', () => {
       expect(localStorage.getItem('auth_user')).toBe(JSON.stringify(fakeUser))
     })
 
-    it('登录失败时清除状态并抛出错误', async () => {
+    it('Login失败时清除Status并抛出错误', async () => {
       mockLogin.mockRejectedValue(new Error('Invalid credentials'))
       const store = useAuthStore()
 
@@ -92,7 +92,7 @@ describe('useAuthStore', () => {
       expect(store.isAuthenticated).toBe(false)
     })
 
-    it('需要 2FA 时返回响应但不设置认证状态', async () => {
+    it('需要 2FA 时Back响应但不Settings认证Status', async () => {
       const twoFAResponse = { requires_2fa: true, temp_token: 'temp-123' }
       mockLogin.mockResolvedValue(twoFAResponse)
       const store = useAuthStore()
@@ -108,7 +108,7 @@ describe('useAuthStore', () => {
   // --- login2FA ---
 
   describe('login2FA', () => {
-    it('2FA 验证成功后设置认证状态', async () => {
+    it('2FA 验证成功后Settings认证Status', async () => {
       mockLogin2FA.mockResolvedValue(fakeAuthResponse)
       const store = useAuthStore()
 
@@ -123,7 +123,7 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('2FA 验证失败时清除状态并抛出错误', async () => {
+    it('2FA 验证失败时清除Status并抛出错误', async () => {
       mockLogin2FA.mockRejectedValue(new Error('Invalid TOTP'))
       const store = useAuthStore()
 
@@ -136,16 +136,14 @@ describe('useAuthStore', () => {
   // --- logout ---
 
   describe('logout', () => {
-    it('注销后清除所有状态和 localStorage', async () => {
+    it('注销后清除所有Status和 localStorage', async () => {
       mockLogin.mockResolvedValue(fakeAuthResponse)
       mockLogout.mockResolvedValue(undefined)
       const store = useAuthStore()
 
-      // 先登录
       await store.login({ email: 'test@example.com', password: '123456' })
       expect(store.isAuthenticated).toBe(true)
 
-      // 注销
       await store.logout()
 
       expect(store.token).toBeNull()
@@ -161,11 +159,11 @@ describe('useAuthStore', () => {
   // --- checkAuth ---
 
   describe('checkAuth', () => {
-    it('从 localStorage 恢复持久化状态', () => {
+    it('从 localStorage 恢复持久化Status', () => {
       localStorage.setItem('auth_token', 'saved-token')
       localStorage.setItem('auth_user', JSON.stringify(fakeUser))
 
-      // Mock refreshUser (getCurrentUser) 防止后台刷新报错
+      // Mock refreshUser (getCurrentUser) 防止后台Refresh报错
       mockGetCurrentUser.mockResolvedValue({ data: fakeUser })
 
       const store = useAuthStore()
@@ -176,7 +174,7 @@ describe('useAuthStore', () => {
       expect(store.isAuthenticated).toBe(true)
     })
 
-    it('localStorage 无数据时保持未认证状态', () => {
+    it('localStorage 无数据时保持未认证Status', () => {
       const store = useAuthStore()
       store.checkAuth()
 
@@ -185,7 +183,7 @@ describe('useAuthStore', () => {
       expect(store.isAuthenticated).toBe(false)
     })
 
-    it('localStorage 中用户数据损坏时清除状态', () => {
+    it('localStorage 中User数据损坏时清除Status', () => {
       localStorage.setItem('auth_token', 'saved-token')
       localStorage.setItem('auth_user', 'invalid-json{{{')
 
@@ -197,7 +195,7 @@ describe('useAuthStore', () => {
       expect(localStorage.getItem('auth_token')).toBeNull()
     })
 
-    it('恢复 refresh token 和过期时间', () => {
+    it('恢复 refresh token 和Expired时间', () => {
       const futureTs = String(Date.now() + 3600_000)
       localStorage.setItem('auth_token', 'saved-token')
       localStorage.setItem('auth_user', JSON.stringify(fakeUser))
@@ -317,7 +315,7 @@ describe('useAuthStore', () => {
   // --- isAdmin ---
 
   describe('isAdmin', () => {
-    it('管理员用户返回 true', async () => {
+    it('AdminUserBack true', async () => {
       const adminResponse = { ...fakeAuthResponse, user: { ...fakeAdminUser } }
       mockLogin.mockResolvedValue(adminResponse)
       const store = useAuthStore()
@@ -327,7 +325,7 @@ describe('useAuthStore', () => {
       expect(store.isAdmin).toBe(true)
     })
 
-    it('普通用户返回 false', async () => {
+    it('普通UserBack false', async () => {
       mockLogin.mockResolvedValue(fakeAuthResponse)
       const store = useAuthStore()
 
@@ -336,7 +334,7 @@ describe('useAuthStore', () => {
       expect(store.isAdmin).toBe(false)
     })
 
-    it('未登录时返回 false', () => {
+    it('未Login时Back false', () => {
       const store = useAuthStore()
       expect(store.isAdmin).toBe(false)
     })
@@ -345,7 +343,7 @@ describe('useAuthStore', () => {
   // --- refreshUser ---
 
   describe('refreshUser', () => {
-    it('刷新用户数据并更新 localStorage', async () => {
+    it('RefreshUser数据并更新 localStorage', async () => {
       mockLogin.mockResolvedValue(fakeAuthResponse)
       const store = useAuthStore()
       await store.login({ email: 'test@example.com', password: '123456' })
@@ -369,7 +367,7 @@ describe('useAuthStore', () => {
   // --- isSimpleMode ---
 
   describe('isSimpleMode', () => {
-    it('run_mode 为 simple 时返回 true', async () => {
+    it('run_mode 为 simple 时Back true', async () => {
       const simpleResponse = {
         ...fakeAuthResponse,
         user: { ...fakeUser, run_mode: 'simple' as const },

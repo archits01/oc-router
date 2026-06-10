@@ -50,7 +50,7 @@ func (d *PgDumper) Dump(ctx context.Context) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("start pg_dump: %w", err)
 	}
 
-	// 返回一个 ReadCloser：读 stdout，关闭时等待进程退出
+	//
 	return &cmdReadCloser{ReadCloser: stdout, cmd: cmd}, nil
 }
 

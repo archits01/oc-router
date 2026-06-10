@@ -109,9 +109,9 @@ func TestChannelToResponse_EmptyDefaults(t *testing.T) {
 		},
 	}
 
-	// handler 层 channelToResponse 现在是纯透传：BillingModelSource 的空值兜底
-	// 已下放到 service 层（Create/GetByID/List/Update/ListAvailable 出口统一处理），
-	// 因此这里构造 fixture 时直接传入归一化后的值。
+	// handler
+	//
+	//
 	resp := channelToResponse(ch)
 	require.Equal(t, "channel_mapped", resp.BillingModelSource)
 	require.NotNil(t, resp.GroupIDs)
@@ -125,7 +125,7 @@ func TestChannelToResponse_EmptyDefaults(t *testing.T) {
 }
 
 func TestChannelToResponse_BillingModelSourcePassthrough(t *testing.T) {
-	// handler 不再兜底 BillingModelSource：空值应原样透传（由 service 层负责默认回填）。
+	// handler
 	ch := &service.Channel{
 		ID:                 1,
 		Name:               "ch",

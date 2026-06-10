@@ -1,7 +1,7 @@
 package tlsfingerprint
 
 // FingerprintResponse represents the response from tls.peet.ws/api/all.
-// 共享测试类型，供 unit 和 integration 测试文件使用。
+//
 type FingerprintResponse struct {
 	IP    string  `json:"ip"`
 	TLS   TLSInfo `json:"tls"`

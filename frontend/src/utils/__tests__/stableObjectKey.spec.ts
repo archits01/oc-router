@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 
 describe('createStableObjectKeyResolver', () => {
-  it('对同一对象返回稳定 key', () => {
+  it('对同一对象Back稳定 key', () => {
     const resolve = createStableObjectKeyResolver<{ value: string }>('rule')
     const obj = { value: 'a' }
 
@@ -13,7 +13,7 @@ describe('createStableObjectKeyResolver', () => {
     expect(key1.startsWith('rule-')).toBe(true)
   })
 
-  it('不同对象返回不同 key', () => {
+  it('不同对象Back不同 key', () => {
     const resolve = createStableObjectKeyResolver<{ value: string }>('rule')
 
     const key1 = resolve({ value: 'a' })

@@ -14,7 +14,7 @@ type SchedulerOutboxEvent struct {
 	CreatedAt time.Time
 }
 
-// SchedulerOutboxRepository 提供调度 outbox 的读取接口。
+// SchedulerOutboxRepository
 type SchedulerOutboxRepository interface {
 	ListAfter(ctx context.Context, afterID int64, limit int) ([]SchedulerOutboxEvent, error)
 	MaxID(ctx context.Context) (int64, error)

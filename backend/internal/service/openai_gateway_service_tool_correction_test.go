@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-// TestOpenAIGatewayService_ToolCorrection 测试 OpenAIGatewayService 中的工具修正集成
+// TestOpenAIGatewayService_ToolCorrection
 func TestOpenAIGatewayService_ToolCorrection(t *testing.T) {
-	// 创建一个简单的 service 实例来测试工具修正
+	//
 	service := &OpenAIGatewayService{
 		toolCorrector: NewCodexToolCorrector(),
 	}
@@ -59,17 +59,14 @@ func TestOpenAIGatewayService_ToolCorrection(t *testing.T) {
 			result := service.correctToolCallsInResponseBody(tt.input)
 			resultStr := string(result)
 
-			// 检查是否包含期望的工具名称
 			if !strings.Contains(resultStr, tt.expected) {
 				t.Errorf("expected result to contain %q, got %q", tt.expected, resultStr)
 			}
 
-			// 对于预期有变化的情况，验证结果与输入不同
 			if tt.changed && string(result) == string(tt.input) {
 				t.Error("expected result to be different from input, but they are the same")
 			}
 
-			// 对于预期无变化的情况，验证结果与输入相同
 			if !tt.changed && string(result) != string(tt.input) {
 				t.Error("expected result to be same as input, but they are different")
 			}
@@ -77,7 +74,7 @@ func TestOpenAIGatewayService_ToolCorrection(t *testing.T) {
 	}
 }
 
-// TestOpenAIGatewayService_ToolCorrectorInitialization 测试工具修正器是否正确初始化
+// TestOpenAIGatewayService_ToolCorrectorInitialization
 func TestOpenAIGatewayService_ToolCorrectorInitialization(t *testing.T) {
 	service := &OpenAIGatewayService{
 		toolCorrector: NewCodexToolCorrector(),
@@ -87,7 +84,6 @@ func TestOpenAIGatewayService_ToolCorrectorInitialization(t *testing.T) {
 		t.Fatal("toolCorrector should not be nil")
 	}
 
-	// 测试修正器可以正常工作
 	data := `{"tool_calls":[{"function":{"name":"apply_patch"}}]}`
 	corrected, changed := service.toolCorrector.CorrectToolCallsInSSEData(data)
 
@@ -100,13 +96,12 @@ func TestOpenAIGatewayService_ToolCorrectorInitialization(t *testing.T) {
 	}
 }
 
-// TestToolCorrectionStats 测试工具修正统计功能
+// TestToolCorrectionStats
 func TestToolCorrectionStats(t *testing.T) {
 	service := &OpenAIGatewayService{
 		toolCorrector: NewCodexToolCorrector(),
 	}
 
-	// 执行几次修正
 	testData := []string{
 		`{"tool_calls":[{"function":{"name":"apply_patch"}}]}`,
 		`{"tool_calls":[{"function":{"name":"update_plan"}}]}`,

@@ -29,8 +29,8 @@ func NewOpenAIOAuthService(proxyRepo ProxyRepository, oauthClient OpenAIOAuthCli
 	}
 }
 
-// SetPrivacyClientFactory 注入 ImpersonateChrome 客户端工厂，
-// 用于调用 chatgpt.com/backend-api 获取账号信息（plan_type 等）。
+// SetPrivacyClientFactory
+//
 func (s *OpenAIOAuthService) SetPrivacyClientFactory(factory PrivacyClientFactory) {
 	s.privacyClientFactory = factory
 }
@@ -252,15 +252,15 @@ func (s *OpenAIOAuthService) RefreshTokenWithClientID(ctx context.Context, refre
 	return tokenInfo, nil
 }
 
-// enrichTokenInfo 通过 ChatGPT backend-api 补全 tokenInfo 并设置隐私（best-effort）。
-// 从 accounts/check 获取最新 plan_type、subscription_expires_at、email，
-// 然后尝试关闭训练数据共享。适用于所有获取/刷新 token 的路径。
+// enrichTokenInfo
+//
+//
 func (s *OpenAIOAuthService) enrichTokenInfo(ctx context.Context, tokenInfo *OpenAITokenInfo, proxyURL string) {
 	if tokenInfo.AccessToken == "" || s.privacyClientFactory == nil {
 		return
 	}
 
-	// 从 access_token JWT 中提取 orgID（poid），用于匹配正确的账号
+	//
 	orgID := tokenInfo.OrganizationID
 	if orgID == "" {
 		if atClaims, err := openai.DecodeIDToken(tokenInfo.AccessToken); err == nil && atClaims.OpenAIAuth != nil {
@@ -284,7 +284,7 @@ func (s *OpenAIOAuthService) enrichTokenInfo(ctx context.Context, tokenInfo *Ope
 		}
 	}
 
-	// 尝试设置隐私（关闭训练数据共享），best-effort
+	//
 	tokenInfo.PrivacyMode = disableOpenAITraining(ctx, s.privacyClientFactory, tokenInfo.AccessToken, proxyURL)
 }
 
@@ -356,7 +356,7 @@ func (s *OpenAIOAuthService) BuildAccountCredentials(tokenInfo *OpenAITokenInfo)
 		"access_token": tokenInfo.AccessToken,
 		"expires_at":   expiresAt,
 	}
-	// 仅在刷新响应返回了新的 refresh_token 时才更新，防止用空值覆盖已有令牌
+	//
 	if strings.TrimSpace(tokenInfo.RefreshToken) != "" {
 		creds["refresh_token"] = tokenInfo.RefreshToken
 	}

@@ -19,11 +19,10 @@ func TestShortHash(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := shortHash(tt.input)
-			// Base36 编码的 uint64 最长 13 个字符
+			// Base36
 			if len(result) > 13 {
 				t.Errorf("shortHash result too long: %d characters", len(result))
 			}
-			// 相同输入应该产生相同输出
 			result2 := shortHash(tt.input)
 			if result != result2 {
 				t.Errorf("shortHash not deterministic: %s vs %s", result, result2)
@@ -37,7 +36,7 @@ func TestBuildGeminiDigestChain(t *testing.T) {
 		name     string
 		req      *antigravity.GeminiRequest
 		wantLen  int  // 预期的分段数量
-		hasEmpty bool // 是否应该是空字符串
+		hasEmpty bool // 是否应该是empty string
 	}{
 		{
 			name:     "nil request",
@@ -111,13 +110,11 @@ func TestBuildGeminiDigestChain(t *testing.T) {
 				return
 			}
 
-			// 检查分段数量
 			parts := splitChain(result)
 			if len(parts) != tt.wantLen {
 				t.Errorf("expected %d parts, got %d: %s", tt.wantLen, len(parts), result)
 			}
 
-			// 验证每个分段的格式
 			for _, part := range parts {
 				if len(part) < 3 || part[1] != ':' {
 					t.Errorf("invalid part format: %s", part)
@@ -136,17 +133,15 @@ func TestGenerateGeminiPrefixHash(t *testing.T) {
 	hash2 := GenerateGeminiPrefixHash(1, 100, "192.168.1.1", "Mozilla/5.0", "antigravity", "gemini-2.5-pro")
 	hash3 := GenerateGeminiPrefixHash(2, 100, "192.168.1.1", "Mozilla/5.0", "antigravity", "gemini-2.5-pro")
 
-	// 相同输入应该产生相同输出
 	if hash1 != hash2 {
 		t.Errorf("GenerateGeminiPrefixHash not deterministic: %s vs %s", hash1, hash2)
 	}
 
-	// 不同输入应该产生不同输出
 	if hash1 == hash3 {
 		t.Errorf("GenerateGeminiPrefixHash collision for different inputs")
 	}
 
-	// Base64 URL 编码的 12 字节正好是 16 字符
+	// Base64 URL
 	if len(hash1) != 16 {
 		t.Errorf("expected 16 characters, got %d: %s", len(hash1), hash1)
 	}
@@ -236,7 +231,6 @@ func TestFormatGeminiSessionValue(t *testing.T) {
 		t.Errorf("expected %s, got %s", expected, result)
 	}
 
-	// 验证往返一致性
 	uuid, accID, ok := ParseGeminiSessionValue(result)
 	if !ok {
 		t.Error("ParseGeminiSessionValue failed on formatted value")
@@ -246,7 +240,7 @@ func TestFormatGeminiSessionValue(t *testing.T) {
 	}
 }
 
-// splitChain 辅助函数：按 "-" 分割摘要链
+// splitChain "-"
 func splitChain(chain string) []string {
 	if chain == "" {
 		return nil
@@ -322,7 +316,7 @@ func TestDigestChainTamperedMiddleContent(t *testing.T) {
 		t.Error("Tampered middle content should produce different chains")
 	}
 
-	// 验证第一个 user 的 hash 相同
+	//
 	parts1 := splitChain(chain1)
 	parts2 := splitChain(chain2)
 
@@ -382,7 +376,6 @@ func TestGenerateGeminiDigestSessionKey(t *testing.T) {
 		})
 	}
 
-	// 验证确定性：相同输入产生相同输出
 	t.Run("deterministic", func(t *testing.T) {
 		hash := "testprefix123456"
 		uuid := "test-uuid-12345"
@@ -393,7 +386,7 @@ func TestGenerateGeminiDigestSessionKey(t *testing.T) {
 		}
 	})
 
-	// 验证不同 uuid 产生不同 sessionKey（负载均衡核心逻辑）
+	//
 	t.Run("different uuid different key", func(t *testing.T) {
 		hash := "sameprefix123456"
 		uuid1 := "uuid0001-session-a"

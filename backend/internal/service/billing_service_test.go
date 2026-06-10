@@ -17,7 +17,7 @@ func newTestBillingService() *BillingService {
 func TestCalculateCost_BasicComputation(t *testing.T) {
 	svc := newTestBillingService()
 
-	// 使用 claude-sonnet-4 的回退价格：Input $3/MTok, Output $15/MTok
+	// $3/MTok, Output $15/MTok
 	tokens := UsageTokens{
 		InputTokens:  1000,
 		OutputTokens: 500,
@@ -66,7 +66,7 @@ func TestCalculateCost_RateMultiplier(t *testing.T) {
 	cost2x, err := svc.CalculateCost("claude-sonnet-4", tokens, 2.0)
 	require.NoError(t, err)
 
-	// TotalCost 不受倍率影响，ActualCost 翻倍
+	// TotalCost
 	require.InDelta(t, cost1x.TotalCost, cost2x.TotalCost, 1e-10)
 	require.InDelta(t, cost1x.ActualCost*2, cost2x.ActualCost, 1e-10)
 }
@@ -88,8 +88,8 @@ func TestGetModelPricing_FallbackMatchesByFamily(t *testing.T) {
 
 	for _, tt := range tests {
 		pricing, err := svc.GetModelPricing(tt.model)
-		require.NoError(t, err, "模型 %s", tt.model)
-		require.InDelta(t, tt.expectedInput, pricing.InputPricePerToken, 1e-12, "模型 %s 输入价格", tt.model)
+		require.NoError(t, err, "model %s", tt.model)
+		require.InDelta(t, tt.expectedInput, pricing.InputPricePerToken, 1e-12, "model %s 输入价格", tt.model)
 	}
 }
 
@@ -108,7 +108,7 @@ func TestGetModelPricing_CaseInsensitive(t *testing.T) {
 func TestGetModelPricing_UnknownClaudeModelFallsBackToSonnet(t *testing.T) {
 	svc := newTestBillingService()
 
-	// 不包含 opus/sonnet/haiku 关键词的 Claude 模型会走默认 Sonnet 价格
+	//
 	pricing, err := svc.GetModelPricing("claude-unknown-model")
 	require.NoError(t, err)
 	require.InDelta(t, 3e-6, pricing.InputPricePerToken, 1e-12)
@@ -197,13 +197,13 @@ func TestCalculateCost_OpenAIGPT54LongContextAppliesWholeSessionMultipliers(t *t
 	require.InDelta(t, expectedInput+expectedOutput, cost.ActualCost, 1e-10)
 }
 
-// 回归测试 #2293：长上下文计费触发时，cache_read_tokens 也应应用 LongContextInputMultiplier。
-// 修复前：CacheReadCost = tokens * 0.25e-6 （漏乘倍率，少计费用）。
-// 修复后：CacheReadCost = tokens * 0.25e-6 * LongContextInputMultiplier(=2.0)。
+// #2293：
+// = tokens * 0.25e-6 （
+// = tokens * 0.25e-6 * LongContextInputMultiplier(=2.0)。
 func TestCalculateCost_OpenAIGPT54LongContextAppliesMultiplierToCacheRead(t *testing.T) {
 	svc := newTestBillingService()
 
-	// InputTokens + CacheReadTokens = 1000 + 300000 = 301000 > 272000 阈值
+	// InputTokens + CacheReadTokens = 1000 + 300000 = 301000 > 272000
 	tokens := UsageTokens{
 		InputTokens:     1000,
 		CacheReadTokens: 300000,
@@ -227,11 +227,11 @@ func TestCalculateCost_OpenAIGPT54LongContextAppliesMultiplierToCacheRead(t *tes
 	require.InDelta(t, expectedTotal, cost.ActualCost, 1e-10)
 }
 
-// 阴性测试：未触发长上下文时，cache_read_price 不应被错误地乘以倍率。
+//
 func TestCalculateCost_OpenAIGPT54NoLongContextKeepsCacheReadAtBasePrice(t *testing.T) {
 	svc := newTestBillingService()
 
-	// InputTokens + CacheReadTokens = 1000 + 100000 = 101000 < 272000 阈值，不触发长上下文
+	// InputTokens + CacheReadTokens = 1000 + 100000 = 101000 < 272000
 	tokens := UsageTokens{
 		InputTokens:     1000,
 		CacheReadTokens: 100000,
@@ -246,14 +246,14 @@ func TestCalculateCost_OpenAIGPT54NoLongContextKeepsCacheReadAtBasePrice(t *test
 		"cache_read_cost should remain at base price when below long-context threshold")
 }
 
-// 回归测试 #2816 follow-up：长上下文计费触发时，cache_creation_tokens 也应应用
-// LongContextInputMultiplier。computeCacheCreationCost 直接读取 pricing.* 价格，
-// 不经过 computeTokenBreakdown 内的 inputPrice / cacheReadPrice 倍率修改，因此
-// 修复前 cache_creation 部分会按基础价计算，少计费用约 50%（默认倍率 2.0）。
+// #2816 follow-up：
+// LongContextInputMultiplier。computeCacheCreationCost *
+//
+// %（
 func TestCalculateCost_OpenAIGPT54LongContextAppliesMultiplierToCacheCreation(t *testing.T) {
 	svc := newTestBillingService()
 
-	// InputTokens + CacheReadTokens = 1000 + 300000 = 301000 > 272000 阈值
+	// InputTokens + CacheReadTokens = 1000 + 300000 = 301000 > 272000
 	tokens := UsageTokens{
 		InputTokens:         1000,
 		CacheReadTokens:     300000,
@@ -270,11 +270,11 @@ func TestCalculateCost_OpenAIGPT54LongContextAppliesMultiplierToCacheCreation(t 
 		"cache_creation_cost should be scaled by LongContextInputMultiplier when long-context pricing applies")
 }
 
-// 阴性测试：未触发长上下文时，cache_creation_price 不应被错误地乘以倍率。
+//
 func TestCalculateCost_OpenAIGPT54NoLongContextKeepsCacheCreationAtBasePrice(t *testing.T) {
 	svc := newTestBillingService()
 
-	// InputTokens + CacheReadTokens = 1000 + 100000 = 101000 < 272000 阈值，不触发长上下文
+	// InputTokens + CacheReadTokens = 1000 + 100000 = 101000 < 272000
 	tokens := UsageTokens{
 		InputTokens:         1000,
 		CacheReadTokens:     100000,
@@ -290,9 +290,9 @@ func TestCalculateCost_OpenAIGPT54NoLongContextKeepsCacheCreationAtBasePrice(t *
 		"cache_creation_cost should remain at base price when below long-context threshold")
 }
 
-// 覆盖 5m / 1h ephemeral 分类计费路径：长上下文触发时两档价格都应被倍率缩放。
-// 使用手工构造的 pricing（参考 TestCalculateCost_SupportsCacheBreakdown 的写法）
-// 以便同时控制 SupportsCacheBreakdown + 长上下文阈值。
+//
+//
+// +
 func TestCalculateCost_LongContextAppliesMultiplierToCacheCreation5mAnd1h(t *testing.T) {
 	svc := &BillingService{
 		cfg: &config.Config{},
@@ -311,7 +311,7 @@ func TestCalculateCost_LongContextAppliesMultiplierToCacheCreation5mAnd1h(t *tes
 		},
 	}
 
-	// InputTokens + CacheReadTokens = 1000 + 300000 = 301000 > 272000 阈值
+	// InputTokens + CacheReadTokens = 1000 + 300000 = 301000 > 272000
 	tokens := UsageTokens{
 		InputTokens:           1000,
 		CacheReadTokens:       300000,
@@ -375,7 +375,7 @@ func TestCalculateCostWithLongContext_BelowThreshold(t *testing.T) {
 		OutputTokens:    1000,
 		CacheReadTokens: 100000,
 	}
-	// 总输入 150k < 200k 阈值，应走正常计费
+	// < 200k
 	cost, err := svc.CalculateCostWithLongContext("claude-sonnet-4", tokens, 1.0, 200000, 2.0)
 	require.NoError(t, err)
 
@@ -388,8 +388,8 @@ func TestCalculateCostWithLongContext_BelowThreshold(t *testing.T) {
 func TestCalculateCostWithLongContext_AboveThreshold_CacheExceedsThreshold(t *testing.T) {
 	svc := newTestBillingService()
 
-	// 缓存 210k + 输入 10k = 220k > 200k 阈值
-	// 缓存已超阈值：范围内 200k 缓存，范围外 10k 缓存 + 10k 输入
+	// + = 220k > 200k
+	// + 10k
 	tokens := UsageTokens{
 		InputTokens:     10000,
 		OutputTokens:    1000,
@@ -398,14 +398,14 @@ func TestCalculateCostWithLongContext_AboveThreshold_CacheExceedsThreshold(t *te
 	cost, err := svc.CalculateCostWithLongContext("claude-sonnet-4", tokens, 1.0, 200000, 2.0)
 	require.NoError(t, err)
 
-	// 范围内：200k cache + 0 input + 1k output
+	// + 0 input + 1k output
 	inRange, _ := svc.CalculateCost("claude-sonnet-4", UsageTokens{
 		InputTokens:     0,
 		OutputTokens:    1000,
 		CacheReadTokens: 200000,
 	}, 1.0)
 
-	// 范围外：10k cache + 10k input，倍率 2.0
+	// + 10k input，
 	outRange, _ := svc.CalculateCost("claude-sonnet-4", UsageTokens{
 		InputTokens:     10000,
 		CacheReadTokens: 10000,
@@ -417,8 +417,8 @@ func TestCalculateCostWithLongContext_AboveThreshold_CacheExceedsThreshold(t *te
 func TestCalculateCostWithLongContext_AboveThreshold_CacheBelowThreshold(t *testing.T) {
 	svc := newTestBillingService()
 
-	// 缓存 100k + 输入 150k = 250k > 200k 阈值
-	// 缓存未超阈值：范围内 100k 缓存 + 100k 输入，范围外 50k 输入
+	// + = 250k > 200k
+	// + 100k
 	tokens := UsageTokens{
 		InputTokens:     150000,
 		OutputTokens:    1000,
@@ -429,7 +429,6 @@ func TestCalculateCostWithLongContext_AboveThreshold_CacheBelowThreshold(t *test
 
 	require.True(t, cost.ActualCost > 0, "费用应大于 0")
 
-	// 正常费用不含长上下文
 	normalCost, _ := svc.CalculateCost("claude-sonnet-4", tokens, 1.0)
 	require.True(t, cost.ActualCost > normalCost.ActualCost, "长上下文费用应高于正常费用")
 }
@@ -439,7 +438,7 @@ func TestCalculateCostWithLongContext_DisabledThreshold(t *testing.T) {
 
 	tokens := UsageTokens{InputTokens: 300000, CacheReadTokens: 0}
 
-	// threshold <= 0 应禁用长上下文计费
+	// threshold <= 0
 	cost1, err := svc.CalculateCostWithLongContext("claude-sonnet-4", tokens, 1.0, 0, 2.0)
 	require.NoError(t, err)
 
@@ -454,7 +453,7 @@ func TestCalculateCostWithLongContext_ExtraMultiplierLessEqualOne(t *testing.T) 
 
 	tokens := UsageTokens{InputTokens: 300000}
 
-	// extraMultiplier <= 1 应禁用长上下文计费
+	// extraMultiplier <= 1
 	cost, err := svc.CalculateCostWithLongContext("claude-sonnet-4", tokens, 1.0, 200000, 1.0)
 	require.NoError(t, err)
 
@@ -516,7 +515,7 @@ func TestCalculateCostWithConfig_ZeroMultiplier(t *testing.T) {
 	cost, err := svc.CalculateCostWithConfig("claude-sonnet-4", tokens)
 	require.NoError(t, err)
 
-	// 倍率 <=0 时默认 1.0
+	// <=0
 	expected, _ := svc.CalculateCost("claude-sonnet-4", tokens, 1.0)
 	require.InDelta(t, expected.ActualCost, cost.ActualCost, 1e-10)
 }
@@ -554,7 +553,7 @@ func TestForceUpdatePricing_NilService(t *testing.T) {
 }
 
 func TestCalculateCostWithLongContext_PropagatesError(t *testing.T) {
-	// 使用空的 fallback prices 让 GetModelPricing 失败
+	//
 	svc := &BillingService{
 		cfg:            &config.Config{},
 		fallbackPrices: make(map[string]*ModelPricing),

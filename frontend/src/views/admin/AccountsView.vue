@@ -1188,19 +1188,15 @@ const openMenu = (a: Account, e: MouseEvent) => {
     let top: number
 
     if (viewportWidth < 768) {
-      // 居中显示,水平位置
       left = Math.max(padding, Math.min(
         rect.left + rect.width / 2 - menuWidth / 2,
         viewportWidth - menuWidth - padding
       ))
 
-      // 优先显示在按钮下方
       top = rect.bottom + 4
 
-      // 如果下方空间不够,显示在上方
       if (top + menuHeight > viewportHeight - padding) {
         top = rect.top - menuHeight - 4
-        // 如果上方也不够,就贴在视口顶部
         if (top < padding) {
           top = padding
         }
@@ -1486,7 +1482,6 @@ const syncPaginationAfterLocalRemoval = () => {
   if (pagination.page > maxPage) {
     pagination.page = maxPage
   }
-  // 行被本地移除后不立刻全量补页，改为提示用户手动同步。
   hasPendingListSync.value = nextTotal > 0
 }
 
@@ -1535,7 +1530,7 @@ const handleExportData = async () => {
           }
     )
     const timestamp = formatExportTimestamp()
-    const filename = `sub2api-account-${timestamp}.json`
+    const filename = `oc-router-account-${timestamp}.json`
     const blob = new Blob([JSON.stringify(dataPayload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -1662,19 +1657,17 @@ const isExpired = (value: number | null) => {
   if (!value) return false
   return value * 1000 <= Date.now()
 }
-// 所绑定代理的有效期(逻辑同 /admin/proxies,见 utils/proxyExpiry)
+// 所绑定代理的Valid期(逻辑同 /admin/proxies,见 utils/proxyExpiry)
 const proxyExpiryBadge = (p: AccountProxy): string => proxyExpiryBadgeClass(p.expires_at, p.status)
 const proxyExpiryText = (p: AccountProxy): string => {
   const { key, params } = proxyExpiryLabelKey(p.expires_at, p.status)
   return params ? t(key, params) : t(key)
 }
 
-// 滚动时关闭操作菜单（不关闭列设置下拉菜单）
 const handleScroll = () => {
   menu.show = false
 }
 
-// 点击外部关闭顶部下拉菜单
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
   if (accountToolsDropdownRef.value && !accountToolsDropdownRef.value.contains(target)) {

@@ -104,13 +104,13 @@ type UsageLog struct {
 	// UpstreamModel is the actual model sent to the upstream provider after mapping.
 	// Nil means no mapping was applied (requested model was used as-is).
 	UpstreamModel *string
-	// ChannelID 渠道 ID
+	// ChannelID
 	ChannelID *int64
-	// ModelMappingChain 模型映射链，如 "a→b→c"
+	// ModelMappingChain "a→b→c"
 	ModelMappingChain *string
-	// BillingTier 计费层级标签（per_request/image 模式）
+	// BillingTier
 	BillingTier *string
-	// BillingMode 计费模式：token/image
+	// BillingMode
 	BillingMode *string
 	// ServiceTier records the OpenAI service tier used for billing, e.g. "priority" / "flex".
 	ServiceTier *string
@@ -144,9 +144,9 @@ type UsageLog struct {
 	TotalCost         float64
 	ActualCost        float64
 	RateMultiplier    float64
-	// AccountRateMultiplier 账号计费倍率快照（nil 表示历史数据，按 1.0 处理）
+	// AccountRateMultiplier
 	AccountRateMultiplier *float64
-	// AccountStatsCost 账号统计定价预计算费用（nil = 使用默认公式 total_cost × account_rate_multiplier）
+	// AccountStatsCost = × account_rate_multiplier）
 	AccountStatsCost *float64
 
 	BillingType  int8
@@ -158,10 +158,9 @@ type UsageLog struct {
 	UserAgent    *string
 	IPAddress    *string
 
-	// Cache TTL Override 标记（管理员强制替换了缓存 TTL 计费）
+	// Cache TTL Override
 	CacheTTLOverridden bool
 
-	// 图片生成字段
 	ImageCount         int
 	ImageSize          *string
 	ImageInputSize     *string

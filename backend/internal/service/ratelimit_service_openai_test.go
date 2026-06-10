@@ -424,9 +424,9 @@ func TestHandle429_AnthropicPlatformUnaffected(t *testing.T) {
 func TestCalculateOpenAI429ResetTime_UserProvidedScenario(t *testing.T) {
 	// This is the exact scenario from the user:
 	// codex_7d_used_percent: 100
-	// codex_7d_reset_after_seconds: 384607 (约4.5天后重置)
+	// codex_7d_reset_after_seconds: 384607 ()
 	// codex_5h_used_percent: 3
-	// codex_5h_reset_after_seconds: 17369 (约4.8小时后重置)
+	// codex_5h_reset_after_seconds: 17369 ()
 
 	svc := &RateLimitService{}
 

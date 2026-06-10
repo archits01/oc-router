@@ -10,11 +10,10 @@ import (
 	"github.com/lib/pq"
 )
 
-// --- 账号统计定价规则 ---
+// ---
 
-// batchLoadAccountStatsPricingRules 批量加载多个渠道的账号统计定价规则（含模型定价）
+// batchLoadAccountStatsPricingRules
 func (r *channelRepository) batchLoadAccountStatsPricingRules(ctx context.Context, channelIDs []int64) (map[int64][]service.AccountStatsPricingRule, error) {
-	// 1. 查询规则
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, channel_id, name, group_ids, account_ids, sort_order, created_at, updated_at
 		 FROM channel_account_stats_pricing_rules WHERE channel_id = ANY($1) ORDER BY channel_id, sort_order, id`,
@@ -43,13 +42,12 @@ func (r *channelRepository) batchLoadAccountStatsPricingRules(ctx context.Contex
 		return nil, fmt.Errorf("iterate account stats pricing rules: %w", err)
 	}
 
-	// 2. 批量加载规则的模型定价
 	pricingMap, err := r.batchLoadAccountStatsModelPricing(ctx, ruleIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. 按 channelID 分组并关联定价
+	// 3.
 	result := make(map[int64][]service.AccountStatsPricingRule, len(channelIDs))
 	for i := range allRules {
 		allRules[i].Pricing = pricingMap[allRules[i].ID]
@@ -59,7 +57,7 @@ func (r *channelRepository) batchLoadAccountStatsPricingRules(ctx context.Contex
 	return result, nil
 }
 
-// batchLoadAccountStatsModelPricing 批量加载规则的模型定价
+// batchLoadAccountStatsModelPricing
 func (r *channelRepository) batchLoadAccountStatsModelPricing(ctx context.Context, ruleIDs []int64) (map[int64][]service.ChannelModelPricing, error) {
 	if len(ruleIDs) == 0 {
 		return make(map[int64][]service.ChannelModelPricing), nil
@@ -120,7 +118,7 @@ func (r *channelRepository) batchLoadAccountStatsModelPricing(ctx context.Contex
 	return pricingMap, nil
 }
 
-// loadAccountStatsPricingRules 加载单个渠道的账号统计定价规则（供 GetByID 使用）
+// loadAccountStatsPricingRules
 func (r *channelRepository) loadAccountStatsPricingRules(ctx context.Context, channelID int64) ([]service.AccountStatsPricingRule, error) {
 	result, err := r.batchLoadAccountStatsPricingRules(ctx, []int64{channelID})
 	if err != nil {
@@ -129,9 +127,9 @@ func (r *channelRepository) loadAccountStatsPricingRules(ctx context.Context, ch
 	return result[channelID], nil
 }
 
-// replaceAccountStatsPricingRulesTx 在事务中替换渠道的账号统计定价规则（删除旧的 + 插入新的）
+// replaceAccountStatsPricingRulesTx +
 func replaceAccountStatsPricingRulesTx(ctx context.Context, tx *sql.Tx, channelID int64, rules []service.AccountStatsPricingRule) error {
-	// CASCADE 会自动删除关联的 model_pricing
+	// CASCADE
 	if _, err := tx.ExecContext(ctx,
 		`DELETE FROM channel_account_stats_pricing_rules WHERE channel_id = $1`, channelID,
 	); err != nil {
@@ -147,7 +145,7 @@ func replaceAccountStatsPricingRulesTx(ctx context.Context, tx *sql.Tx, channelI
 	return nil
 }
 
-// createAccountStatsPricingRuleTx 在事务中创建单条账号统计定价规则及其模型定价
+// createAccountStatsPricingRuleTx
 func createAccountStatsPricingRuleTx(ctx context.Context, tx *sql.Tx, rule *service.AccountStatsPricingRule) error {
 	err := tx.QueryRowContext(ctx,
 		`INSERT INTO channel_account_stats_pricing_rules (channel_id, name, group_ids, account_ids, sort_order)
@@ -166,7 +164,7 @@ func createAccountStatsPricingRuleTx(ctx context.Context, tx *sql.Tx, rule *serv
 	return nil
 }
 
-// createAccountStatsModelPricingTx 在事务中创建单条账号统计模型定价
+// createAccountStatsModelPricingTx
 func createAccountStatsModelPricingTx(ctx context.Context, tx *sql.Tx, ruleID int64, pricing *service.ChannelModelPricing) error {
 	modelsJSON, err := json.Marshal(pricing.Models)
 	if err != nil {

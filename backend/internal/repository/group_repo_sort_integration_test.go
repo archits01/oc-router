@@ -7,9 +7,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-// TestListWithAccountCountSort_AttachesActiveCount 验证通过 account_count 排序时，
-// ActiveAccountCount 与 AccountCount 都被正确附加到返回结果中，
-// 且排序基于 total 账号数而非 active 账号数。
+// TestListWithAccountCountSort_AttachesActiveCount
+// ActiveAccountCount
+//
 func (s *GroupRepoSuite) TestListWithAccountCountSort_AttachesActiveCount() {
 	// Group A: 2 total, 1 active (1 disabled account)
 	gA := &service.Group{Name: "sort-count-a", Platform: service.PlatformAnthropic, RateMultiplier: 1, Status: service.StatusActive, SubscriptionType: service.SubscriptionTypeStandard}

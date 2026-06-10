@@ -85,7 +85,7 @@ describe('useClipboard', () => {
     expect(mockShowSuccess).toHaveBeenCalledWith('common.copiedToClipboard')
   })
 
-  it('空文本返回 false 且不复制', async () => {
+  it('空文本Back false 且不复制', async () => {
     const { copyToClipboard, copied } = useClipboard()
 
     const result = await copyToClipboard('')

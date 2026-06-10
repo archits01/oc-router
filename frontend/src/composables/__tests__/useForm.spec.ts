@@ -34,7 +34,6 @@ describe('useForm', () => {
     expect(loading.value).toBe(false)
 
     const submitPromise = submit()
-    // 提交中
     expect(loading.value).toBe(true)
 
     resolveSubmit!()
@@ -50,12 +49,12 @@ describe('useForm', () => {
     const { submit } = useForm({
       form: { name: 'test' },
       submitFn,
-      successMsg: '保存成功',
+      successMsg: 'Save成功',
     })
 
     await submit()
 
-    expect(showSuccessSpy).toHaveBeenCalledWith('保存成功')
+    expect(showSuccessSpy).toHaveBeenCalledWith('Save成功')
   })
 
   it('submit 成功但无 successMsg 时不调用 showSuccess', async () => {
@@ -73,7 +72,7 @@ describe('useForm', () => {
   })
 
   it('submit 失败时显示错误消息并抛出错误', async () => {
-    const error = Object.assign(new Error('提交失败'), {
+    const error = Object.assign(new Error('Submit失败'), {
       response: { data: { message: '服务器错误' } },
     })
     const submitFn = vi.fn().mockRejectedValue(error)
@@ -84,7 +83,7 @@ describe('useForm', () => {
       submitFn,
     })
 
-    await expect(submit()).rejects.toThrow('提交失败')
+    await expect(submit()).rejects.toThrow('Submit失败')
 
     expect(showErrorSpy).toHaveBeenCalled()
     expect(loading.value).toBe(false)
@@ -105,7 +104,7 @@ describe('useForm', () => {
     expect(showErrorSpy).toHaveBeenCalledWith('自定义错误提示')
   })
 
-  it('loading 中不会重复提交', async () => {
+  it('loading 中不会重复Submit', async () => {
     let resolveSubmit: () => void
     const submitFn = vi.fn(
       () => new Promise<void>((resolve) => { resolveSubmit = resolve })
@@ -116,9 +115,8 @@ describe('useForm', () => {
       submitFn,
     })
 
-    // 第一次提交
     const p1 = submit()
-    // 第二次提交（应被忽略，因为 loading=true）
+    // 第二次Submit（应被忽略，因为 loading=true）
     submit()
 
     expect(submitFn).toHaveBeenCalledTimes(1)

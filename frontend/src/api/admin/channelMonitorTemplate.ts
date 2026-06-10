@@ -2,7 +2,7 @@
  * Admin Channel Monitor Request Template API.
  *
  * 模板 = 一组可复用的 headers + 可选 body 覆盖配置。
- * 应用到监控 = 拷贝快照；模板后续变动不自动同步，需手动点「应用到关联监控」刷新。
+ * 应用到监控 = 拷贝快照；模板后续变动不自动同步，需手动点「应用到关联监控」Refresh。
  */
 
 import { apiClient } from '../client'

@@ -1,13 +1,10 @@
-// Package repository 实现数据访问层（Repository Pattern）。
+// Package repository
 //
-// 该包提供了与数据库交互的所有操作，包括 CRUD、复杂查询和批量操作。
-// 采用 Repository 模式将数据访问逻辑与业务逻辑分离，便于测试和维护。
 //
-// 主要特性：
-//   - 使用 Ent ORM 进行类型安全的数据库操作
-//   - 对于复杂查询（如批量更新、聚合统计）使用原生 SQL
-//   - 提供统一的错误翻译机制，将数据库错误转换为业务错误
-//   - 支持软删除，所有查询自动过滤已删除记录
+//
+//
+//   -
+//   -
 package repository
 
 import (
@@ -34,18 +31,16 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 )
 
-// accountRepository 实现 service.AccountRepository 接口。
-// 提供 AI API 账户的完整数据访问功能。
+// accountRepository
 //
-// 设计说明：
-//   - client: Ent 客户端，用于类型安全的 ORM 操作
-//   - sql: 原生 SQL 执行器，用于复杂查询和批量操作
-//   - schedulerCache: 调度器缓存，用于在账号状态变更时同步快照
+//
+//   - client: Ent
+//   - sql:
+//   - schedulerCache:
 type accountRepository struct {
-	client *dbent.Client // Ent ORM 客户端
-	sql    sqlExecutor   // 原生 SQL 执行接口
-	// schedulerCache 用于在账号状态变更时主动同步快照到缓存，
-	// 确保粘性会话能及时感知账号不可用状态。
+	client *dbent.Client // Ent ORM client
+	sql    sqlExecutor   // raw SQL executor interface
+	// schedulerCache
 	// Used to proactively sync account snapshot to cache when status changes,
 	// ensuring sticky sessions can promptly detect unavailable accounts.
 	schedulerCache service.SchedulerCache
@@ -64,14 +59,13 @@ var schedulerNeutralExtraKeys = map[string]struct{}{
 	"session_window_utilization": {},
 }
 
-// NewAccountRepository 创建账户仓储实例。
-// 这是对外暴露的构造函数，返回接口类型以便于依赖注入。
+// NewAccountRepository
 func NewAccountRepository(client *dbent.Client, sqlDB *sql.DB, schedulerCache service.SchedulerCache) service.AccountRepository {
 	return newAccountRepositoryWithSQL(client, sqlDB, schedulerCache)
 }
 
-// newAccountRepositoryWithSQL 是内部构造函数，支持依赖注入 SQL 执行器。
-// 这种设计便于单元测试时注入 mock 对象。
+// newAccountRepositoryWithSQL
+//
 func newAccountRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor, schedulerCache service.SchedulerCache) *accountRepository {
 	return &accountRepository{client: client, sql: sqlq, schedulerCache: schedulerCache}
 }
@@ -244,11 +238,10 @@ func (r *accountRepository) GetByIDs(ctx context.Context, ids []int64) ([]*servi
 	return out, nil
 }
 
-// ExistsByID 检查指定 ID 的账号是否存在。
-// 相比 GetByID，此方法性能更优，因为：
-//   - 使用 Exist() 方法生成 SELECT EXISTS 查询，只返回布尔值
-//   - 不加载完整的账号实体及其关联数据（Groups、Proxy 等）
-//   - 适用于删除前的存在性检查等只需判断有无的场景
+// ExistsByID
+//
+//   - ()
+//   -
 func (r *accountRepository) ExistsByID(ctx context.Context, id int64) (bool, error) {
 	exists, err := r.client.Account.Query().Where(dbaccount.IDEQ(id)).Exist(ctx)
 	if err != nil {
@@ -262,7 +255,7 @@ func (r *accountRepository) GetByCRSAccountID(ctx context.Context, crsAccountID 
 		return nil, nil
 	}
 
-	// 使用 sqljson.ValueEQ 生成 JSON 路径过滤，避免手写 SQL 片段导致语法兼容问题。
+	//
 	m, err := r.client.Account.Query().
 		Where(func(s *entsql.Selector) {
 			s.Where(sqljson.ValueEQ(dbaccount.FieldExtra, crsAccountID, sqljson.Path("crs_account_id")))
@@ -402,8 +395,8 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &account.ID, nil, buildSchedulerGroupPayload(account.GroupIDs)); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue account update failed: account=%d err=%v", account.ID, err)
 	}
-	// 普通账号编辑（如 model_mapping / credentials）也需要立即刷新单账号快照，
-	// 否则网关在 outbox worker 延迟或异常时仍可能读到旧配置。
+	//
+	//
 	r.syncSchedulerAccountSnapshot(ctx, account.ID)
 	return nil
 }
@@ -424,7 +417,6 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	// 使用事务保证账号与关联分组的删除原子性
 	tx, err := r.client.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return err
@@ -435,7 +427,7 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 		defer func() { _ = tx.Rollback() }()
 		txClient = tx.Client()
 	} else {
-		// 已处于外部事务中（ErrTxStarted），复用当前 client
+		//
 		txClient = r.client
 	}
 
@@ -733,9 +725,7 @@ func (r *accountRepository) SetError(ctx context.Context, id int64, errorMsg str
 	return nil
 }
 
-// syncSchedulerAccountSnapshot 在账号状态变更时主动同步快照到调度器缓存。
-// 当账号被设置为错误、禁用、不可调度或临时不可调度时调用，
-// 确保调度器和粘性会话逻辑能及时感知账号的最新状态，避免继续使用不可用账号。
+// syncSchedulerAccountSnapshot
 //
 // syncSchedulerAccountSnapshot proactively syncs account snapshot to scheduler cache
 // when account status changes. Called when account is set to error, disabled,
@@ -872,7 +862,6 @@ func (r *accountRepository) BindGroups(ctx context.Context, accountID int64, gro
 	if err != nil {
 		return err
 	}
-	// 使用事务保证删除旧绑定与创建新绑定的原子性
 	tx, err := r.client.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return err
@@ -883,7 +872,7 @@ func (r *accountRepository) BindGroups(ctx context.Context, accountID int64, gro
 		defer func() { _ = tx.Rollback() }()
 		txClient = tx.Client()
 	} else {
-		// 已处于外部事务中（ErrTxStarted），复用当前 client
+		//
 		txClient = r.client
 	}
 
@@ -970,7 +959,6 @@ func (r *accountRepository) ListSchedulableByPlatform(ctx context.Context, platf
 }
 
 func (r *accountRepository) ListSchedulableByGroupIDAndPlatform(ctx context.Context, groupID int64, platform string) ([]service.Account, error) {
-	// 单平台查询复用多平台逻辑，保持过滤条件与排序策略一致。
 	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
 		status:      service.StatusActive,
 		schedulable: true,
@@ -982,8 +970,7 @@ func (r *accountRepository) ListSchedulableByPlatforms(ctx context.Context, plat
 	if len(platforms) == 0 {
 		return nil, nil
 	}
-	// 仅返回可调度的活跃账号，并过滤处于过载/限流窗口的账号。
-	// 代理与分组信息统一在 accountsToService 中批量加载，避免 N+1 查询。
+	// +1
 	now := time.Now()
 	accounts, err := r.client.Account.Query().
 		Where(
@@ -1052,7 +1039,6 @@ func (r *accountRepository) ListSchedulableByGroupIDAndPlatforms(ctx context.Con
 	if len(platforms) == 0 {
 		return nil, nil
 	}
-	// 复用按分组查询逻辑，保证分组优先级 + 账号优先级的排序与筛选一致。
 	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
 		status:      service.StatusActive,
 		schedulable: true,
@@ -1264,7 +1250,6 @@ func (r *accountRepository) UpdateSessionWindow(ctx context.Context, id int64, s
 	if err != nil {
 		return err
 	}
-	// 触发调度器缓存更新（仅当窗口时间有变化时）
 	if start != nil || end != nil {
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue session window update failed: account=%d err=%v", id, err)
@@ -1335,7 +1320,7 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 		return nil
 	}
 
-	// 使用 JSONB 合并操作实现原子更新，避免读-改-写的并发丢失更新问题
+	//
 	payload, err := json.Marshal(updates)
 	if err != nil {
 		return err
@@ -1364,9 +1349,9 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue extra update failed: account=%d err=%v", id, err)
 		}
 	} else {
-		// 观测型 extra 字段不需要触发 bucket 重建，但仍同步单账号快照，
-		// 让 sticky session / GetAccount 命中缓存时也能读到最新数据，
-		// 同时避免缓存局部 patch 覆盖掉并发写入的其它账号字段。
+		//
+		//
+		//
 		r.syncSchedulerAccountSnapshot(ctx, id)
 	}
 	return nil
@@ -1416,7 +1401,7 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		idx++
 	}
 	if updates.ProxyID != nil {
-		// 0 表示清除代理（前端发送 0 而不是 null 来表达清除意图）
+		// 0
 		if *updates.ProxyID == 0 {
 			setClauses = append(setClauses, "proxy_id = NULL")
 		} else {
@@ -1459,7 +1444,7 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		args = append(args, *updates.Schedulable)
 		idx++
 	}
-	// JSONB 需要合并而非覆盖，使用 raw SQL 保持旧行为。
+	// JSONB
 	if len(updates.Credentials) > 0 {
 		payload, err := json.Marshal(updates.Credentials)
 		if err != nil {
@@ -1518,14 +1503,14 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 type accountGroupQueryOptions struct {
 	status      string
 	schedulable bool
-	platforms   []string // 允许的多个平台，空切片表示不进行平台过滤
+	platforms   []string // allowed platforms, empty slice means no platform filtering
 }
 
 func (r *accountRepository) queryAccountsByGroup(ctx context.Context, groupID int64, opts accountGroupQueryOptions) ([]service.Account, error) {
 	q := r.client.AccountGroup.Query().
 		Where(dbaccountgroup.GroupIDEQ(groupID))
 
-	// 通过 account_groups 中间表查询账号，并按需叠加状态/平台/调度能力过滤。
+	//
 	preds := make([]dbpredicate.Account, 0, 6)
 	preds = append(preds, dbaccount.DeletedAtIsNil())
 	if opts.status != "" {
@@ -1835,8 +1820,8 @@ func itoa(v int) string {
 	return strconv.Itoa(v)
 }
 
-// FindByExtraField 根据 extra 字段中的键值对查找账号。
-// 使用 PostgreSQL JSONB @> 操作符进行高效查询（需要 GIN 索引支持）。
+// FindByExtraField
+// @>
 //
 // FindByExtraField finds accounts by key-value pairs in the extra field.
 // Uses PostgreSQL JSONB @> operator for efficient queries (requires GIN index).
@@ -1979,16 +1964,16 @@ const nextWeeklyResetAtExpr = `(
 	ELSE NULL END
 )`
 
-// IncrementQuotaUsed 原子递增账号的配额用量（总/日/周三个维度）
-// 日/周额度在周期过期时自动重置为 0 再递增。
-// 支持滚动窗口（rolling）和固定时间（fixed）两种重置模式。
+// IncrementQuotaUsed
+//
+//
 func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, amount float64) error {
 	rows, err := r.sql.QueryContext(ctx,
 		`UPDATE accounts SET extra = (
 			COALESCE(extra, '{}'::jsonb)
-			-- 总额度：始终递增
+			-- total quota: always increments
 			|| jsonb_build_object('quota_used', COALESCE((extra->>'quota_used')::numeric, 0) + $1)
-			-- 日额度：仅在 quota_daily_limit > 0 时处理
+			-- daily quota: only processed when quota_daily_limit > 0
 			|| CASE WHEN COALESCE((extra->>'quota_daily_limit')::numeric, 0) > 0 THEN
 				jsonb_build_object(
 					'quota_daily_used',
@@ -2000,12 +1985,12 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 					THEN `+nowUTC+`
 					ELSE COALESCE(extra->>'quota_daily_start', `+nowUTC+`) END
 				)
-				-- 固定模式重置时更新下次重置时间
+				-- update next reset time on fixed-mode reset
 				|| CASE WHEN `+dailyExpiredExpr+` AND `+nextDailyResetAtExpr+` IS NOT NULL
 				   THEN jsonb_build_object('quota_daily_reset_at', `+nextDailyResetAtExpr+`)
 				   ELSE '{}'::jsonb END
 			ELSE '{}'::jsonb END
-			-- 周额度：仅在 quota_weekly_limit > 0 时处理
+			-- weekly quota: only processed when quota_weekly_limit > 0
 			|| CASE WHEN COALESCE((extra->>'quota_weekly_limit')::numeric, 0) > 0 THEN
 				jsonb_build_object(
 					'quota_weekly_used',
@@ -2017,7 +2002,7 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 					THEN `+nowUTC+`
 					ELSE COALESCE(extra->>'quota_weekly_start', `+nowUTC+`) END
 				)
-				-- 固定模式重置时更新下次重置时间
+				-- update next reset time on fixed-mode reset
 				|| CASE WHEN `+weeklyExpiredExpr+` AND `+nextWeeklyResetAtExpr+` IS NOT NULL
 				   THEN jsonb_build_object('quota_weekly_reset_at', `+nextWeeklyResetAtExpr+`)
 				   ELSE '{}'::jsonb END
@@ -2043,7 +2028,6 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 		return err
 	}
 
-	// 任一维度配额刚超限时触发调度快照刷新
 	if limit > 0 && newUsed >= limit && (newUsed-amount) < limit {
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue quota exceeded failed: account=%d err=%v", id, err)
@@ -2052,8 +2036,8 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 	return nil
 }
 
-// ResetQuotaUsed 重置账号所有维度的配额用量为 0
-// 保留固定重置模式的配置字段（quota_daily_reset_mode 等），仅清零用量和窗口起始时间
+// ResetQuotaUsed
+//
 func (r *accountRepository) ResetQuotaUsed(ctx context.Context, id int64) error {
 	_, err := r.sql.ExecContext(ctx,
 		`UPDATE accounts SET extra = (
@@ -2065,16 +2049,15 @@ func (r *accountRepository) ResetQuotaUsed(ctx context.Context, id int64) error 
 	if err != nil {
 		return err
 	}
-	// 重置配额后触发调度快照刷新，使账号重新参与调度
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue quota reset failed: account=%d err=%v", id, err)
 	}
 	return nil
 }
 
-// RevertProxyFallback 将账号的 proxy_id 切回 proxy_fallback_origin_id，并清空 origin 字段。
-// 仅当 proxy_fallback_origin_id IS NOT NULL 时执行更新；
-// 若影响行数为 0，则返回 ErrAccountNotInFallback（账号存在但不在 fallback 状态）。
+// RevertProxyFallback
+//
+//
 func (r *accountRepository) RevertProxyFallback(ctx context.Context, accountID int64) error {
 	res, err := r.sql.ExecContext(ctx, `
 		UPDATE accounts SET proxy_id=proxy_fallback_origin_id, proxy_fallback_origin_id=NULL, updated_at=NOW()

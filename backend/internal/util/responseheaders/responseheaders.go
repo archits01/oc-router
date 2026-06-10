@@ -7,11 +7,11 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 )
 
-// defaultAllowed 定义允许透传的响应头白名单
-// 注意：以下头部由 Go HTTP 包自动处理，不应手动设置：
-//   - content-length: 由 ResponseWriter 根据实际写入数据自动设置
-//   - transfer-encoding: 由 HTTP 库根据需要自动添加/移除
-//   - connection: 由 HTTP 库管理连接复用
+// defaultAllowed
+//
+//   - content-length:
+//   - transfer-encoding:
+//   - connection:
 var defaultAllowed = map[string]struct{}{
 	"content-type":                   {},
 	"content-encoding":               {},
@@ -34,7 +34,7 @@ var defaultAllowed = map[string]struct{}{
 	"www-authenticate":               {},
 }
 
-// hopByHopHeaders 是跳过的 hop-by-hop 头部，这些头部由 HTTP 库自动处理
+// hopByHopHeaders
 var hopByHopHeaders = map[string]struct{}{
 	"content-length":    {},
 	"transfer-encoding": {},
@@ -53,7 +53,7 @@ func CompileHeaderFilter(cfg config.ResponseHeaderConfig) *CompiledHeaderFilter 
 	for key := range defaultAllowed {
 		allowed[key] = struct{}{}
 	}
-	// 关闭时只使用默认白名单，additional/force_remove 不生效
+	//
 	if cfg.Enabled {
 		for _, key := range cfg.AdditionalAllowed {
 			normalized := strings.ToLower(strings.TrimSpace(key))
@@ -96,7 +96,7 @@ func FilterHeaders(src http.Header, filter *CompiledHeaderFilter) http.Header {
 		if _, ok := filter.allowed[lower]; !ok {
 			continue
 		}
-		// 跳过 hop-by-hop 头部，这些由 HTTP 库自动处理
+		//
 		if _, isHopByHop := hopByHopHeaders[lower]; isHopByHop {
 			continue
 		}

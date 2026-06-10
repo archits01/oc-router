@@ -13,7 +13,7 @@ import (
 
 const requestIDHeader = "X-Request-ID"
 
-// RequestLogger 在请求入口注入 request-scoped logger。
+// RequestLogger
 func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request == nil {

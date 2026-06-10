@@ -46,7 +46,7 @@ export function normalizePlatformQuotasMap(input?: DefaultPlatformQuotasMap | nu
   return result
 }
 
-/** 提交前清洗：非有限数/负数/空字符串 → null（保留 0 = 显式禁用），返回全 4 平台嵌套 map */
+/** Submit前清洗：非有限数/负数/空字符串 → null（保留 0 = 显式Disable），Back全 4 平台嵌套 map */
 export function sanitizePlatformQuotasMap(input?: DefaultPlatformQuotasMap | null): DefaultPlatformQuotasMap {
   const clean = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null)
   const result: DefaultPlatformQuotasMap = {}
@@ -166,10 +166,10 @@ const PAYMENT_VISIBLE_METHOD_SOURCE_ALIASES: Record<
   },
 };
 const WECHAT_CONNECT_MODE_OPTIONS: WeChatConnectModeOption[] = [
-  { value: "open", labelZh: "PC 应用", labelEn: "PC App" },
+  { value: "open", labelZh: "PC App", labelEn: "PC App" },
   {
     value: "mp",
-    labelZh: "公众号",
+    labelZh: "Official Account",
     labelEn: "Official Account",
   },
   {
@@ -365,7 +365,7 @@ export interface SystemSettings {
   frontend_url: string;
   invitation_code_enabled: boolean;
   totp_enabled: boolean; // TOTP 双因素认证
-  totp_encryption_key_configured: boolean; // TOTP 加密密钥是否已配置
+  totp_encryption_key_configured: boolean; // TOTP 加密密钥YesNo已配置
   login_agreement_enabled: boolean;
   login_agreement_mode: "modal" | "checkbox" | string;
   login_agreement_updated_at: string;
@@ -549,7 +549,6 @@ export interface SystemSettings {
   min_claude_code_version: string;
   max_claude_code_version: string;
 
-  // 分组隔离
   allow_ungrouped_key_scheduling: boolean;
 
   // Gateway forwarding behavior
@@ -592,7 +591,6 @@ export interface SystemSettings {
   payment_visible_method_wxpay_enabled?: boolean;
   openai_advanced_scheduler_enabled?: boolean;
 
-  // 余额、订阅到期与账号限额通知
   balance_low_notify_enabled: boolean;
   balance_low_notify_threshold: number;
   balance_low_notify_recharge_url: string;
@@ -825,7 +823,6 @@ export interface UpdateSettingsRequest {
   payment_visible_method_alipay_enabled?: boolean;
   payment_visible_method_wxpay_enabled?: boolean;
   openai_advanced_scheduler_enabled?: boolean;
-  // 余额、订阅到期与账号限额通知
   balance_low_notify_enabled?: boolean;
   balance_low_notify_threshold?: number;
   balance_low_notify_recharge_url?: string;

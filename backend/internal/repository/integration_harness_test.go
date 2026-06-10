@@ -101,7 +101,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	// 创建 ent client 用于集成测试
+	//
 	drv := entsql.OpenDB(dialect.Postgres, integrationDB)
 	integrationEntClient = dbent.NewClient(dbent.Driver(drv))
 
@@ -198,15 +198,14 @@ func testTx(t *testing.T) *sql.Tx {
 	return tx
 }
 
-// testEntClient 返回全局的 ent client，用于测试需要内部管理事务的代码（如 Create/Update 方法）。
-// 注意：此 client 的操作会真正写入数据库，测试结束后不会自动回滚。
+// testEntClient
+//
 func testEntClient(t *testing.T) *dbent.Client {
 	t.Helper()
 	return integrationEntClient
 }
 
-// testEntTx 返回一个 ent 事务，用于需要事务隔离的测试。
-// 测试结束后会自动回滚，不会影响数据库状态。
+// testEntTx
 func testEntTx(t *testing.T) *dbent.Tx {
 	t.Helper()
 
@@ -218,17 +217,17 @@ func testEntTx(t *testing.T) *dbent.Tx {
 	return tx
 }
 
-// testEntSQLTx 已弃用：不要在新测试中使用此函数。
-// 基于 *sql.Tx 创建的 ent client 在调用 client.Tx() 时会 panic。
-// 对于需要测试内部使用事务的代码，请使用 testEntClient。
-// 对于需要事务隔离的测试，请使用 testEntTx。
+// testEntSQLTx
+// *sql.Tx ()
+//
+//
 //
 // Deprecated: Use testEntClient or testEntTx instead.
 func testEntSQLTx(t *testing.T) (*dbent.Client, *sql.Tx) {
 	t.Helper()
 
-	// 直接失败，避免旧测试误用导致的事务嵌套 panic。
-	t.Fatalf("testEntSQLTx 已弃用：请使用 testEntClient 或 testEntTx")
+	//
+	t.Fatalf("testEntSQLTx is deprecated: use testEntClient or testEntTx")
 	return nil, nil
 }
 
@@ -399,7 +398,7 @@ type IntegrationDBSuite struct {
 // SetupTest initializes ctx and client for each test method.
 func (s *IntegrationDBSuite) SetupTest() {
 	s.ctx = context.Background()
-	// 统一使用 ent.Tx，确保每个测试都有独立事务并自动回滚。
+	//
 	tx := testEntTx(s.T())
 	s.tx = tx
 	s.client = tx.Client()

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// dingtalkSettingsRepoStub 复用 settingHandlerRepoStub（已在 setting_handler_auth_source_defaults_test.go 定义）
+// dingtalkSettingsRepoStub
 
 func newDingTalkSettingsHandler() (*SettingHandler, *settingHandlerRepoStub) {
 	repo := &settingHandlerRepoStub{values: map[string]string{}}
@@ -23,7 +23,7 @@ func newDingTalkSettingsHandler() (*SettingHandler, *settingHandlerRepoStub) {
 	return handler, repo
 }
 
-// baseValidDingTalkBody 返回一个可以通过所有校验的最小合法 body。
+// baseValidDingTalkBody
 func baseValidDingTalkBody() map[string]any {
 	return map[string]any{
 		"dingtalk_connect_enabled":                 true,
@@ -34,8 +34,8 @@ func baseValidDingTalkBody() map[string]any {
 	}
 }
 
-// TestSettingsPUT_DingTalk_V3_InternalOnlyAllowsEmptyCorpID 验证方案 A：
-// internal_only + internal_corp_id="" 应通过校验（→ 200），不再是 400。
+// TestSettingsPUT_DingTalk_V3_InternalOnlyAllowsEmptyCorpID
+// internal_only + internal_corp_id="" → 200），
 func TestSettingsPUT_DingTalk_V3_InternalOnlyAllowsEmptyCorpID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, _ := newDingTalkSettingsHandler()
@@ -57,7 +57,7 @@ func TestSettingsPUT_DingTalk_V3_InternalOnlyAllowsEmptyCorpID(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
-// TestSettingsPUT_DingTalk_HappyPath_None 验证 none policy → 200
+// TestSettingsPUT_DingTalk_HappyPath_None → 200
 func TestSettingsPUT_DingTalk_HappyPath_None(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, _ := newDingTalkSettingsHandler()
@@ -83,7 +83,7 @@ func TestSettingsPUT_DingTalk_HappyPath_None(t *testing.T) {
 	require.Equal(t, true, data["dingtalk_connect_enabled"])
 }
 
-// TestSettingsPUT_DingTalk_HappyPath_InternalOnly_WithCorpID 验证 internal_only + corp_id → 200
+// TestSettingsPUT_DingTalk_HappyPath_InternalOnly_WithCorpID + corp_id → 200
 func TestSettingsPUT_DingTalk_HappyPath_InternalOnly_WithCorpID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, _ := newDingTalkSettingsHandler()
@@ -105,8 +105,8 @@ func TestSettingsPUT_DingTalk_HappyPath_InternalOnly_WithCorpID(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
-// TestSettingsPUT_DingTalk_BypassRegistration_RoundTrip 验证 bypass_registration 字段 save+load。
-// 必须用 policy=internal_only：bypass 仅在该 policy 下生效，其它 policy 写入层会 coerce 为 false。
+// TestSettingsPUT_DingTalk_BypassRegistration_RoundTrip +load。
+// =internal_only：bypass
 func TestSettingsPUT_DingTalk_BypassRegistration_RoundTrip(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, _ := newDingTalkSettingsHandler()
@@ -133,9 +133,9 @@ func TestSettingsPUT_DingTalk_BypassRegistration_RoundTrip(t *testing.T) {
 	require.Equal(t, true, data["dingtalk_connect_bypass_registration"])
 }
 
-// TestSettingsPUT_DingTalk_Disabled_SkipsValidation 验证 disabled 时跳过 corp 校验 → 200。
-// 用 enabled=true 时必然触发"Client ID is required when enabled"的空 client_id 作为
-// 哨兵——只要 enabled=false 仍能 200 就证明跳过了。
+// TestSettingsPUT_DingTalk_Disabled_SkipsValidation → 200。
+// =true "Client ID is required when enabled"
+// ——=false
 func TestSettingsPUT_DingTalk_Disabled_SkipsValidation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, _ := newDingTalkSettingsHandler()
@@ -159,7 +159,7 @@ func TestSettingsPUT_DingTalk_Disabled_SkipsValidation(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
-// TestSettingsPUT_DingTalk_SyncFlags_InternalOnly_RoundTrip 验证三个 sync 开关在 internal_only 下可正常 save+load。
+// TestSettingsPUT_DingTalk_SyncFlags_InternalOnly_RoundTrip +load。
 func TestSettingsPUT_DingTalk_SyncFlags_InternalOnly_RoundTrip(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, _ := newDingTalkSettingsHandler()
@@ -190,7 +190,7 @@ func TestSettingsPUT_DingTalk_SyncFlags_InternalOnly_RoundTrip(t *testing.T) {
 	require.Equal(t, true, data["dingtalk_connect_sync_dept"], "sync_dept should be true for internal_only")
 }
 
-// TestSettingsPUT_DingTalk_SyncFlags_PolicyNone_CoercedToFalse 验证 policy=none 时三个 sync 开关被 coerce 为 false。
+// TestSettingsPUT_DingTalk_SyncFlags_PolicyNone_CoercedToFalse =none
 func TestSettingsPUT_DingTalk_SyncFlags_PolicyNone_CoercedToFalse(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, _ := newDingTalkSettingsHandler()
@@ -221,9 +221,9 @@ func TestSettingsPUT_DingTalk_SyncFlags_PolicyNone_CoercedToFalse(t *testing.T) 
 	require.Equal(t, false, data["dingtalk_connect_sync_dept"], "sync_dept must be coerced to false when policy=none")
 }
 
-// TestSettingsPUT_DingTalk_StaleWhitelist_CoercedToNone 验证升级兼容：
-// admin 直接把 corp_restriction_policy=whitelist 提交（前端 UI 已无此选项，但 API 仍可命中）
-// 不应导致 400 失败，应该被静默 coerce 为 none 后通过校验。
+// TestSettingsPUT_DingTalk_StaleWhitelist_CoercedToNone
+// admin =whitelist
+//
 func TestSettingsPUT_DingTalk_StaleWhitelist_CoercedToNone(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, repo := newDingTalkSettingsHandler()
@@ -246,7 +246,7 @@ func TestSettingsPUT_DingTalk_StaleWhitelist_CoercedToNone(t *testing.T) {
 		"stale whitelist 应在写入路径被 coerce 为 none")
 }
 
-// TestSettingsPUT_DingTalk_SyncAttrKey_RoundTrip 验证 3 个 attr key 字段 save+load + 空值 fallback 到默认值。
+// TestSettingsPUT_DingTalk_SyncAttrKey_RoundTrip +load +
 func TestSettingsPUT_DingTalk_SyncAttrKey_RoundTrip(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -274,12 +274,12 @@ func TestSettingsPUT_DingTalk_SyncAttrKey_RoundTrip(t *testing.T) {
 
 		require.Equal(t, http.StatusOK, rec.Code)
 
-		// 验证写入 DB 的 key
+		//
 		require.Equal(t, "my_email_attr", repo.values[service.SettingKeyDingTalkConnectSyncCorpEmailAttrKey])
 		require.Equal(t, "my_name_attr", repo.values[service.SettingKeyDingTalkConnectSyncDisplayNameAttrKey])
 		require.Equal(t, "my_dept_attr", repo.values[service.SettingKeyDingTalkConnectSyncDeptAttrKey])
 
-		// 验证响应中的 attr key
+		//
 		var resp response.Response
 		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 		data, ok := resp.Data.(map[string]any)
@@ -294,7 +294,7 @@ func TestSettingsPUT_DingTalk_SyncAttrKey_RoundTrip(t *testing.T) {
 
 		body := baseValidDingTalkBody()
 		body["dingtalk_connect_corp_restriction_policy"] = "internal_only"
-		// 不传 attr key → 写入层 fallback 到默认值
+		// →
 		body["dingtalk_connect_sync_corp_email_attr_key"] = ""
 		body["dingtalk_connect_sync_display_name_attr_key"] = ""
 		body["dingtalk_connect_sync_dept_attr_key"] = ""
@@ -311,7 +311,7 @@ func TestSettingsPUT_DingTalk_SyncAttrKey_RoundTrip(t *testing.T) {
 
 		require.Equal(t, http.StatusOK, rec.Code)
 
-		// 空值应 fallback 到默认值并持久化
+		//
 		require.Equal(t, "dingtalk_email", repo.values[service.SettingKeyDingTalkConnectSyncCorpEmailAttrKey])
 		require.Equal(t, "dingtalk_name", repo.values[service.SettingKeyDingTalkConnectSyncDisplayNameAttrKey])
 		require.Equal(t, "dingtalk_department", repo.values[service.SettingKeyDingTalkConnectSyncDeptAttrKey])

@@ -1,36 +1,34 @@
-// Package model 定义服务层使用的数据模型。
+// Package model
 package model
 
 import "time"
 
-// ErrorPassthroughRule 全局错误透传规则
-// 用于控制上游错误如何返回给客户端
+// ErrorPassthroughRule
 type ErrorPassthroughRule struct {
 	ID              int64     `json:"id"`
-	Name            string    `json:"name"`             // 规则名称
-	Enabled         bool      `json:"enabled"`          // 是否启用
-	Priority        int       `json:"priority"`         // 优先级（数字越小优先级越高）
-	ErrorCodes      []int     `json:"error_codes"`      // 匹配的错误码列表（OR关系）
-	Keywords        []string  `json:"keywords"`         // 匹配的关键词列表（OR关系）
-	MatchMode       string    `json:"match_mode"`       // "any"(任一条件) 或 "all"(所有条件)
-	Platforms       []string  `json:"platforms"`        // 适用平台列表
-	PassthroughCode bool      `json:"passthrough_code"` // 是否透传原始状态码
-	ResponseCode    *int      `json:"response_code"`    // 自定义状态码（passthrough_code=false 时使用）
-	PassthroughBody bool      `json:"passthrough_body"` // 是否透传原始错误信息
-	CustomMessage   *string   `json:"custom_message"`   // 自定义错误信息（passthrough_body=false 时使用）
-	SkipMonitoring  bool      `json:"skip_monitoring"`  // 是否跳过运维监控记录
-	Description     *string   `json:"description"`      // 规则描述
+	Name            string    `json:"name"`             // rule name
+	Enabled         bool      `json:"enabled"`          // whether enabled
+	Priority        int       `json:"priority"`         // priority (lower number = higher priority)
+	ErrorCodes      []int     `json:"error_codes"`      // list of error codes to match (OR relation)
+	Keywords        []string  `json:"keywords"`         // list of keywords to match (OR relation)
+	MatchMode       string    `json:"match_mode"`       // "any" (any condition) or "all" (all conditions)
+	Platforms       []string  `json:"platforms"`        // applicable platform list
+	PassthroughCode bool      `json:"passthrough_code"` // whether to pass through the original status code
+	ResponseCode    *int      `json:"response_code"`    // custom status code (used when passthrough_code=false)
+	PassthroughBody bool      `json:"passthrough_body"` // whether to pass through the original error info
+	CustomMessage   *string   `json:"custom_message"`   // custom error message (used when passthrough_body=false)
+	SkipMonitoring  bool      `json:"skip_monitoring"`  // whether to skip ops monitoring records
+	Description     *string   `json:"description"`      // rule description
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
-// MatchModeAny 表示任一条件匹配即可
+// MatchModeAny
 const MatchModeAny = "any"
 
-// MatchModeAll 表示所有条件都必须匹配
+// MatchModeAll
 const MatchModeAll = "all"
 
-// 支持的平台常量
 const (
 	PlatformAnthropic   = "anthropic"
 	PlatformOpenAI      = "openai"
@@ -38,12 +36,12 @@ const (
 	PlatformAntigravity = "antigravity"
 )
 
-// AllPlatforms 返回所有支持的平台列表
+// AllPlatforms
 func AllPlatforms() []string {
 	return []string{PlatformAnthropic, PlatformOpenAI, PlatformGemini, PlatformAntigravity}
 }
 
-// Validate 验证规则配置的有效性
+// Validate
 func (r *ErrorPassthroughRule) Validate() error {
 	if r.Name == "" {
 		return &ValidationError{Field: "name", Message: "name is required"}
@@ -51,7 +49,6 @@ func (r *ErrorPassthroughRule) Validate() error {
 	if r.MatchMode != MatchModeAny && r.MatchMode != MatchModeAll {
 		return &ValidationError{Field: "match_mode", Message: "match_mode must be 'any' or 'all'"}
 	}
-	// 至少需要配置一个匹配条件（错误码或关键词）
 	if len(r.ErrorCodes) == 0 && len(r.Keywords) == 0 {
 		return &ValidationError{Field: "conditions", Message: "at least one error_code or keyword is required"}
 	}
@@ -64,7 +61,7 @@ func (r *ErrorPassthroughRule) Validate() error {
 	return nil
 }
 
-// ValidationError 表示验证错误
+// ValidationError
 type ValidationError struct {
 	Field   string
 	Message string

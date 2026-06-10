@@ -11,37 +11,37 @@ import (
 )
 
 func TestValidateMigrationExecutionMode(t *testing.T) {
-	t.Run("事务迁移包含CONCURRENTLY会被拒绝", func(t *testing.T) {
+	t.Run("transaction migration containing CONCURRENTLY is rejected", func(t *testing.T) {
 		nonTx, err := validateMigrationExecutionMode("001_add_idx.sql", "CREATE INDEX CONCURRENTLY idx_a ON t(a);")
 		require.False(t, nonTx)
 		require.Error(t, err)
 	})
 
-	t.Run("notx迁移要求CREATE使用IF NOT EXISTS", func(t *testing.T) {
+	t.Run("notx migration requires CREATE to use IF NOT EXISTS", func(t *testing.T) {
 		nonTx, err := validateMigrationExecutionMode("001_add_idx_notx.sql", "CREATE INDEX CONCURRENTLY idx_a ON t(a);")
 		require.False(t, nonTx)
 		require.Error(t, err)
 	})
 
-	t.Run("notx迁移要求DROP使用IF EXISTS", func(t *testing.T) {
+	t.Run("notx migration requires DROP to use IF EXISTS", func(t *testing.T) {
 		nonTx, err := validateMigrationExecutionMode("001_drop_idx_notx.sql", "DROP INDEX CONCURRENTLY idx_a;")
 		require.False(t, nonTx)
 		require.Error(t, err)
 	})
 
-	t.Run("notx迁移禁止事务控制语句", func(t *testing.T) {
+	t.Run("notx migration prohibits transaction control statements", func(t *testing.T) {
 		nonTx, err := validateMigrationExecutionMode("001_add_idx_notx.sql", "BEGIN; CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_a ON t(a); COMMIT;")
 		require.False(t, nonTx)
 		require.Error(t, err)
 	})
 
-	t.Run("notx迁移禁止混用非CONCURRENTLY语句", func(t *testing.T) {
+	t.Run("notx migration prohibits mixing non-CONCURRENTLY statements", func(t *testing.T) {
 		nonTx, err := validateMigrationExecutionMode("001_add_idx_notx.sql", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_a ON t(a); UPDATE t SET a = 1;")
 		require.False(t, nonTx)
 		require.Error(t, err)
 	})
 
-	t.Run("notx迁移允许幂等并发索引语句", func(t *testing.T) {
+	t.Run("notx migration allows idempotent concurrent index statements", func(t *testing.T) {
 		nonTx, err := validateMigrationExecutionMode("001_add_idx_notx.sql", `
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_a ON t(a);
 DROP INDEX CONCURRENTLY IF EXISTS idx_b;

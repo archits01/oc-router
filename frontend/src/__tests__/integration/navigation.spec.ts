@@ -48,7 +48,6 @@ vi.mock('@/stores/app', () => ({
   })
 }))
 
-// 创建测试路由
 function createTestRouter(): Router {
   return createRouter({
     history: createWebHistory(),
@@ -93,13 +92,11 @@ describe('Navigation Integration Tests', () => {
   let originalCancelIdleCallback: typeof window.cancelIdleCallback
 
   beforeEach(() => {
-    // 设置 Pinia
+    // Settings Pinia
     setActivePinia(createPinia())
 
-    // 重置导航加载状态
     _resetNavigationLoadingInstance()
 
-    // 创建新的路由实例
     router = createTestRouter()
 
     // Mock requestIdleCallback
@@ -120,20 +117,17 @@ describe('Navigation Integration Tests', () => {
   })
 
   describe('完整页面导航流程', () => {
-    it('导航时应该触发加载状态变化', async () => {
+    it('导航时应该触发加载Status变化', async () => {
       const navigationLoading = useNavigationLoadingState()
 
-      // 初始状态
       expect(navigationLoading.isLoading.value).toBe(false)
 
-      // 挂载应用
       const wrapper = mount(TestApp, {
         global: {
           plugins: [router]
         }
       })
 
-      // 等待路由初始化
       await router.isReady()
       await flushPromises()
 
@@ -142,7 +136,6 @@ describe('Navigation Integration Tests', () => {
       await flushPromises()
       await nextTick()
 
-      // 导航结束后状态应该重置
       expect(navigationLoading.isLoading.value).toBe(false)
 
       wrapper.unmount()
@@ -160,13 +153,12 @@ describe('Navigation Integration Tests', () => {
       await flushPromises()
       await nextTick()
 
-      // 检查当前路由
       expect(router.currentRoute.value.path).toBe('/dashboard')
 
       wrapper.unmount()
     })
 
-    it('连续快速导航应该正确处理路由状态', async () => {
+    it('连续快速导航应该正确处理路由Status', async () => {
       const wrapper = mount(TestApp, {
         global: {
           plugins: [router]
@@ -176,7 +168,6 @@ describe('Navigation Integration Tests', () => {
       await router.isReady()
       await router.push('/dashboard')
 
-      // 快速连续导航
       router.push('/keys')
       router.push('/usage')
       router.push('/dashboard')
@@ -196,7 +187,7 @@ describe('Navigation Integration Tests', () => {
       const routePrefetch = useRoutePrefetch()
       const triggerSpy = vi.spyOn(routePrefetch, 'triggerPrefetch')
 
-      // 设置 afterEach 守卫
+      // Settings afterEach 守卫
       router.afterEach((to) => {
         routePrefetch.triggerPrefetch(to)
       })
@@ -211,7 +202,6 @@ describe('Navigation Integration Tests', () => {
       await router.push('/dashboard')
       await flushPromises()
 
-      // 应该触发预加载
       expect(triggerSpy).toHaveBeenCalled()
 
       wrapper.unmount()
@@ -230,23 +220,20 @@ describe('Navigation Integration Tests', () => {
       await router.push('/dashboard')
       await flushPromises()
 
-      // 手动触发预加载
       routePrefetch.triggerPrefetch(router.currentRoute.value)
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       const prefetchedCount = routePrefetch.prefetchedRoutes.value.size
 
-      // 再次触发相同路由预加载
       routePrefetch.triggerPrefetch(router.currentRoute.value)
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // 预加载数量不应增加
       expect(routePrefetch.prefetchedRoutes.value.size).toBe(prefetchedCount)
 
       wrapper.unmount()
     })
 
-    it('路由变化时应取消之前的预加载任务', async () => {
+    it('路由变化时应Cancel之前的预加载任务', async () => {
       const routePrefetch = useRoutePrefetch()
 
       const wrapper = mount(TestApp, {
@@ -257,13 +244,12 @@ describe('Navigation Integration Tests', () => {
 
       await router.isReady()
 
-      // 触发预加载
       routePrefetch.triggerPrefetch(router.currentRoute.value)
 
       // 立即导航到新路由（这会在内部调用 cancelPendingPrefetch）
       routePrefetch.triggerPrefetch({ path: '/keys' } as any)
 
-      // 由于 triggerPrefetch 内部调用 cancelPendingPrefetch，检查是否有预加载被正确管理
+      // 由于 triggerPrefetch 内部调用 cancelPendingPrefetch，检查YesNo有预加载被正确管理
       expect(routePrefetch.prefetchedRoutes.value.size).toBeLessThanOrEqual(2)
 
       wrapper.unmount()
@@ -274,7 +260,6 @@ describe('Navigation Integration Tests', () => {
     it('chunk 加载失败应该被正确捕获', async () => {
       const errorHandler = vi.fn()
 
-      // 创建带错误处理的路由
       const errorRouter = createRouter({
         history: createWebHistory(),
         routes: [
@@ -286,7 +271,6 @@ describe('Navigation Integration Tests', () => {
           {
             path: '/error-page',
             name: 'ErrorPage',
-            // 模拟加载失败的组件
             component: () => Promise.reject(new Error('Failed to fetch dynamically imported module'))
           }
         ]
@@ -304,16 +288,13 @@ describe('Navigation Integration Tests', () => {
       await errorRouter.push('/dashboard')
       await flushPromises()
 
-      // 尝试导航到会失败的页面
       try {
         await errorRouter.push('/error-page')
       } catch {
-        // 预期会失败
       }
 
       await flushPromises()
 
-      // 错误处理器应该被调用
       expect(errorHandler).toHaveBeenCalled()
 
       wrapper.unmount()
@@ -357,7 +338,6 @@ describe('Navigation Integration Tests', () => {
       try {
         await errorRouter.push('/chunk-error')
       } catch {
-        // 预期会失败
       }
 
       await flushPromises()
@@ -369,11 +349,10 @@ describe('Navigation Integration Tests', () => {
     })
   })
 
-  describe('导航状态管理', () => {
+  describe('导航Status管理', () => {
     it('导航开始时 isLoading 应该变为 true', async () => {
       const navigationLoading = useNavigationLoadingState()
 
-      // 创建一个延迟加载的组件来模拟真实场景
       const DelayedComponent = defineComponent({
         name: 'DelayedComponent',
         async setup() {
@@ -398,7 +377,6 @@ describe('Navigation Integration Tests', () => {
         ]
       })
 
-      // 设置导航守卫
       delayRouter.beforeEach(() => {
         navigationLoading.startNavigation()
       })
@@ -423,7 +401,7 @@ describe('Navigation Integration Tests', () => {
       wrapper.unmount()
     })
 
-    it('导航取消时应该正确重置状态', async () => {
+    it('导航Cancel时应该正确ResetStatus', async () => {
       const navigationLoading = useNavigationLoadingState()
 
       const testRouter = createRouter({
@@ -439,7 +417,6 @@ describe('Navigation Integration Tests', () => {
             name: 'Keys',
             component: MockKeys,
             beforeEnter: (_to, _from, next) => {
-              // 模拟导航取消
               next(false)
             }
           }
@@ -464,11 +441,9 @@ describe('Navigation Integration Tests', () => {
       await testRouter.push('/dashboard')
       await flushPromises()
 
-      // 尝试导航到被取消的路由
       await testRouter.push('/keys').catch(() => {})
       await flushPromises()
 
-      // 导航被取消后，状态应该被重置
       // 注意：由于 afterEach 仍然会被调用，isLoading 应该为 false
       expect(navigationLoading.isLoading.value).toBe(false)
 

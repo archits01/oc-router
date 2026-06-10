@@ -3,7 +3,7 @@ package geminicli
 import "testing"
 
 func TestDriveStorageInfo(t *testing.T) {
-	// 测试 DriveStorageInfo 结构体
+	//
 	info := &DriveStorageInfo{
 		Limit: 100 * 1024 * 1024 * 1024, // 100GB
 		Usage: 50 * 1024 * 1024 * 1024,  // 50GB

@@ -57,16 +57,16 @@ type RegisterRequest struct {
 	AffCode        string `json:"aff_code"`        // 邀请返利码
 }
 
-// SendVerifyCodeRequest 发送验证码请求
+// SendVerifyCodeRequest
 type SendVerifyCodeRequest struct {
 	Email          string `json:"email" binding:"required,email"`
 	TurnstileToken string `json:"turnstile_token"`
 }
 
-// SendVerifyCodeResponse 发送验证码响应
+// SendVerifyCodeResponse
 type SendVerifyCodeResponse struct {
 	Message   string `json:"message"`
-	Countdown int    `json:"countdown"` // 倒计时秒数
+	Countdown int    `json:"countdown"` // 倒计时seconds数
 }
 
 // LoginRequest represents the login request payload
@@ -76,11 +76,11 @@ type LoginRequest struct {
 	TurnstileToken string `json:"turnstile_token"`
 }
 
-// AuthResponse 认证响应格式（匹配前端期望）
+// AuthResponse
 type AuthResponse struct {
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token,omitempty"` // 新增：Refresh Token
-	ExpiresIn    int       `json:"expires_in,omitempty"`    // 新增：Access Token有效期（秒）
+	ExpiresIn    int       `json:"expires_in,omitempty"`    // 新增：Access Tokenvalid期（seconds）
 	TokenType    string    `json:"token_type"`
 	User         *dto.User `json:"user"`
 }
@@ -95,8 +95,8 @@ func ensureLoginUserActive(user *service.User) error {
 	return nil
 }
 
-// respondWithTokenPair 生成 Token 对并返回认证响应
-// 如果 Token 对生成失败，回退到只返回 Access Token（向后兼容）
+// respondWithTokenPair
+//
 func (h *AuthHandler) respondWithTokenPair(c *gin.Context, user *service.User) {
 	if err := ensureLoginUserActive(user); err != nil {
 		response.ErrorFrom(c, err)
@@ -106,7 +106,7 @@ func (h *AuthHandler) respondWithTokenPair(c *gin.Context, user *service.User) {
 	tokenPair, err := h.authService.GenerateTokenPair(c.Request.Context(), user, "")
 	if err != nil {
 		slog.Error("failed to generate token pair", "error", err, "user_id", user.ID)
-		// 回退到只返回Access Token
+		//
 		token, tokenErr := h.authService.GenerateToken(user)
 		if tokenErr != nil {
 			response.InternalError(c, "Failed to generate token")
@@ -165,7 +165,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// Turnstile 验证（邮箱验证码注册场景避免重复校验一次性 token）
+	// Turnstile
 	if err := h.authService.VerifyTurnstileForRegister(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c), req.VerifyCode); err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -188,7 +188,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	h.respondWithTokenPair(c, user)
 }
 
-// SendVerifyCode 发送邮箱验证码
+// SendVerifyCode
 // POST /api/v1/auth/send-verify-code
 func (h *AuthHandler) SendVerifyCode(c *gin.Context) {
 	var req SendVerifyCodeRequest
@@ -197,7 +197,7 @@ func (h *AuthHandler) SendVerifyCode(c *gin.Context) {
 		return
 	}
 
-	// Turnstile 验证
+	// Turnstile
 	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c)); err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -224,7 +224,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Turnstile 验证
+	// Turnstile
 	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c)); err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -235,7 +235,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	_ = token // token 由 authService.Login 返回但此处由 respondWithTokenPair 重新生成
+	_ = token // token 由 authService.Login returned但此处由 respondWithTokenPair 重新生成
 
 	if err := h.ensureBackendModeAllowsUser(c.Request.Context(), user); err != nil {
 		response.ErrorFrom(c, err)
@@ -437,12 +437,12 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	})
 }
 
-// ValidatePromoCodeRequest 验证优惠码请求
+// ValidatePromoCodeRequest
 type ValidatePromoCodeRequest struct {
 	Code string `json:"code" binding:"required"`
 }
 
-// ValidatePromoCodeResponse 验证优惠码响应
+// ValidatePromoCodeResponse
 type ValidatePromoCodeResponse struct {
 	Valid       bool    `json:"valid"`
 	BonusAmount float64 `json:"bonus_amount,omitempty"`
@@ -450,10 +450,9 @@ type ValidatePromoCodeResponse struct {
 	Message     string  `json:"message,omitempty"`
 }
 
-// ValidatePromoCode 验证优惠码（公开接口，注册前调用）
+// ValidatePromoCode
 // POST /api/v1/auth/validate-promo-code
 func (h *AuthHandler) ValidatePromoCode(c *gin.Context) {
-	// 检查优惠码功能是否启用
 	if h.settingSvc != nil && !h.settingSvc.IsPromoCodeEnabled(c.Request.Context()) {
 		response.Success(c, ValidatePromoCodeResponse{
 			Valid:     false,
@@ -470,7 +469,6 @@ func (h *AuthHandler) ValidatePromoCode(c *gin.Context) {
 
 	promoCode, err := h.promoService.ValidatePromoCode(c.Request.Context(), req.Code)
 	if err != nil {
-		// 根据错误类型返回对应的错误码
 		errorCode := "PROMO_CODE_INVALID"
 		switch err {
 		case service.ErrPromoCodeNotFound:
@@ -506,21 +504,20 @@ func (h *AuthHandler) ValidatePromoCode(c *gin.Context) {
 	})
 }
 
-// ValidateInvitationCodeRequest 验证邀请码请求
+// ValidateInvitationCodeRequest
 type ValidateInvitationCodeRequest struct {
 	Code string `json:"code" binding:"required"`
 }
 
-// ValidateInvitationCodeResponse 验证邀请码响应
+// ValidateInvitationCodeResponse
 type ValidateInvitationCodeResponse struct {
 	Valid     bool   `json:"valid"`
 	ErrorCode string `json:"error_code,omitempty"`
 }
 
-// ValidateInvitationCode 验证邀请码（公开接口，注册前调用）
+// ValidateInvitationCode
 // POST /api/v1/auth/validate-invitation-code
 func (h *AuthHandler) ValidateInvitationCode(c *gin.Context) {
-	// 检查邀请码功能是否启用
 	if h.settingSvc == nil || !h.settingSvc.IsInvitationCodeEnabled(c.Request.Context()) {
 		response.Success(c, ValidateInvitationCodeResponse{
 			Valid:     false,
@@ -535,7 +532,6 @@ func (h *AuthHandler) ValidateInvitationCode(c *gin.Context) {
 		return
 	}
 
-	// 验证邀请码
 	redeemCode, err := h.redeemService.GetByCode(c.Request.Context(), req.Code)
 	if err != nil {
 		response.Success(c, ValidateInvitationCodeResponse{
@@ -545,7 +541,6 @@ func (h *AuthHandler) ValidateInvitationCode(c *gin.Context) {
 		return
 	}
 
-	// 检查类型和状态
 	if redeemCode.Type != service.RedeemTypeInvitation {
 		response.Success(c, ValidateInvitationCodeResponse{
 			Valid:     false,
@@ -567,18 +562,18 @@ func (h *AuthHandler) ValidateInvitationCode(c *gin.Context) {
 	})
 }
 
-// ForgotPasswordRequest 忘记密码请求
+// ForgotPasswordRequest
 type ForgotPasswordRequest struct {
 	Email          string `json:"email" binding:"required,email"`
 	TurnstileToken string `json:"turnstile_token"`
 }
 
-// ForgotPasswordResponse 忘记密码响应
+// ForgotPasswordResponse
 type ForgotPasswordResponse struct {
 	Message string `json:"message"`
 }
 
-// ForgotPassword 请求密码重置
+// ForgotPassword
 // POST /api/v1/auth/forgot-password
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	var req ForgotPasswordRequest
@@ -587,7 +582,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	// Turnstile 验证
+	// Turnstile
 	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c)); err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -612,19 +607,19 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	})
 }
 
-// ResetPasswordRequest 重置密码请求
+// ResetPasswordRequest
 type ResetPasswordRequest struct {
 	Email       string `json:"email" binding:"required,email"`
 	Token       string `json:"token" binding:"required"`
 	NewPassword string `json:"new_password" binding:"required,min=6"`
 }
 
-// ResetPasswordResponse 重置密码响应
+// ResetPasswordResponse
 type ResetPasswordResponse struct {
 	Message string `json:"message"`
 }
 
-// ResetPassword 重置密码
+// ResetPassword
 // POST /api/v1/auth/reset-password
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req ResetPasswordRequest
@@ -646,20 +641,20 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 // ==================== Token Refresh Endpoints ====================
 
-// RefreshTokenRequest 刷新Token请求
+// RefreshTokenRequest
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
-// RefreshTokenResponse 刷新Token响应
+// RefreshTokenResponse
 type RefreshTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int    `json:"expires_in"` // Access Token有效期（秒）
+	ExpiresIn    int    `json:"expires_in"` // Access Tokenvalid期（seconds）
 	TokenType    string `json:"token_type"`
 }
 
-// RefreshToken 刷新Token
+// RefreshToken
 // POST /api/v1/auth/refresh
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
@@ -688,28 +683,26 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	})
 }
 
-// LogoutRequest 登出请求
+// LogoutRequest
 type LogoutRequest struct {
 	RefreshToken string `json:"refresh_token,omitempty"` // 可选：撤销指定的Refresh Token
 }
 
-// LogoutResponse 登出响应
+// LogoutResponse
 type LogoutResponse struct {
 	Message string `json:"message"`
 }
 
-// Logout 用户登出
+// Logout
 // POST /api/v1/auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
 	var req LogoutRequest
-	// 允许空请求体（向后兼容）
 	_ = c.ShouldBindJSON(&req)
 
-	// 如果提供了Refresh Token，撤销它
+	//
 	if req.RefreshToken != "" {
 		if err := h.authService.RevokeRefreshToken(c.Request.Context(), req.RefreshToken); err != nil {
 			slog.Debug("failed to revoke refresh token", "error", err)
-			// 不影响登出流程
 		}
 	}
 	h.consumePendingOAuthSessionOnLogout(c)
@@ -720,12 +713,12 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	})
 }
 
-// RevokeAllSessionsResponse 撤销所有会话响应
+// RevokeAllSessionsResponse
 type RevokeAllSessionsResponse struct {
 	Message string `json:"message"`
 }
 
-// RevokeAllSessions 撤销当前用户的所有会话
+// RevokeAllSessions
 // POST /api/v1/auth/revoke-all-sessions
 func (h *AuthHandler) RevokeAllSessions(c *gin.Context) {
 	subject, ok := middleware2.GetAuthSubjectFromContext(c)

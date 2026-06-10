@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestIsOpenAIWSTokenEvent_TerminalEventsExcluded 覆盖 isOpenAIWSTokenEvent 的回归用例。
-// 重点验证终止事件（response.completed / response.done）不再被当作 token event，
-// 否则当上游没有可识别的 delta 时，firstTokenMs 会被填到终止时刻，
-// 等于把"总耗时"误报为"首 token 延迟"（issue #2651）。
+// TestIsOpenAIWSTokenEvent_TerminalEventsExcluded
+//
+//
+// """"（issue #2651）。
 func TestIsOpenAIWSTokenEvent_TerminalEventsExcluded(t *testing.T) {
 	cases := []struct {
 		name      string
@@ -53,9 +53,9 @@ func TestIsOpenAIWSTokenEvent_TerminalEventsExcluded(t *testing.T) {
 	}
 }
 
-// TestIsOpenAIWSTokenEvent_DisjointWithTerminal 守护「token 事件集合与终止事件集合互斥」的不变量。
-// firstTokenMs 的计算依赖于 isTokenEvent && !isTerminalEvent；
-// 若两者再次出现交集，则 issue #2651 描述的 latency 误报会重现。
+// TestIsOpenAIWSTokenEvent_DisjointWithTerminal 「token 」
+// firstTokenMs && !isTerminalEvent；
+// #2651
 func TestIsOpenAIWSTokenEvent_DisjointWithTerminal(t *testing.T) {
 	terminalEvents := []string{
 		"response.completed",

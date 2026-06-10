@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/schema/index"
 )
 
-// IdempotencyRecord 幂等请求记录表。
+// IdempotencyRecord
 type IdempotencyRecord struct {
 	ent.Schema
 }

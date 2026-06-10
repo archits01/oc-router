@@ -252,7 +252,7 @@ func Relay(
 	secondExit := relayExitSignal{graceful: true}
 	hasSecondExit := false
 
-	// 客户端断开后尽力继续读取上游短窗口，捕获延迟 usage/terminal 事件用于计费。
+	//
 	if firstExit.stage == "read_client" && firstExit.graceful {
 		dropDownstreamWrites.Store(true)
 		secondExit, hasSecondExit = waitRelayExit(exitCh, drainTimeout)
@@ -473,7 +473,7 @@ func runUpstreamToClient(
 		case coderws.MessageText:
 			observedEvent = observeUpstreamMessage(state, payload, startAt, nowFn, onUsageParseFailure)
 		case coderws.MessageBinary:
-			// binary frame 直接透传，不进入 JSON 观测路径（避免无效解析开销）。
+			// binary frame
 		}
 		emitTurnComplete(onTurnComplete, state, observedEvent)
 		if dropDownstreamWrites != nil && dropDownstreamWrites.Load() {
@@ -616,7 +616,7 @@ func observeUpstreamMessage(
 	if responseID == "" {
 		responseID = strings.TrimSpace(values[2].String())
 	}
-	// 仅 terminal 事件兜底读取顶层 id，避免把 event_id 当成 response_id 关联到 turn。
+	//
 	if responseID == "" && isTerminalEvent(eventType) {
 		responseID = strings.TrimSpace(values[3].String())
 	}
@@ -781,7 +781,7 @@ func parseUsageAndAccumulate(
 		if onParseFailure != nil {
 			onParseFailure(eventType, usageRaw)
 		}
-		// 解析失败时不做部分字段累加，避免计费 usage 出现“半有效”状态。
+		// “”
 		return Usage{}
 	}
 	parsedUsage := Usage{

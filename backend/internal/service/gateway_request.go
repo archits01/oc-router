@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	// 这些字节模式用于 fast-path 判断，避免每次 []byte("...") 产生临时分配。
+	// []byte("...")
 	patternTypeThinking         = []byte(`"type":"thinking"`)
 	patternTypeThinkingSpaced   = []byte(`"type": "thinking"`)
 	patternTypeRedactedThinking = []byte(`"type":"redacted_thinking"`)
@@ -42,9 +42,9 @@ var (
 	sessionUserAgentVersionPattern = regexp.MustCompile(`\bv?\d+(?:\.\d+){1,3}\b`)
 )
 
-// SessionContext 粘性会话上下文，用于区分不同来源的请求。
-// 仅在 GenerateSessionHash 第 3 级 fallback（消息内容 hash）时混入，
-// 避免不同用户发送相同消息产生相同 hash 导致账号集中。
+// SessionContext
+//
+//
 type SessionContext struct {
 	ClientIP  string
 	UserAgent string
@@ -105,7 +105,7 @@ func (r jsonRange) exists() bool {
 	return r.start >= 0 && r.end >= r.start
 }
 
-// clearGatewayRequestDerivedState 清空绑定当前 body 的轻量派生字段，防止 ReplaceBody 后读到旧值。
+// clearGatewayRequestDerivedState
 func clearGatewayRequestDerivedState(parsed *ParsedRequest) {
 	if parsed == nil {
 		return
@@ -153,7 +153,7 @@ func setGatewayRequestRanges(parsed *ParsedRequest, protocol string, jsonStr str
 	}
 }
 
-// parseGatewayRequestCurrentBody 只做标量和 raw range 轻量解析，不恢复 system/messages 对象图。
+// parseGatewayRequestCurrentBody
 func parseGatewayRequestCurrentBody(parsed *ParsedRequest, protocol string) error {
 	if parsed == nil || parsed.Body == nil {
 		return fmt.Errorf("empty request body")
@@ -164,7 +164,7 @@ func parseGatewayRequestCurrentBody(parsed *ParsedRequest, protocol string) erro
 		return fmt.Errorf("invalid json")
 	}
 
-	// 只在当前函数内零拷贝读取 JSON 字段；ReplaceBody 后必须重新进入本函数刷新派生状态。
+	//
 	jsonStr := *(*string)(unsafe.Pointer(&bodyBytes))
 	clearGatewayRequestDerivedState(parsed)
 	parsed.protocol = protocol
@@ -209,25 +209,23 @@ func refreshGatewayRequestRanges(parsed *ParsedRequest, protocol string) error {
 	return parseGatewayRequestCurrentBody(parsed, protocol)
 }
 
-// ParsedRequest 保存网关请求的预解析结果
+// ParsedRequest
 //
-// 性能优化说明：
-// 原实现在多个位置重复解析请求体（Handler、Service 各解析一次）：
-// 1. gateway_handler.go 解析获取 model 和 stream
-// 2. gateway_service.go 再次解析获取 system、messages、metadata
-// 3. GenerateSessionHash 又一次解析获取会话哈希所需字段
 //
-// 新实现一次解析，多处复用：
-// 1. 在 Handler 层统一调用 ParseGatewayRequest 一次性解析
-// 2. 将解析结果 ParsedRequest 传递给 Service 层
-// 3. 避免重复 json.Unmarshal，减少 CPU 和内存开销
+// 1. gateway_handler.go
+// 2. gateway_service.go
+// 3. GenerateSessionHash
+//
+// 1.
+// 2.
+// 3.
 type ParsedRequest struct {
 	Body            *RequestBodyRef // 原始请求体引用（保留用于转发）；替换内容请走 ReplaceBody
-	Model           string          // 请求的模型名称
-	Stream          bool            // 是否为流式请求
+	Model           string          // 请求的model名称
+	Stream          bool            // 是否为streaming request
 	MetadataUserID  string          // metadata.user_id（用于会话亲和）
 	HasSystem       bool            // 是否包含 system 字段（包含 null 也视为显式传入）
-	ThinkingEnabled bool            // 是否开启 thinking（部分平台会影响最终模型名）
+	ThinkingEnabled bool            // 是否开启 thinking（部分平台会影响最终model名）
 	OutputEffort    string          // output_config.effort（Claude API 的推理强度控制）
 	MaxTokens       int             // max_tokens 值（用于探测请求拦截）
 	SessionContext  *SessionContext // 可选：请求上下文区分因子（nil 时行为不变）
@@ -236,11 +234,11 @@ type ParsedRequest struct {
 	systemRange   jsonRange // system/systemInstruction.parts 的 raw JSON 范围，绑定 Body 当前内容
 	messagesRange jsonRange // messages/contents 的 raw JSON 范围，绑定 Body 当前内容
 
-	// GroupID 请求所属分组 ID（来自 API Key）
+	// GroupID
 	GroupID *int64
 
-	// OnUpstreamAccepted 上游接受请求后立即调用（用于提前释放串行锁）
-	// 流式请求在收到 2xx 响应头后调用，避免持锁等流完成
+	// OnUpstreamAccepted
+	//
 	OnUpstreamAccepted func()
 }
 
@@ -287,9 +285,9 @@ func normalizeSessionUserAgentFallback(raw string) string {
 	return strings.Join(strings.Fields(normalized), " ")
 }
 
-// ParseGatewayRequest 解析网关请求体并返回结构化结果。
-// protocol 指定请求协议格式（domain.PlatformAnthropic / domain.PlatformGemini），
-// 不同协议使用不同的 system/messages 字段名。
+// ParseGatewayRequest
+// protocol
+//
 func ParseGatewayRequest(body *RequestBodyRef, protocol string) (*ParsedRequest, error) {
 	parsed := &ParsedRequest{Body: body}
 	if err := parseGatewayRequestCurrentBody(parsed, protocol); err != nil {
@@ -345,7 +343,7 @@ func (p *ParsedRequest) SystemValue() (any, bool) {
 	return system, true
 }
 
-// CloneForBody 为单次账号尝试创建独立 body 视图，避免 failover 复用已改写的 ParsedRequest。
+// CloneForBody
 func (p *ParsedRequest) CloneForBody(body []byte) (*ParsedRequest, error) {
 	if p == nil {
 		return nil, fmt.Errorf("parse request: empty request")
@@ -359,7 +357,7 @@ func (p *ParsedRequest) CloneForBody(body []byte) (*ParsedRequest, error) {
 	return &clone, nil
 }
 
-// ReplaceBody 统一刷新当前 body 和 raw range，保证后续 helper 读取的是最新请求体。
+// ReplaceBody
 func (p *ParsedRequest) ReplaceBody(data []byte) error {
 	if p == nil {
 		return fmt.Errorf("parse request: empty request")
@@ -376,9 +374,9 @@ func (p *ParsedRequest) ReplaceBody(data []byte) error {
 	return nil
 }
 
-// sliceRawFromBody 返回 Result.Raw 对应的原始字节切片。
-// 优先使用 Result.Index 直接从 body 切片，避免对大字段（如 messages）产生额外拷贝。
-// 当 Index 不可用时，退化为复制（理论上极少发生）。
+// sliceRawFromBody
+//
+//
 func sliceRawFromBody(body []byte, r gjson.Result) []byte {
 	if r.Index > 0 {
 		end := r.Index + len(r.Raw)
@@ -386,7 +384,7 @@ func sliceRawFromBody(body []byte, r gjson.Result) []byte {
 			return body[r.Index:end]
 		}
 	}
-	// fallback: 不影响正确性，但会产生一次拷贝
+	// fallback:
 	return []byte(r.Raw)
 }
 
@@ -506,9 +504,8 @@ func StripEmptyTextBlocks(body []byte) []byte {
 // Returns filtered body or original body if filtering fails (fail-safe)
 // This prevents 400 errors from invalid thinking block signatures
 //
-// 策略：
-//   - 当 thinking.type 不是 "enabled"/"adaptive"：移除所有 thinking 相关块
-//   - 当 thinking.type 是 "enabled"/"adaptive"：仅移除缺失/无效 signature 的 thinking 块（避免 400）
+//   - "enabled"/"adaptive"：
+//   - "enabled"/"adaptive"：
 //     (blocks with missing/empty/dummy signatures that would cause 400 errors)
 func FilterThinkingBlocks(body []byte) []byte {
 	return filterThinkingBlocksInternal(body, false)
@@ -555,16 +552,16 @@ func FilterThinkingBlocksForRetry(body []byte) []byte {
 		return body
 	}
 
-	// 尽量避免把整个 body Unmarshal 成 map（会产生大量 map/接口分配）。
-	// 这里先用 gjson 把 messages 子树摘出来，后续只对 messages 做 Unmarshal/Marshal。
+	//
+	//
 	jsonStr := *(*string)(unsafe.Pointer(&body))
 	msgsRes := gjson.Get(jsonStr, "messages")
 	if !msgsRes.Exists() || !msgsRes.IsArray() {
 		return body
 	}
 
-	// Fast path：只需要删除顶层 thinking，不需要改 messages。
-	// 注意：patternThinkingField 可能来自嵌套字段（如 tool_use.input.thinking），因此必须用 gjson 判断顶层字段是否存在。
+	// Fast path：
+	//
 	containsThinkingBlocks := bytes.Contains(body, patternTypeThinking) ||
 		bytes.Contains(body, patternTypeThinkingSpaced) ||
 		bytes.Contains(body, patternTypeRedactedThinking) ||
@@ -604,7 +601,7 @@ func FilterThinkingBlocksForRetry(body []byte) []byte {
 			continue
 		}
 
-		// 延迟分配：只有检测到需要修改的块，才构建新 slice。
+		//
 		var newContent []any
 		modifiedThisMsg := false
 
@@ -756,9 +753,9 @@ func FilterThinkingBlocksForRetry(body []byte) []byte {
 	return out
 }
 
-// removeThinkingDependentContextStrategies 从 context_management.edits 中移除
-// 需要 thinking 启用的策略（如 clear_thinking_20251015）。
-// 当顶层 "thinking" 字段被禁用时必须调用，否则上游会返回
+// removeThinkingDependentContextStrategies
+//
+// "thinking"
 // "strategy requires thinking to be enabled or adaptive"。
 func removeThinkingDependentContextStrategies(body []byte) []byte {
 	jsonStr := *(*string)(unsafe.Pointer(&body))
@@ -799,32 +796,31 @@ func removeThinkingDependentContextStrategies(body []byte) []byte {
 	return body
 }
 
-// anthropicBetaContextManagementToken 是 context_management 字段受的 beta token。
-// 与 claude.BetaContextManagement 保持一致；在本文件本地定义以避免震荡
-// claude package 的该常量含义。
+// anthropicBetaContextManagementToken
+//
+// claude package
 const anthropicBetaContextManagementToken = "context-management-2025-06-27"
 
-// sanitizeAnthropicBodyForBetaTokens 是对 Anthropic 直连路径上 body↔beta header
-// **能力维度**对称约束的统一实现，与 Bedrock 路径的
-// `sanitizeBedrockFieldsForBetaTokens` 对称。
+// sanitizeAnthropicBodyForBetaTokens ↔beta header
+// ****
+// `sanitizeBedrockFieldsForBetaTokens`
 //
-// 问题场景：
-//   - context_management 是 Claude Code CLI 2.1.87+ 默认携带的 beta 字段
-//     （含 clear_thinking_20251015 等清理策略）
-//   - 其被 Anthropic 上游接受的前提是 anthropic-beta header 含
+//   - context_management +
+//     （
+//   -
 //     `context-management-2025-06-27`
-//   - 若两侧不一致上游 Pydantic schema 拒收：
+//   -
 //     "context_management: Extra inputs are not permitted"
 //
-// 本函数按最终发送的 anthropic-beta header 决定是否保留 body 中的
-// context_management 字段：缺 beta token → strip。这将限制完全建立在
-// "能力维度" 上，与 model 名 / token type / mimicry 子路径无关。
 //
-// 调用约束：必须在 CCH 签名之前调用，否则签名 hash 与最终 body
-// 不一致，上游会以 third-party 拒收。
+// context_management → strip。
+// ""
 //
-// 返回 (sanitized, changed)：changed 表示是否发生实际删除，供调用方决定
-// 是否重用原 body 引用。
+//
+//
+//
+// (sanitized, changed)：changed
+//
 func sanitizeAnthropicBodyForBetaTokens(body []byte, anthropicBetaHeader string) ([]byte, bool) {
 	if len(body) == 0 {
 		return body, false
@@ -838,9 +834,9 @@ func sanitizeAnthropicBodyForBetaTokens(body []byte, anthropicBetaHeader string)
 	if b, err := sjson.DeleteBytes(body, "context_management"); err == nil {
 		return b, true
 	} else {
-		// 不应发生：gjson 刚验证过字段存在 + body 是合法 JSON。如果 sjson 仍报错，
-		// 调用方会拿到 (body, false)，但此前 computeFinalAnthropicBeta 已按“strip 后”
-		// 计算了 finalBeta——两侧会不一致。记录 warning 最小限度提醒运维。
+		// + body
+		// (body, false)，“strip ”
+		// ——
 		logger.LegacyPrintf("service.gateway",
 			"[CtxMgmtSanitize] sjson.DeleteBytes failed unexpectedly: %v (body len=%d). "+
 				"body and final anthropic-beta header may be out of sync.", err, len(body))
@@ -848,8 +844,8 @@ func sanitizeAnthropicBodyForBetaTokens(body []byte, anthropicBetaHeader string)
 	return body, false
 }
 
-// anthropicBetaTokensContains 检测逗号分隔的 anthropic-beta header 是否含指定 token。
-// 宋体空格宽容；区分大小写（Anthropic beta token 始终是小写）。
+// anthropicBetaTokensContains
+//
 func anthropicBetaTokensContains(header, token string) bool {
 	if header == "" || token == "" {
 		return false
@@ -1051,9 +1047,8 @@ func FilterSignatureSensitiveBlocksForRetry(body []byte) []byte {
 }
 
 // filterThinkingBlocksInternal removes invalid thinking blocks from request
-// 策略：
-//   - 当 thinking.type 不是 "enabled"/"adaptive"：移除所有 thinking 相关块
-//   - 当 thinking.type 是 "enabled"/"adaptive"：仅移除缺失/无效 signature 的 thinking 块
+//   - "enabled"/"adaptive"：
+//   - "enabled"/"adaptive"：
 func filterThinkingBlocksInternal(body []byte, _ bool) []byte {
 	// Fast path: if body doesn't contain "thinking", skip parsing
 	if !bytes.Contains(body, []byte(`"type":"thinking"`)) &&

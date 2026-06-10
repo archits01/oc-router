@@ -153,7 +153,6 @@ describe('admin UsageView distribution metric toggles', () => {
   })
 
   it('keeps previous model stats visible during refresh until new data arrives', async () => {
-    // 首次加载返回 A
     getModelStats.mockResolvedValueOnce({ models: [{ model: 'A', total_tokens: 10 }] })
 
     const wrapper = mount(UsageView, {
@@ -170,14 +169,13 @@ describe('admin UsageView distribution metric toggles', () => {
     await flushPromises()
     expect((wrapper.vm as any).requestedModelStats).toEqual([{ model: 'A', total_tokens: 10 }])
 
-    // 刷新:让第二次 getModelStats 处于 pending,断言旧数据 A 仍在(不被清空成 [])
+    // Refresh:让第二次 getModelStats 处于 pending,断言旧数据 A 仍在(不被清空成 [])
     let resolveSecond: (v: any) => void = () => {}
     getModelStats.mockReturnValueOnce(new Promise((res) => { resolveSecond = res }))
     ;(wrapper.vm as any).refreshData()
     await flushPromises()
     expect((wrapper.vm as any).requestedModelStats).toEqual([{ model: 'A', total_tokens: 10 }])
 
-    // 新数据到达后替换为 B
     resolveSecond({ models: [{ model: 'B', total_tokens: 20 }] })
     await flushPromises()
     expect((wrapper.vm as any).requestedModelStats).toEqual([{ model: 'B', total_tokens: 20 }])
@@ -332,7 +330,6 @@ describe('admin UsageView errors tab filter forwarding', () => {
     vi.advanceTimersByTime(120)
     await flushPromises()
 
-    // 模拟用户在过滤器里选择了模型/账户/分组
     const vm = wrapper.vm as any
     vm.filters.model = 'gpt-5.3-codex'
     vm.filters.account_id = 7

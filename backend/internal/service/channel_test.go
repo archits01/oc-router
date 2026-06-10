@@ -82,12 +82,12 @@ func TestGetIntervalForContext(t *testing.T) {
 		wantNil   bool
 	}{
 		{"first interval", 50000, testPtrFloat64(1e-6), false},
-		// (min, max] — 128000 在第一个区间的 max，包含，所以匹配第一个
+		// (min, max] — 128000
 		{"boundary: max of first (inclusive)", 128000, testPtrFloat64(1e-6), false},
-		// 128001 > 128000，匹配第二个区间
+		// 128001 > 128000，
 		{"boundary: just above first max", 128001, testPtrFloat64(2e-6), false},
 		{"unbounded interval", 500000, testPtrFloat64(2e-6), false},
-		// (0, max] — 0 不匹配任何区间（左开）
+		// (0, max] — 0
 		{"zero tokens: no match", 0, nil, true},
 	}
 
@@ -435,7 +435,7 @@ func TestValidateIntervals_UnboundedNotLast(t *testing.T) {
 }
 
 func TestValidateIntervals_ImageModeAllowsMultipleUnboundedTiers(t *testing.T) {
-	// image / per_request 按 tier_label 匹配，多条 min=0/max=nil 是合法形态。
+	// image / per_request =0/max=nil
 	intervals := []PricingInterval{
 		{MinTokens: 0, MaxTokens: nil, TierLabel: "1K", PerRequestPrice: testPtrFloat64(0.04)},
 		{MinTokens: 0, MaxTokens: nil, TierLabel: "2K", PerRequestPrice: testPtrFloat64(0.06)},
@@ -446,7 +446,7 @@ func TestValidateIntervals_ImageModeAllowsMultipleUnboundedTiers(t *testing.T) {
 }
 
 func TestValidateIntervals_ImageModeStillRejectsNegativePrice(t *testing.T) {
-	// image 模式只跳过区间重叠校验，单条字段自洽（价格非负）仍要校验。
+	// image
 	intervals := []PricingInterval{
 		{MinTokens: 0, MaxTokens: nil, TierLabel: "1K", PerRequestPrice: testPtrFloat64(-1)},
 	}
@@ -456,7 +456,7 @@ func TestValidateIntervals_ImageModeStillRejectsNegativePrice(t *testing.T) {
 }
 
 func TestValidateIntervals_ImageModeStillRejectsBadMaxTokens(t *testing.T) {
-	// image 模式仍校验 max <= min 这种单条不合法。
+	// image <= min
 	intervals := []PricingInterval{
 		{MinTokens: 100, MaxTokens: testPtrInt(50), TierLabel: "1K", PerRequestPrice: testPtrFloat64(0.04)},
 	}
@@ -580,7 +580,7 @@ func TestGetModelPricingByPlatform(t *testing.T) {
 }
 
 func TestSupportedModels_WildcardOnlyPricingRowsSkipped(t *testing.T) {
-	// 定价中含通配符条目（pattern），不应被当作具体模型名展开。
+	//
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 1, Platform: "anthropic", Models: []string{"claude-sonnet-*", "claude-sonnet-4-6"}},
@@ -598,8 +598,8 @@ func TestSupportedModels_WildcardOnlyPricingRowsSkipped(t *testing.T) {
 }
 
 func TestSupportedModels_WildcardPrefixMatchesNothing(t *testing.T) {
-	// 通配符模式无任何对应定价模型时，该平台 mapping 路不产出；
-	// 但其他平台的 pricing-only 模型仍会通过 Pass B 出现。
+	//
+	//
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 1, Platform: "openai", Models: []string{"gpt-4o"}},
@@ -615,8 +615,8 @@ func TestSupportedModels_WildcardPrefixMatchesNothing(t *testing.T) {
 }
 
 func TestSupportedModels_CrossPlatformPricingDoesNotBleed(t *testing.T) {
-	// anthropic 的通配符不应把 openai 定价行拉到 anthropic 平台下；
-	// openai 的 pricing-only 模型则正常通过 Pass B 暴露在 openai 平台下。
+	// anthropic
+	// openai
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 1, Platform: "openai", Models: []string{"claude-sonnet-4-6"}},
@@ -627,12 +627,11 @@ func TestSupportedModels_CrossPlatformPricingDoesNotBleed(t *testing.T) {
 	}
 	got := ch.SupportedModels()
 	require.Len(t, got, 1)
-	require.Equal(t, "openai", got[0].Platform, "不能把 openai 定价标记为 anthropic 模型")
+	require.Equal(t, "openai", got[0].Platform, "不能把 openai 定价标记为 anthropic model")
 	require.Equal(t, "claude-sonnet-4-6", got[0].Name)
 }
 
 func TestSupportedModels_CaseInsensitiveDedup(t *testing.T) {
-	// 两行定价用不同大小写定义了同一模型，结果应去重为 1 条；首次出现的原始大小写保留。
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 1, Platform: "openai", Models: []string{"GPT-4o"}},
@@ -648,8 +647,8 @@ func TestSupportedModels_CaseInsensitiveDedup(t *testing.T) {
 }
 
 func TestSupportedModels_EmptyPlatformMapping(t *testing.T) {
-	// ModelMapping 平台 key 存在但 value 为空 map：mapping 路跳过该平台，
-	// 但 pricing 路仍会把该平台的定价模型补齐（关键修复：azcc 这种"只配定价不配映射"渠道）。
+	// ModelMapping
+	// ""
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 1, Platform: "anthropic", Models: []string{"claude-sonnet-4-6"}},
@@ -681,7 +680,7 @@ func TestSupportedModels_ExactKeyUsesPricedCaseWhenAvailable(t *testing.T) {
 }
 
 func TestSupportedModels_AsteriskOnlyMappingExpandsAllPriced(t *testing.T) {
-	// 映射 key 为单独的 "*"：前缀为空 → 命中该平台所有定价模型（透传场景）。
+	// "*"：→
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 1, Platform: "openai", Models: []string{"gpt-4o", "gpt-4o-mini"}},
@@ -697,8 +696,8 @@ func TestSupportedModels_AsteriskOnlyMappingExpandsAllPriced(t *testing.T) {
 }
 
 func TestSupportedModels_PricingOnlyNoMapping(t *testing.T) {
-	// 渠道完全没配 mapping，只配了定价 —— 应该把所有定价模型作为支持模型返回。
-	// 这是修复前的核心 bug 场景（前端显示"未配置模型"）。
+	// ——
+	// ""）。
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 1, Platform: "anthropic", Models: []string{"claude-opus-4-6"}, InputPrice: testPtrFloat64(1.5e-5)},
@@ -715,8 +714,8 @@ func TestSupportedModels_PricingOnlyNoMapping(t *testing.T) {
 }
 
 func TestSupportedModels_ExactMappingUsesTargetPricing(t *testing.T) {
-	// 精确 mapping `src → target`：定价应按 target 查（实际计费的是 target），
-	// 而不是按 src 自查。
+	// `src → target`：
+	//
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 100, Platform: "anthropic", Models: []string{"req-model"}, InputPrice: testPtrFloat64(3e-6)},
@@ -738,8 +737,8 @@ func TestSupportedModels_ExactMappingUsesTargetPricing(t *testing.T) {
 }
 
 func TestSupportedModels_ExactMappingTargetMissingFromPricing(t *testing.T) {
-	// `src → target` 但 target 不在渠道定价里 —— 结果中 src 的 Pricing 为 nil
-	// （等待 ListAvailable 阶段的全局 LiteLLM 回落填充）。
+	// `src → target` ——
+	// （
 	ch := &Channel{
 		ModelPricing: []ChannelModelPricing{
 			{ID: 1, Platform: "anthropic", Models: []string{"some-priced-model"}, InputPrice: testPtrFloat64(1.5e-5)},

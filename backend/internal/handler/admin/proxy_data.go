@@ -46,7 +46,7 @@ func (h *ProxyHandler) ExportData(c *gin.Context) {
 		}
 	}
 
-	// 构建 id→name 映射，用于导出备用代理 name
+	// →name
 	proxyNameByID := make(map[int64]string, len(proxies))
 	for i := range proxies {
 		proxyNameByID[proxies[i].ID] = proxies[i].Name
@@ -118,7 +118,7 @@ func (h *ProxyHandler) ImportData(c *gin.Context) {
 	}
 
 	proxyByKey := make(map[string]service.Proxy, len(existingProxies))
-	// proxyNameToID 用于 backup_proxy_name 反查：DB 已有 + 本批次新建均会写入
+	// proxyNameToID +
 	proxyNameToID := make(map[string]int64, len(existingProxies))
 	for i := range existingProxies {
 		p := existingProxies[i]
@@ -152,8 +152,8 @@ func (h *ProxyHandler) ImportData(c *gin.Context) {
 		if existing, ok := proxyByKey[key]; ok {
 			result.ProxyReused++
 			if normalizedStatus != "" && normalizedStatus != existing.Status {
-				// 已存在代理同步 status 时，同时保留/覆盖导入 item 的完整字段，
-				// 避免 UpdateProxy 零值覆盖有效期/fallback 配置。
+				//
+				//
 				var existingExpiresAt *time.Time
 				if item.ExpiresAt != nil {
 					t := time.Unix(*item.ExpiresAt, 0).UTC()
@@ -175,7 +175,6 @@ func (h *ProxyHandler) ImportData(c *gin.Context) {
 					FallbackMode:   existingFallbackMode,
 					BackupProxyID:  existingBackupProxyID,
 					ExpiryWarnDays: item.ExpiryWarnDays,
-					// 保留已存在代理的网络配置字段
 					Name:     existing.Name,
 					Protocol: existing.Protocol,
 					Host:     existing.Host,
@@ -196,21 +195,21 @@ func (h *ProxyHandler) ImportData(c *gin.Context) {
 			continue
 		}
 
-		// 解析 expires_at（unix 秒 → *time.Time）
+		// → *time.Time）
 		var expiresAt *time.Time
 		if item.ExpiresAt != nil {
 			t := time.Unix(*item.ExpiresAt, 0).UTC()
 			expiresAt = &t
 		}
 
-		// 解析 backup_proxy_name → backup_proxy_id
+		// → backup_proxy_id
 		fallbackMode := item.FallbackMode
 		var backupProxyID *int64
 		if item.BackupProxyName != "" {
 			if bid, ok := proxyNameToID[item.BackupProxyName]; ok {
 				backupProxyID = &bid
 			} else {
-				// 查不到备用代理：降级 fallback_mode=none，记录 warning
+				// =none，
 				fallbackMode = service.FallbackModeNone
 				result.Errors = append(result.Errors, DataImportError{
 					Kind:     "proxy",
@@ -245,13 +244,13 @@ func (h *ProxyHandler) ImportData(c *gin.Context) {
 		}
 		result.ProxyCreated++
 		proxyByKey[key] = *created
-		// 把新建代理的 name 也加入反查表，供后续批内代理引用
+		//
 		if created.Name != "" {
 			proxyNameToID[created.Name] = created.ID
 		}
 
 		if normalizedStatus != "" && normalizedStatus != created.Status {
-			// 新建后同步 status 时，传入完整字段，避免零值覆盖刚创建的有效期/fallback 配置。
+			//
 			if _, err := h.adminService.UpdateProxy(ctx, created.ID, &service.UpdateProxyInput{
 				Status:         normalizedStatus,
 				ExpiresAt:      expiresAt,

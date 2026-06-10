@@ -143,7 +143,7 @@ func TestHandleSmartRetry_QuotaExhausted_UsesCreditsAndStoresIndependentState(t 
 	require.Nil(t, result.switchError)
 	require.Len(t, upstream.requestBodies, 1)
 	require.Contains(t, string(upstream.requestBodies[0]), "enabledCreditTypes")
-	require.Empty(t, repo.modelRateLimitCalls, "overages 成功后不应写入普通 model_rate_limits")
+	require.Empty(t, repo.modelRateLimitCalls, "overages success后不应写入普通 model_rate_limits")
 }
 
 func TestHandleSmartRetry_RateLimited_DoesNotUseCredits(t *testing.T) {
@@ -228,7 +228,7 @@ func TestAntigravityRetryLoop_ModelRateLimited_InjectsCredits(t *testing.T) {
 		},
 		errors: []error{nil},
 	}
-	// 模型已限流 + overages 启用 + 无 AICredits key → 应直接注入积分
+	// + overages + →
 	account := &Account{
 		ID:          103,
 		Name:        "acc-103",
@@ -279,7 +279,7 @@ func TestAntigravityRetryLoop_CreditsExhausted_DoesNotInject(t *testing.T) {
 	antigravity.BaseURLs = []string{"https://ag-1.test"}
 	antigravity.DefaultURLAvailability = antigravity.NewURLAvailability(time.Minute)
 
-	// 模型限流 + overages 启用 + AICredits key 生效 → 不应注入积分，应切号
+	// + overages + AICredits key →
 	account := &Account{
 		ID:          104,
 		Name:        "acc-104",
@@ -316,7 +316,7 @@ func TestAntigravityRetryLoop_CreditsExhausted_DoesNotInject(t *testing.T) {
 		},
 	})
 
-	// 模型限流 + 积分耗尽 → 应触发切号错误
+	// + →
 	require.Error(t, err)
 	var switchErr *AntigravityAccountSwitchError
 	require.ErrorAs(t, err, &switchErr)
@@ -344,7 +344,7 @@ func TestAntigravityRetryLoop_CreditErrorMarksExhausted(t *testing.T) {
 		},
 		errors: []error{nil},
 	}
-	// 模型限流 + overages 启用 + 积分可用 → 注入积分但上游返回积分不足
+	// + overages + →
 	account := &Account{
 		ID:          105,
 		Name:        "acc-105",
@@ -381,7 +381,7 @@ func TestAntigravityRetryLoop_CreditErrorMarksExhausted(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	// 验证 AICredits key 已通过 SetModelRateLimit 写入数据库
+	//
 	require.Len(t, repo.modelRateLimitCalls, 1, "应通过 SetModelRateLimit 写入 AICredits key")
 	require.Equal(t, creditsExhaustedKey, repo.modelRateLimitCalls[0].modelKey)
 }
@@ -446,7 +446,7 @@ func TestShouldMarkCreditsExhausted(t *testing.T) {
 }
 
 func TestInjectEnabledCreditTypes(t *testing.T) {
-	t.Run("正常 JSON 注入成功", func(t *testing.T) {
+	t.Run("正常 JSON 注入success", func(t *testing.T) {
 		body := []byte(`{"model":"claude-sonnet-4-5","request":{}}`)
 		result := injectEnabledCreditTypes(body)
 		require.NotNil(t, result)
@@ -454,11 +454,11 @@ func TestInjectEnabledCreditTypes(t *testing.T) {
 		require.Contains(t, string(result), `GOOGLE_ONE_AI`)
 	})
 
-	t.Run("非法 JSON 返回 nil", func(t *testing.T) {
+	t.Run("非法 JSON returned nil", func(t *testing.T) {
 		require.Nil(t, injectEnabledCreditTypes([]byte(`not json`)))
 	})
 
-	t.Run("空 body 返回 nil", func(t *testing.T) {
+	t.Run("空 body returned nil", func(t *testing.T) {
 		require.Nil(t, injectEnabledCreditTypes([]byte{}))
 	})
 
@@ -513,7 +513,7 @@ func TestClearCreditsExhausted(t *testing.T) {
 		require.Empty(t, repo.extraUpdateCalls)
 	})
 
-	t.Run("有 AICredits key 时删除并调用 UpdateExtra", func(t *testing.T) {
+	t.Run("有 AICredits key 时delete并调用 UpdateExtra", func(t *testing.T) {
 		repo := &stubAntigravityAccountRepo{}
 		svc := &AntigravityGatewayService{accountRepo: repo}
 		account := &Account{
@@ -533,12 +533,11 @@ func TestClearCreditsExhausted(t *testing.T) {
 		}
 		svc.clearCreditsExhausted(context.Background(), account)
 		require.Len(t, repo.extraUpdateCalls, 1)
-		// AICredits key 应被删除
+		// AICredits key
 		rawLimits := account.Extra[modelRateLimitsKey].(map[string]any)
 		_, exists := rawLimits[creditsExhaustedKey]
-		require.False(t, exists, "AICredits key 应被删除")
-		// 普通模型限流应保留
+		require.False(t, exists, "AICredits key 应被delete")
 		_, exists = rawLimits["claude-sonnet-4-5"]
-		require.True(t, exists, "普通模型限流应保留")
+		require.True(t, exists, "普通model限流应保留")
 	})
 }

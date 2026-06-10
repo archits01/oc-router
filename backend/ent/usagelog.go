@@ -37,13 +37,10 @@ type UsageLog struct {
 	RequestedModel *string `json:"requested_model,omitempty"`
 	// UpstreamModel holds the value of the "upstream_model" field.
 	UpstreamModel *string `json:"upstream_model,omitempty"`
-	// 渠道 ID
 	ChannelID *int64 `json:"channel_id,omitempty"`
-	// 模型映射链
 	ModelMappingChain *string `json:"model_mapping_chain,omitempty"`
-	// 计费层级标签
 	BillingTier *string `json:"billing_tier,omitempty"`
-	// 计费模式：token/per_request/image
+	//
 	BillingMode *string `json:"billing_mode,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID *int64 `json:"group_id,omitempty"`

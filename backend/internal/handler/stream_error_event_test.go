@@ -31,7 +31,7 @@ func newGinContextForEndpoint(t *testing.T, endpoint string) (*gin.Context, *htt
 	return c, w
 }
 
-// parseResponsesFailedSSE 抽出 SSE 中 data 行的 JSON，返回 (response 对象, error 对象)。
+// parseResponsesFailedSSE (response )。
 func parseResponsesFailedSSE(t *testing.T, body string) (map[string]any, map[string]any) {
 	t.Helper()
 	require.True(t, strings.HasPrefix(body, "event: response.failed\n"),
@@ -47,7 +47,7 @@ func parseResponsesFailedSSE(t *testing.T, body string) (map[string]any, map[str
 	require.NoError(t, json.Unmarshal([]byte(jsonStr), &parsed), "data must be valid JSON: %s", jsonStr)
 
 	assert.Equal(t, "response.failed", parsed["type"])
-	// 故意不发 sequence_number，避免与后续真实事件的序号冲突。
+	//
 	_, hasSeq := parsed["sequence_number"]
 	assert.False(t, hasSeq, "synthetic event must not emit sequence_number")
 
@@ -77,7 +77,7 @@ func TestOpenAIHandleStreamingAwareError_ResponsesStreamingEmitsResponseFailed(t
 	assert.Equal(t, "Concurrency limit exceeded for user, please retry later", errObj["message"])
 }
 
-// 当 setOpsRequestContext 写过 model，合成事件应回填该字段（与 codebase 已有 makeResponsesCompletedEvent 对齐）。
+//
 func TestOpenAIHandleStreamingAwareError_ResponsesStreamingIncludesModel(t *testing.T) {
 	c, w := newGinContextForEndpoint(t, EndpointResponses)
 	setOpsRequestContext(c, "gpt-5.5", true)
@@ -89,7 +89,7 @@ func TestOpenAIHandleStreamingAwareError_ResponsesStreamingIncludesModel(t *test
 	assert.Equal(t, "gpt-5.5", resp["model"])
 }
 
-// 没有 model 时 model 字段不应出现（避免发空字符串污染下游解析）。
+//
 func TestOpenAIHandleStreamingAwareError_ResponsesStreamingOmitsEmptyModel(t *testing.T) {
 	c, w := newGinContextForEndpoint(t, EndpointResponses)
 	h := &OpenAIGatewayHandler{}
@@ -100,7 +100,7 @@ func TestOpenAIHandleStreamingAwareError_ResponsesStreamingOmitsEmptyModel(t *te
 	assert.False(t, hasModel, "model field must be omitted when unknown")
 }
 
-// 当 request.Context 携带 ctxkey.RequestID 时，合成 id 应与之关联，便于和 server log 串起来。
+//
 func TestOpenAIHandleStreamingAwareError_ResponsesStreamingReusesRequestID(t *testing.T) {
 	c, w := newGinContextForEndpoint(t, EndpointResponses)
 	c.Request = c.Request.WithContext(
@@ -114,20 +114,20 @@ func TestOpenAIHandleStreamingAwareError_ResponsesStreamingReusesRequestID(t *te
 	assert.Equal(t, "resp_fd277bc5ff7e45d18aa9f54e1df318f1", resp["id"])
 }
 
-// 与旧分支的 TestOpenAIHandleStreamingAwareError_JSONEscaping 对齐：
-// 新的 response.failed payload 也必须正确转义 message 里的特殊字符，
-// 否则下游 SDK 解析 JSON 时会失败。
+//
+//
+//
 func TestOpenAIHandleStreamingAwareError_ResponsesStreamingJSONEscaping(t *testing.T) {
 	cases := []struct {
 		name    string
 		errType string
 		message string
 	}{
-		{"双引号", "server_error", `upstream returned "invalid" response`},
-		{"反斜杠", "server_error", `path C:\Users\test\file.txt not found`},
-		{"双引号+反斜杠", "upstream_error", `error parsing "key\value": unexpected token`},
-		{"换行与制表", "server_error", "line1\nline2\ttab"},
-		{"普通", "upstream_error", "Upstream service temporarily unavailable"},
+		{"double quotes", "server_error", `upstream returned "invalid" response`},
+		{"backslash", "server_error", `path C:\Users\test\file.txt not found`},
+		{"double quotes + backslash", "upstream_error", `error parsing "key\value": unexpected token`},
+		{"newline and tab", "server_error", "line1\nline2\ttab"},
+		{"normal", "upstream_error", "Upstream service temporarily unavailable"},
 	}
 
 	for _, tc := range cases {
@@ -137,7 +137,7 @@ func TestOpenAIHandleStreamingAwareError_ResponsesStreamingJSONEscaping(t *testi
 			h.handleStreamingAwareError(c, http.StatusBadGateway, tc.errType, tc.message, true)
 
 			_, errObj := parseResponsesFailedSSE(t, w.Body.String())
-			assert.Equal(t, tc.message, errObj["message"], "message 必须被原样还原")
+			assert.Equal(t, tc.message, errObj["message"], "message must be preserved as-is")
 		})
 	}
 }
@@ -175,10 +175,10 @@ func TestGatewayHandleStreamingAwareError_MessagesStreamingKeepsLegacy(t *testin
 	assert.True(t, strings.HasPrefix(body, `data: {"type":"error"`), "got: %q", body)
 }
 
-// 项目里 /responses 注册在多组路由：/v1/responses（gateway）、裸 /responses（top-level）、
-// /backend-api/codex/responses（codex direct）。我们 fix 必须覆盖全部，
-// 否则一些客户端走的路径就不会发 response.failed，照样报 stream closed。
-// 这是生产 2026-05-24 ~11:05 UTC user 16 实际命中的 bug。
+//
+// /backend-api/codex/responses（codex direct）。
+//
+// ~11:05 UTC user 16
 func TestInboundIsResponses_CoversAllRoutes(t *testing.T) {
 	cases := []struct {
 		route string
@@ -186,7 +186,7 @@ func TestInboundIsResponses_CoversAllRoutes(t *testing.T) {
 	}{
 		{"/v1/responses", true},
 		{"/v1/responses/compact", true},
-		{"/responses", true}, // <-- 用户 16 实际走这条
+		{"/responses", true}, // <-- user 16 actually takes this path
 		{"/responses/compact", true},
 		{"/backend-api/codex/responses", true},
 		{"/backend-api/codex/responses/compact", true},
@@ -203,17 +203,17 @@ func TestInboundIsResponses_CoversAllRoutes(t *testing.T) {
 	}
 }
 
-// 用 c.Request.URL.Path 作为 fallback（当 c.FullPath() 为空时，例如某些测试 fixture）。
+// ()
 func TestInboundIsResponses_FallsBackToURLPath(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodPost, "/responses", nil)
-	// 这种情况下 c.FullPath() 是 ""，必须 fallback 到 URL.Path
+	// () ""，
 	assert.True(t, inboundIsResponses(c), "URL.Path fallback must work when FullPath is empty")
 }
 
-// 回归生产事故：用户 16 走 /responses 路径，必须发 response.failed。
+//
 func TestOpenAIHandleStreamingAwareError_BareResponsesRouteEmitsResponseFailed(t *testing.T) {
 	c, w := newGinContextForEndpoint(t, "/responses")
 	h := &OpenAIGatewayHandler{}
@@ -231,7 +231,7 @@ func TestSynthesizeResponseID_FallbackUUID(t *testing.T) {
 	c, _ := newGinContextForEndpoint(t, EndpointResponses)
 	id := synthesizeResponseID(c)
 	assert.True(t, strings.HasPrefix(id, "resp_"))
-	// uuid 去掉短横线后 32 hex 字符；前缀 "resp_" 共 37。
+	// uuid "resp_"
 	assert.Len(t, id, 37)
 }
 

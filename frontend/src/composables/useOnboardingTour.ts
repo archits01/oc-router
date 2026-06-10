@@ -77,7 +77,7 @@ export function useOnboardingTour(options: OnboardingOptions) {
   }
 
   /**
-   * 检查元素是否存在，如果不存在则重试
+   * 检查元素YesNo存在，如果不存在则重试
    */
   const ensureElement = async (selector: string, timeout = 5000): Promise<boolean> => {
     const startTime = Date.now()
@@ -92,7 +92,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
   }
 
   const startTour = async (startIndex = 0) => {
-    // 动态获取当前用户角色和步骤
     const isAdmin = userStore.user?.role === 'admin'
     const isSimpleMode = userStore.isSimpleMode
     const steps = isAdmin ? getAdminSteps(t, isSimpleMode) : getUserSteps(t)
@@ -100,7 +99,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
     // 确保 DOM 就绪
     await nextTick()
 
-    // 如果指定了起始步骤，确保元素可见
     const currentStep = steps[startIndex]
     if (currentStep?.element && typeof currentStep.element === 'string') {
       await ensureElement(currentStep.element, TIMING.ELEMENT_TIMEOUT_MS)
@@ -115,16 +113,14 @@ export function useOnboardingTour(options: OnboardingOptions) {
       showProgress: true,
       steps,
       animate: true,
-      allowClose: false, // 禁止点击遮罩关闭
+      allowClose: false, // 禁止点击遮罩Close
       stagePadding: 4,
       popoverClass: 'theme-tour-popover',
       nextBtnText: t('common.next'),
       prevBtnText: t('common.back'),
       doneBtnText: t('common.confirm'),
 
-      // 导航处理
       onNextClick: async (_el, _step, { config, state }) => {
-        // 如果是最后一步，点击则是"完成"
         if (state.activeIndex === (config.steps?.length ?? 0) - 1) {
           markAsSeen()
           driverInstance?.destroy()
@@ -253,7 +249,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
             footerEl.appendChild(rightContainer)
           }
 
-          // 3. 状态更新
           const isLastStep = state.activeIndex === (config.steps?.length ?? 0) - 1
           const activeNextBtn = nextButton || footerEl.querySelector(`.${CLASS_NEXT_BTN}`)
 
@@ -269,12 +264,9 @@ export function useOnboardingTour(options: OnboardingOptions) {
         }
       },
 
-      // 步骤高亮时触发
       onHighlightStarted: async (element, step) => {
-        // 清理之前的监听器
         cleanupClickListener()
 
-        // 尝试等待元素
         if (!element && step.element && typeof step.element === 'string') {
            const exists = await ensureElement(step.element, 8000)
            if (!exists) {
@@ -399,7 +391,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
 
       onDestroyed: () => {
         cleanupClickListener()
-        // 清理全局监听器 (由此处唯一管理)
         if (globalKeyboardHandler) {
           document.removeEventListener('keydown', globalKeyboardHandler, { capture: true })
           globalKeyboardHandler = null
@@ -410,7 +401,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
 
     onboardingStore.setDriverInstance(driverInstance)
 
-    // 添加全局键盘监听器
     globalKeyboardHandler = (e: KeyboardEvent) => {
       if (!driverInstance?.isActive()) return
 
@@ -425,7 +415,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
 
       if (e.key === 'ArrowRight') {
         const target = e.target as HTMLElement
-        // 允许在输入框中使用方向键
         if (['INPUT', 'TEXTAREA'].includes(target?.tagName)) {
            return
         }
@@ -433,7 +422,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
         e.preventDefault()
         e.stopPropagation()
 
-        // 对于交互式步骤，箭头键应该触发交互而非跳过
         const currentIndex = driverInstance!.getActiveIndex() ?? 0
         const currentStep = steps[currentIndex]
 
@@ -443,21 +431,18 @@ export function useOnboardingTour(options: OnboardingOptions) {
             : currentStep.element as HTMLElement
 
           if (targetElement) {
-            // 对于非输入类元素，提示用户需要点击或按Enter
+            // 对于非输入类元素，提示User需要点击或按Enter
             const isClickable = !['INPUT', 'TEXTAREA', 'SELECT'].includes(targetElement.tagName)
             if (isClickable) {
-              // 不自动触发，只是停留提示
               return
             }
           }
         }
 
-        // 非交互式步骤才允许箭头键翻页
         driverInstance!.moveNext()
       }
       else if (e.key === 'Enter') {
         const target = e.target as HTMLElement
-        // 允许在输入框中使用回车
         if (['INPUT', 'TEXTAREA'].includes(target?.tagName)) {
            return
         }
@@ -465,7 +450,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
         e.preventDefault()
         e.stopPropagation()
 
-        // 回车键处理交互式步骤
         const currentIndex = driverInstance!.getActiveIndex() ?? 0
         const currentStep = steps[currentIndex]
 
@@ -486,7 +470,6 @@ export function useOnboardingTour(options: OnboardingOptions) {
       }
       else if (e.key === 'ArrowLeft') {
         const target = e.target as HTMLElement
-        // 允许在输入框中使用方向键
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName) || target?.isContentEditable) {
            return
         }
@@ -531,12 +514,10 @@ export function useOnboardingTour(options: OnboardingOptions) {
       return
     }
 
-    // 简易模式下禁用新手引导
     if (userStore.isSimpleMode) {
       return
     }
 
-    // 只在管理员+标准模式下自动启动
     const isAdmin = userStore.user?.role === 'admin'
     if (!isAdmin) {
       return

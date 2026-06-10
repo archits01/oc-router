@@ -104,7 +104,7 @@ func TestEasyPayRefundRetriesWithTradeNoWhenOutTradeNoNotFound(t *testing.T) {
 		gotForms = append(gotForms, r.PostForm)
 		w.Header().Set("Content-Type", "application/json")
 		if len(gotForms) == 1 {
-			_, _ = w.Write([]byte(`{"code":0,"msg":"订单编号不存在！"}`))
+			_, _ = w.Write([]byte(`{"code":0,"msg":"订单编号does not exist！"}`))
 			return
 		}
 		_, _ = w.Write([]byte(`{"code":1,"msg":"ok"}`))

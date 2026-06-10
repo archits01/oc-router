@@ -31,27 +31,27 @@ func TestOpenAIHandleStreamingAwareError_JSONEscaping(t *testing.T) {
 		message string
 	}{
 		{
-			name:    "包含双引号的消息",
+			name:    "message containing double quotes",
 			errType: "server_error",
 			message: `upstream returned "invalid" response`,
 		},
 		{
-			name:    "包含反斜杠的消息",
+			name:    "message containing backslash",
 			errType: "server_error",
 			message: `path C:\Users\test\file.txt not found`,
 		},
 		{
-			name:    "包含双引号和反斜杠的消息",
+			name:    "message containing double quotes and backslash",
 			errType: "upstream_error",
 			message: `error parsing "key\value": unexpected token`,
 		},
 		{
-			name:    "包含换行符的消息",
+			name:    "message containing newline",
 			errType: "server_error",
 			message: "line1\nline2\ttab",
 		},
 		{
-			name:    "普通消息",
+			name:    "normal message",
 			errType: "upstream_error",
 			message: "Upstream service temporarily unavailable",
 		},
@@ -69,25 +69,24 @@ func TestOpenAIHandleStreamingAwareError_JSONEscaping(t *testing.T) {
 
 			body := w.Body.String()
 
-			// 验证 SSE 格式：event: error\ndata: {JSON}\n\n
-			assert.True(t, strings.HasPrefix(body, "event: error\n"), "应以 'event: error\\n' 开头")
-			assert.True(t, strings.HasSuffix(body, "\n\n"), "应以 '\\n\\n' 结尾")
+			// \ndata: {JSON}\n\n
+			assert.True(t, strings.HasPrefix(body, "event: error\n"), "should start with 'event: error\\n'")
+			assert.True(t, strings.HasSuffix(body, "\n\n"), "should end with '\\n\\n'")
 
-			// 提取 data 部分
+			//
 			lines := strings.Split(strings.TrimSuffix(body, "\n\n"), "\n")
-			require.Len(t, lines, 2, "应有 event 行和 data 行")
+			require.Len(t, lines, 2, "should have event line and data line")
 			dataLine := lines[1]
-			require.True(t, strings.HasPrefix(dataLine, "data: "), "第二行应以 'data: ' 开头")
+			require.True(t, strings.HasPrefix(dataLine, "data: "), "second line should start with 'data: '")
 			jsonStr := strings.TrimPrefix(dataLine, "data: ")
 
-			// 验证 JSON 合法性
+			//
 			var parsed map[string]any
 			err := json.Unmarshal([]byte(jsonStr), &parsed)
-			require.NoError(t, err, "JSON 应能被成功解析，原始 JSON: %s", jsonStr)
+			require.NoError(t, err, "JSON should be parsed successfully, raw JSON: %s", jsonStr)
 
-			// 验证结构
 			errorObj, ok := parsed["error"].(map[string]any)
-			require.True(t, ok, "应包含 error 对象")
+			require.True(t, ok, "should contain error object")
 			assert.Equal(t, tt.errType, errorObj["type"])
 			assert.Equal(t, tt.message, errorObj["message"])
 		})
@@ -121,7 +120,7 @@ func TestOpenAIHandleStreamingAwareError_NonStreaming(t *testing.T) {
 	h := &OpenAIGatewayHandler{}
 	h.handleStreamingAwareError(c, http.StatusBadGateway, "upstream_error", "test error", false)
 
-	// 非流式应返回 JSON 响应
+	//
 	assert.Equal(t, http.StatusBadGateway, w.Code)
 
 	var parsed map[string]any
@@ -175,10 +174,10 @@ func TestOpenAIEnsureForwardErrorResponse_WritesFallbackWhenNotWritten(t *testin
 	assert.Equal(t, "Upstream request failed", errorObj["message"])
 }
 
-// Writer 已写后 ensureForwardErrorResponse 必须仍然把错误信息以 SSE
-// 形式追加给客户端（streamStarted 强制 true）。
-// 这是 case B 修复：旧实现遇到 Writer.Written 直接 return false，
-// 客户端只能拿到 silent EOF；Codex CLI 报 "stream closed before response.completed"。
+// Writer
+//
+//
+// "stream closed before response.completed"。
 func TestOpenAIEnsureForwardErrorResponse_AppendsSSEAfterWritten(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
@@ -190,21 +189,21 @@ func TestOpenAIEnsureForwardErrorResponse_AppendsSSEAfterWritten(t *testing.T) {
 	wrote := h.ensureForwardErrorResponse(c, false)
 
 	require.True(t, wrote, "must attempt to communicate the failure to the client via SSE")
-	// 状态码改不了（headers 已 flush），但 body 应该追加 SSE 错误事件。
+	//
 	require.Equal(t, http.StatusTeapot, w.Code)
 	assert.Contains(t, w.Body.String(), "already written")
-	// 非 /responses 路径走 legacy event: error 分支。
+	//
 	assert.Contains(t, w.Body.String(), "event: error\n")
 }
 
-// case B 回归测试：/responses 路径，Writer 已被写过（模拟 ping flushed），
-// ensureForwardErrorResponse 必须发 response.failed，让 Codex 收到合规终止事件。
+// case B
+// ensureForwardErrorResponse
 func TestOpenAIEnsureForwardErrorResponse_ResponsesRouteAfterWrittenEmitsResponseFailed(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodPost, EndpointResponses, nil)
-	// 模拟 ping 已 flush 的状态：Writer 已写过 1 个字节
+	//
 	_, _ = c.Writer.WriteString(":\n\n")
 
 	h := &OpenAIGatewayHandler{}
@@ -296,8 +295,8 @@ func TestOpenAIRecoverResponsesPanic_NoPanicNoWrite(t *testing.T) {
 	assert.Equal(t, "", w.Body.String())
 }
 
-// Panic 在已 flush 的 /v1/responses 流中：状态码无法改（已 written），
-// 但 body 应追加 response.failed 让客户端识别为合规截断而不是 silent EOF。
+// Panic
+//
 func TestOpenAIRecoverResponsesPanic_AppendsResponseFailedAfterWritten(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -498,7 +497,6 @@ func TestOpenAIResponses_MissingDependencies_ReturnsServiceUnavailable(t *testin
 		Concurrency: 1,
 	})
 
-	// 故意使用未初始化依赖，验证快速失败而不是崩溃。
 	h := &OpenAIGatewayHandler{}
 	require.NotPanics(t, func() {
 		h.Responses(c)
@@ -830,7 +828,7 @@ func TestOpenAIResponsesWebSocket_ContentModerationBlocksFirstFrame(t *testing.T
 		APIKeys:      []string{"sk-test"},
 		SampleRate:   100,
 		AllGroups:    true,
-		BlockMessage: "内容审计测试阻断",
+		BlockMessage: "content audit test block",
 	}
 	rawCfg, err := json.Marshal(cfg)
 	require.NoError(t, err)
@@ -895,12 +893,12 @@ func TestOpenAIResponsesWebSocket_ContentModerationBlocksFirstFrame(t *testing.T
 	cancelRead()
 	if readErr == nil {
 		require.Contains(t, string(payload), "content_policy_violation")
-		require.Contains(t, string(payload), "内容审计测试阻断")
+		require.Contains(t, string(payload), "content audit test block")
 	} else {
 		var closeErr coderws.CloseError
 		require.ErrorAs(t, readErr, &closeErr)
 		require.Equal(t, coderws.StatusPolicyViolation, closeErr.Code)
-		require.Contains(t, closeErr.Reason, "内容审计测试阻断")
+		require.Contains(t, closeErr.Reason, "content audit test block")
 	}
 	var logs []service.ContentModerationLog
 	require.Eventually(t, func() bool {
@@ -935,10 +933,10 @@ func TestOpenAIResponsesWebSocket_PassthroughUsageLogInfersReasoningFromInitialR
 	})
 
 	require.Equal(t, "gpt-5.4", gjson.GetBytes(got.upstreamFirstPayload, "model").String(),
-		"上游首帧应使用渠道映射后的模型")
+		"upstream first frame should use channel-mapped model")
 	require.NotNil(t, got.log.ReasoningEffort)
 	require.Equal(t, "xhigh", *got.log.ReasoningEffort,
-		"usage log reasoning effort 必须使用渠道映射前首帧模型后缀推导")
+		"usage log reasoning effort must be derived from pre-channel-mapping first frame model suffix")
 }
 
 func TestOpenAIResponsesWebSocket_PassthroughUsageLogLeavesUserAgentNilWhenMissing(t *testing.T) {
@@ -947,7 +945,7 @@ func TestOpenAIResponsesWebSocket_PassthroughUsageLogLeavesUserAgentNilWhenMissi
 		userAgent:    testStringPtr(""),
 	})
 
-	require.Nil(t, got.log.UserAgent, "空入站 User-Agent 不应由上游握手 UA 或默认 UA 兜底")
+	require.Nil(t, got.log.UserAgent, "empty inbound User-Agent should not be filled by upstream handshake UA or default UA")
 	require.NotNil(t, got.log.ReasoningEffort)
 	require.Equal(t, "medium", *got.log.ReasoningEffort)
 }
@@ -972,7 +970,7 @@ func TestSetOpenAIClientTransportWS(t *testing.T) {
 	require.Equal(t, service.OpenAIClientTransportWS, service.GetOpenAIClientTransport(c))
 }
 
-// TestOpenAIHandler_GjsonExtraction 验证 gjson 从请求体中提取 model/stream 的正确性
+// TestOpenAIHandler_GjsonExtraction
 func TestOpenAIHandler_GjsonExtraction(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -980,10 +978,10 @@ func TestOpenAIHandler_GjsonExtraction(t *testing.T) {
 		wantModel  string
 		wantStream bool
 	}{
-		{"正常提取", `{"model":"gpt-4","stream":true,"input":"hello"}`, "gpt-4", true},
+		{"normal extraction", `{"model":"gpt-4","stream":true,"input":"hello"}`, "gpt-4", true},
 		{"stream false", `{"model":"gpt-4","stream":false}`, "gpt-4", false},
-		{"无 stream 字段", `{"model":"gpt-4"}`, "gpt-4", false},
-		{"model 缺失", `{"stream":true}`, "", true},
+		{"no stream field", `{"model":"gpt-4"}`, "gpt-4", false},
+		{"model missing", `{"stream":true}`, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1000,31 +998,31 @@ func TestOpenAIHandler_GjsonExtraction(t *testing.T) {
 	}
 }
 
-// TestOpenAIHandler_GjsonValidation 验证修复后的 JSON 合法性和类型校验
+// TestOpenAIHandler_GjsonValidation
 func TestOpenAIHandler_GjsonValidation(t *testing.T) {
-	// 非法 JSON 被 gjson.ValidBytes 拦截
+	//
 	require.False(t, gjson.ValidBytes([]byte(`{invalid json`)))
 
-	// model 为数字 → 类型不是 gjson.String，应被拒绝
+	// model →
 	body := []byte(`{"model":123}`)
 	modelResult := gjson.GetBytes(body, "model")
 	require.True(t, modelResult.Exists())
 	require.NotEqual(t, gjson.String, modelResult.Type)
 
-	// model 为 null → 类型不是 gjson.String，应被拒绝
+	// model →
 	body2 := []byte(`{"model":null}`)
 	modelResult2 := gjson.GetBytes(body2, "model")
 	require.True(t, modelResult2.Exists())
 	require.NotEqual(t, gjson.String, modelResult2.Type)
 
-	// stream 为 string → 类型既不是 True 也不是 False，应被拒绝
+	// stream →
 	body3 := []byte(`{"model":"gpt-4","stream":"true"}`)
 	streamResult := gjson.GetBytes(body3, "stream")
 	require.True(t, streamResult.Exists())
 	require.NotEqual(t, gjson.True, streamResult.Type)
 	require.NotEqual(t, gjson.False, streamResult.Type)
 
-	// stream 为 int → 同上
+	// stream →
 	body4 := []byte(`{"model":"gpt-4","stream":1}`)
 	streamResult2 := gjson.GetBytes(body4, "stream")
 	require.True(t, streamResult2.Exists())
@@ -1032,9 +1030,9 @@ func TestOpenAIHandler_GjsonValidation(t *testing.T) {
 	require.NotEqual(t, gjson.False, streamResult2.Type)
 }
 
-// TestOpenAIHandler_InstructionsInjection 验证 instructions 的 gjson/sjson 注入逻辑
+// TestOpenAIHandler_InstructionsInjection
 func TestOpenAIHandler_InstructionsInjection(t *testing.T) {
-	// 测试 1：无 instructions → 注入
+	// →
 	body := []byte(`{"model":"gpt-4"}`)
 	existing := gjson.GetBytes(body, "instructions").String()
 	require.Empty(t, existing)
@@ -1042,18 +1040,18 @@ func TestOpenAIHandler_InstructionsInjection(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "test instruction", gjson.GetBytes(newBody, "instructions").String())
 
-	// 测试 2：已有 instructions → 不覆盖
+	// →
 	body2 := []byte(`{"model":"gpt-4","instructions":"existing"}`)
 	existing2 := gjson.GetBytes(body2, "instructions").String()
 	require.Equal(t, "existing", existing2)
 
-	// 测试 3：空白 instructions → 注入
+	// →
 	body3 := []byte(`{"model":"gpt-4","instructions":"   "}`)
 	existing3 := strings.TrimSpace(gjson.GetBytes(body3, "instructions").String())
 	require.Empty(t, existing3)
 
-	// 测试 4：sjson.SetBytes 返回错误时不应 panic
-	// 正常 JSON 不会产生 sjson 错误，验证返回值被正确处理
+	//
+	//
 	validBody := []byte(`{"model":"gpt-4"}`)
 	result, setErr := sjson.SetBytes(validBody, "instructions", "hello")
 	require.NoError(t, setErr)
@@ -1396,12 +1394,12 @@ func TestOpenAIResponsesWebSocket_FailoverOnUpstreamUsageLimitEvent(t *testing.T
 	select {
 	case <-firstHitCh:
 	case <-time.After(3 * time.Second):
-		t.Fatal("等待第一个上游收到首帧超时")
+		t.Fatal("timed out waiting for first upstream to receive first frame")
 	}
 	select {
 	case <-secondHitCh:
 	case <-time.After(3 * time.Second):
-		t.Fatal("等待第二个上游收到重放首帧超时")
+		t.Fatal("timed out waiting for second upstream to receive replayed first frame")
 	}
 	require.Equal(t, []int64{int64(9902)}, accountRepo.rateLimitedIDs)
 }
@@ -1588,21 +1586,21 @@ func runOpenAIResponsesWebSocketUsageLogCase(t *testing.T, tc openAIResponsesWSU
 	case usageLog = <-usageRepo.created:
 		require.NotNil(t, usageLog)
 	case <-time.After(3 * time.Second):
-		t.Fatal("等待 WebSocket usage log 写入超时")
+		t.Fatal("timed out waiting for WebSocket usage log write")
 	}
 
 	var upstreamFirstPayload []byte
 	select {
 	case upstreamFirstPayload = <-upstreamPayloadCh:
 	case <-time.After(3 * time.Second):
-		t.Fatal("等待上游 WebSocket 首帧超时")
+		t.Fatal("timed out waiting for upstream WebSocket first frame")
 	}
 
 	select {
 	case upstreamErr := <-upstreamErrCh:
 		require.NoError(t, upstreamErr)
 	case <-time.After(3 * time.Second):
-		t.Fatal("等待上游 WebSocket 结束超时")
+		t.Fatal("timed out waiting for upstream WebSocket to close")
 	}
 
 	return openAIResponsesWSUsageLogResult{

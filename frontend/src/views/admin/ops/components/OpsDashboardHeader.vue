@@ -176,7 +176,6 @@ function handleGroupChange(val: string | number | boolean | null) {
 function handleTimeRangeChange(val: string | number | boolean | null) {
   const newValue = String(val || '1h')
   if (newValue === 'custom') {
-    // 初始化为最近1小时
     const now = new Date()
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
     customStartTimeInput.value = oneHourAgo.toISOString().slice(0, 16)
@@ -200,8 +199,8 @@ function handleCustomTimeRangeConfirm() {
 
 function handleCustomTimeRangeCancel() {
   showCustomTimeRangeDialog.value = false
-  // 如果当前不是 custom，不需要做任何事
-  // 如果当前是 custom，保持不变
+  // 如果当前不Yes custom，不需要做任何事
+  // 如果当前Yes custom，保持不变
 }
 
 function handleQueryModeChange(val: string | number | boolean | null) {

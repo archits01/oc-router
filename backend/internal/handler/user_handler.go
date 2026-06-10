@@ -44,8 +44,8 @@ func NewUserHandler(
 }
 
 // GetMyPlatformQuotas GET /user/platform-quotas
-// 返回当前 JWT 用户的 platform quota 状态。
-// D14: 对每条记录逐档判断窗口过期，过期档位 usage=0、window_resets_at=null（不写 DB）
+//
+// D14: =0、window_resets_at=null（
 func (h *UserHandler) GetMyPlatformQuotas(c *gin.Context) {
 	subject, ok := middleware2.GetAuthSubjectFromContext(c)
 	if !ok {

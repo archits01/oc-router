@@ -23,13 +23,9 @@ const emit = defineEmits<{
 const loading = ref(false)
 const saving = ref(false)
 
-// 运行时设置
 const runtimeSettings = ref<OpsAlertRuntimeSettings | null>(null)
-// 邮件通知配置
 const emailConfig = ref<EmailNotificationConfig | null>(null)
-// 高级设置
 const advancedSettings = ref<OpsAdvancedSettings | null>(null)
-// 指标阈值配置
 const metricThresholds = ref<OpsMetricThresholds>({
   sla_percent_min: 99.5,
   ttft_p99_ms_max: 500,
@@ -37,7 +33,6 @@ const metricThresholds = ref<OpsMetricThresholds>({
   upstream_error_rate_percent_max: 5
 })
 
-// 加载所有配置
 async function loadAllSettings() {
   loading.value = true
   try {
@@ -50,11 +45,10 @@ async function loadAllSettings() {
     runtimeSettings.value = runtime
     emailConfig.value = email
     advancedSettings.value = advanced
-    // 兼容旧 payload：后端未返回该字段时补默认值，保证表单可绑定
+    // 兼容旧 payload：后端未Back该字段时补默认值，保证表单可绑定
     if (advancedSettings.value && !advancedSettings.value.openai_account_quota_auto_pause) {
       advancedSettings.value.openai_account_quota_auto_pause = { default_threshold_5h: 0, default_threshold_7d: 0 }
     }
-    // 如果后端返回了阈值，使用后端的值；否则保持默认值
     if (thresholds && Object.keys(thresholds).length > 0) {
         metricThresholds.value = {
           sla_percent_min: thresholds.sla_percent_min ?? 99.5,
@@ -71,18 +65,15 @@ async function loadAllSettings() {
   }
 }
 
-// 监听弹窗打开
 watch(() => props.show, (show) => {
   if (show) {
     loadAllSettings()
   }
 })
 
-// 邮件输入
 const alertRecipientInput = ref('')
 const reportRecipientInput = ref('')
 
-// 严重级别选项
 const severityOptions: Array<{ value: AlertSeverity | ''; label: string }> = [
   { value: '', label: t('admin.ops.email.minSeverityAll') },
   { value: 'critical', label: t('common.critical') },
@@ -90,12 +81,10 @@ const severityOptions: Array<{ value: AlertSeverity | ''; label: string }> = [
   { value: 'info', label: t('common.info') }
 ]
 
-// 验证邮箱
 function isValidEmailAddress(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-// 添加收件人
 function addRecipient(target: 'alert' | 'report') {
   if (!emailConfig.value) return
   const raw = (target === 'alert' ? alertRecipientInput.value : reportRecipientInput.value).trim()
@@ -115,7 +104,6 @@ function addRecipient(target: 'alert' | 'report') {
   else reportRecipientInput.value = ''
 }
 
-// 移除收件人
 function removeRecipient(target: 'alert' | 'report', email: string) {
   if (!emailConfig.value) return
   const list = target === 'alert' ? emailConfig.value.alert.recipients : emailConfig.value.report.recipients
@@ -145,11 +133,9 @@ const quotaAutoPause7dPercent = computed<number | null>({
   }
 })
 
-// 验证
 const validation = computed(() => {
   const errors: string[] = []
 
-  // 验证运行时设置
   if (runtimeSettings.value) {
     const evalSeconds = runtimeSettings.value.evaluation_interval_seconds
     if (!Number.isFinite(evalSeconds) || evalSeconds < 1 || evalSeconds > 86400) {
@@ -157,9 +143,8 @@ const validation = computed(() => {
     }
   }
 
-  // 邮件配置: 启用但无收件人时不阻断保存, 保存时会自动禁用
+  // 邮件配置: Enable但无收件人时不阻断Save, Save时会自动Disable
 
-  // 验证高级设置
   if (advancedSettings.value) {
     const { error_log_retention_days, minute_metrics_retention_days, hourly_metrics_retention_days } = advancedSettings.value.data_retention
     if (error_log_retention_days < 0 || error_log_retention_days > 365) {
@@ -178,7 +163,6 @@ const validation = computed(() => {
     }
   }
 
-  // 验证指标阈值
   if (metricThresholds.value.sla_percent_min != null && (metricThresholds.value.sla_percent_min < 0 || metricThresholds.value.sla_percent_min > 100)) {
     errors.push(t('admin.ops.settings.validation.slaMinPercentRange'))
   }
@@ -195,7 +179,6 @@ const validation = computed(() => {
   return { valid: errors.length === 0, errors }
 })
 
-// 保存所有配置
 async function saveAllSettings() {
   if (!validation.value.valid) {
     appStore.showError(validation.value.errors[0])
@@ -204,7 +187,6 @@ async function saveAllSettings() {
 
   saving.value = true
   try {
-    // 无收件人时自动禁用邮件通知
     if (emailConfig.value) {
       if (emailConfig.value.alert.enabled && emailConfig.value.alert.recipients.length === 0) {
         emailConfig.value.alert.enabled = false
@@ -430,7 +412,7 @@ async function saveAllSettings() {
         </div>
       </div>
 
-      <!-- 高级设置 -->
+      <!-- 高级Settings -->
       <details class="rounded-2xl bg-gray-50 dark:bg-dark-700/50">
         <summary class="cursor-pointer p-4 text-sm font-semibold text-gray-900 dark:text-white">
           {{ t('admin.ops.settings.advancedSettings') }}

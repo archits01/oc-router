@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// stubJWTUserRepo 实现 UserRepository 的最小子集，仅支持 GetByID。
+// stubJWTUserRepo
 type stubJWTUserRepo struct {
 	service.UserRepository
 	users map[int64]*service.User
@@ -50,8 +50,8 @@ func (r *recordingActivityToucher) TouchLastActiveForUser(_ context.Context, use
 	r.userIDs = append(r.userIDs, user.ID)
 }
 
-// newJWTTestEnv 创建 JWT 认证中间件测试环境。
-// 返回 gin.Engine（已注册 JWT 中间件）和 AuthService（用于生成 Token）。
+// newJWTTestEnv
+//
 func newJWTTestEnv(users map[int64]*service.User) (*gin.Engine, *service.AuthService) {
 	gin.SetMode(gin.TestMode)
 
@@ -233,7 +233,7 @@ func TestJWTAuth_TamperedToken(t *testing.T) {
 }
 
 func TestJWTAuth_UserNotFound(t *testing.T) {
-	// 使用 user ID=1 的 token，但 repo 中没有该用户
+	// =1
 	fakeUser := &service.User{
 		ID:           999,
 		Email:        "ghost@example.com",
@@ -241,7 +241,7 @@ func TestJWTAuth_UserNotFound(t *testing.T) {
 		Status:       service.StatusActive,
 		TokenVersion: 1,
 	}
-	// 创建环境时不注入此用户，这样 GetByID 会失败
+	//
 	router, authSvc := newJWTTestEnv(map[int64]*service.User{})
 
 	token, err := authSvc.GenerateToken(fakeUser)
@@ -283,7 +283,7 @@ func TestJWTAuth_UserInactive(t *testing.T) {
 }
 
 func TestJWTAuth_TokenVersionMismatch(t *testing.T) {
-	// Token 生成时 TokenVersion=1，但数据库中用户已更新为 TokenVersion=2（密码修改）
+	// Token =1，=2（
 	userForToken := &service.User{
 		ID:           1,
 		Email:        "test@example.com",

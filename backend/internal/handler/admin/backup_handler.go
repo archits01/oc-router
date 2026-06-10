@@ -19,7 +19,7 @@ func NewBackupHandler(backupService *service.BackupService, userService *service
 	}
 }
 
-// ─── S3 配置 ───
+// ─── S3 ───
 
 func (h *BackupHandler) GetS3Config(c *gin.Context) {
 	cfg, err := h.backupService.GetS3Config(c.Request.Context())
@@ -58,7 +58,7 @@ func (h *BackupHandler) TestS3Connection(c *gin.Context) {
 	response.Success(c, gin.H{"ok": true, "message": "connection successful"})
 }
 
-// ─── 定时备份 ───
+// ─── ───
 
 func (h *BackupHandler) GetSchedule(c *gin.Context) {
 	cfg, err := h.backupService.GetSchedule(c.Request.Context())
@@ -83,7 +83,7 @@ func (h *BackupHandler) UpdateSchedule(c *gin.Context) {
 	response.Success(c, cfg)
 }
 
-// ─── 备份操作 ───
+// ─── ───
 
 type CreateBackupRequest struct {
 	ExpireDays *int `json:"expire_days"` // nil=使用默认值14，0=永不过期
@@ -159,7 +159,7 @@ func (h *BackupHandler) GetDownloadURL(c *gin.Context) {
 	response.Success(c, gin.H{"url": url})
 }
 
-// ─── 恢复操作（需要重新输入管理员密码） ───
+// ─── ───
 
 type RestoreBackupRequest struct {
 	Password string `json:"password" binding:"required"`
@@ -178,14 +178,12 @@ func (h *BackupHandler) RestoreBackup(c *gin.Context) {
 		return
 	}
 
-	// 从上下文获取当前管理员用户 ID
 	sub, ok := middleware.GetAuthSubjectFromContext(c)
 	if !ok {
 		response.Unauthorized(c, "unauthorized")
 		return
 	}
 
-	// 获取管理员用户并验证密码
 	user, err := h.userService.GetByID(c.Request.Context(), sub.UserID)
 	if err != nil {
 		response.ErrorFrom(c, err)

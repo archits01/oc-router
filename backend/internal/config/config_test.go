@@ -1588,7 +1588,7 @@ func TestValidateConfig_OpenAIWSRules(t *testing.T) {
 		return cfg
 	}
 
-	t.Run("sticky response id ttl 兼容旧键回填", func(t *testing.T) {
+	t.Run("sticky response id ttl backward-compatible key backfill", func(t *testing.T) {
 		cfg := buildValid(t)
 		cfg.Gateway.OpenAIWS.StickyResponseIDTTLSeconds = 0
 		cfg.Gateway.OpenAIWS.StickyPreviousResponseTTLSeconds = 7200
@@ -1603,22 +1603,22 @@ func TestValidateConfig_OpenAIWSRules(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name:    "max_conns_per_account 必须为正数",
+			name:    "max_conns_per_account must be positive",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.MaxConnsPerAccount = 0 },
 			wantErr: "gateway.openai_ws.max_conns_per_account",
 		},
 		{
-			name:    "min_idle_per_account 不能为负数",
+			name:    "min_idle_per_account must not be negative",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.MinIdlePerAccount = -1 },
 			wantErr: "gateway.openai_ws.min_idle_per_account",
 		},
 		{
-			name:    "max_idle_per_account 不能为负数",
+			name:    "max_idle_per_account must not be negative",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.MaxIdlePerAccount = -1 },
 			wantErr: "gateway.openai_ws.max_idle_per_account",
 		},
 		{
-			name: "min_idle_per_account 不能大于 max_idle_per_account",
+			name: "min_idle_per_account must not exceed max_idle_per_account",
 			mutate: func(c *Config) {
 				c.Gateway.OpenAIWS.MinIdlePerAccount = 3
 				c.Gateway.OpenAIWS.MaxIdlePerAccount = 2
@@ -1626,7 +1626,7 @@ func TestValidateConfig_OpenAIWSRules(t *testing.T) {
 			wantErr: "gateway.openai_ws.min_idle_per_account must be <= max_idle_per_account",
 		},
 		{
-			name: "max_idle_per_account 不能大于 max_conns_per_account",
+			name: "max_idle_per_account must not exceed max_conns_per_account",
 			mutate: func(c *Config) {
 				c.Gateway.OpenAIWS.MaxConnsPerAccount = 2
 				c.Gateway.OpenAIWS.MinIdlePerAccount = 1
@@ -1635,67 +1635,67 @@ func TestValidateConfig_OpenAIWSRules(t *testing.T) {
 			wantErr: "gateway.openai_ws.max_idle_per_account must be <= max_conns_per_account",
 		},
 		{
-			name:    "dial_timeout_seconds 必须为正数",
+			name:    "dial_timeout_seconds must be positive",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.DialTimeoutSeconds = 0 },
 			wantErr: "gateway.openai_ws.dial_timeout_seconds",
 		},
 		{
-			name:    "read_timeout_seconds 必须为正数",
+			name:    "read_timeout_seconds must be positive",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.ReadTimeoutSeconds = 0 },
 			wantErr: "gateway.openai_ws.read_timeout_seconds",
 		},
 		{
-			name:    "write_timeout_seconds 必须为正数",
+			name:    "write_timeout_seconds must be positive",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.WriteTimeoutSeconds = 0 },
 			wantErr: "gateway.openai_ws.write_timeout_seconds",
 		},
 		{
-			name:    "pool_target_utilization 必须在 (0,1]",
+			name:    "pool_target_utilization must be in (0,1]",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.PoolTargetUtilization = 0 },
 			wantErr: "gateway.openai_ws.pool_target_utilization",
 		},
 		{
-			name:    "queue_limit_per_conn 必须为正数",
+			name:    "queue_limit_per_conn must be positive",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.QueueLimitPerConn = 0 },
 			wantErr: "gateway.openai_ws.queue_limit_per_conn",
 		},
 		{
-			name:    "fallback_cooldown_seconds 不能为负数",
+			name:    "fallback_cooldown_seconds must not be negative",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.FallbackCooldownSeconds = -1 },
 			wantErr: "gateway.openai_ws.fallback_cooldown_seconds",
 		},
 		{
-			name:    "store_disabled_conn_mode 必须为 strict|adaptive|off",
+			name:    "store_disabled_conn_mode must be strict|adaptive|off",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.StoreDisabledConnMode = "invalid" },
 			wantErr: "gateway.openai_ws.store_disabled_conn_mode",
 		},
 		{
-			name:    "ingress_mode_default 必须为 off|ctx_pool|passthrough",
+			name:    "ingress_mode_default must be off|ctx_pool|passthrough",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.IngressModeDefault = "invalid" },
 			wantErr: "gateway.openai_ws.ingress_mode_default",
 		},
 		{
-			name:    "payload_log_sample_rate 必须在 [0,1] 范围内",
+			name:    "payload_log_sample_rate must be in range [0,1]",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.PayloadLogSampleRate = 1.2 },
 			wantErr: "gateway.openai_ws.payload_log_sample_rate",
 		},
 		{
-			name:    "retry_total_budget_ms 不能为负数",
+			name:    "retry_total_budget_ms must not be negative",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.RetryTotalBudgetMS = -1 },
 			wantErr: "gateway.openai_ws.retry_total_budget_ms",
 		},
 		{
-			name:    "lb_top_k 必须为正数",
+			name:    "lb_top_k must be positive",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.LBTopK = 0 },
 			wantErr: "gateway.openai_ws.lb_top_k",
 		},
 		{
-			name:    "sticky_session_ttl_seconds 必须为正数",
+			name:    "sticky_session_ttl_seconds must be positive",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.StickySessionTTLSeconds = 0 },
 			wantErr: "gateway.openai_ws.sticky_session_ttl_seconds",
 		},
 		{
-			name: "sticky_response_id_ttl_seconds 必须为正数",
+			name: "sticky_response_id_ttl_seconds must be positive",
 			mutate: func(c *Config) {
 				c.Gateway.OpenAIWS.StickyResponseIDTTLSeconds = 0
 				c.Gateway.OpenAIWS.StickyPreviousResponseTTLSeconds = 0
@@ -1703,17 +1703,17 @@ func TestValidateConfig_OpenAIWSRules(t *testing.T) {
 			wantErr: "gateway.openai_ws.sticky_response_id_ttl_seconds",
 		},
 		{
-			name:    "sticky_previous_response_ttl_seconds 不能为负数",
+			name:    "sticky_previous_response_ttl_seconds must not be negative",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.StickyPreviousResponseTTLSeconds = -1 },
 			wantErr: "gateway.openai_ws.sticky_previous_response_ttl_seconds",
 		},
 		{
-			name:    "scheduler_score_weights 不能为负数",
+			name:    "scheduler_score_weights must not be negative",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.SchedulerScoreWeights.Queue = -0.1 },
 			wantErr: "gateway.openai_ws.scheduler_score_weights.* must be non-negative",
 		},
 		{
-			name: "scheduler_score_weights 不能全为 0",
+			name: "scheduler_score_weights must not all be 0",
 			mutate: func(c *Config) {
 				c.Gateway.OpenAIWS.SchedulerScoreWeights.Priority = 0
 				c.Gateway.OpenAIWS.SchedulerScoreWeights.Load = 0
@@ -1724,17 +1724,17 @@ func TestValidateConfig_OpenAIWSRules(t *testing.T) {
 			wantErr: "gateway.openai_ws.scheduler_score_weights must not all be zero",
 		},
 		{
-			name:    "sticky_escape_ttft_ms 必须为正数",
+			name:    "sticky_escape_ttft_ms must be positive",
 			mutate:  func(c *Config) { c.Gateway.OpenAIScheduler.StickyEscapeTTFTMs = 0 },
 			wantErr: "gateway.openai_scheduler.sticky_escape_ttft_ms",
 		},
 		{
-			name:    "sticky_escape_error_rate 不能小于 0",
+			name:    "sticky_escape_error_rate must not be less than 0",
 			mutate:  func(c *Config) { c.Gateway.OpenAIScheduler.StickyEscapeErrorRate = -0.1 },
 			wantErr: "gateway.openai_scheduler.sticky_escape_error_rate",
 		},
 		{
-			name:    "sticky_escape_error_rate 不能大于 1",
+			name:    "sticky_escape_error_rate must not be greater than 1",
 			mutate:  func(c *Config) { c.Gateway.OpenAIScheduler.StickyEscapeErrorRate = 1.1 },
 			wantErr: "gateway.openai_scheduler.sticky_escape_error_rate",
 		},
@@ -1763,7 +1763,6 @@ func TestValidateConfig_AutoScaleDisabledIgnoreAutoScaleFields(t *testing.T) {
 	cfg.Gateway.UsageRecord.AutoScaleEnabled = false
 	cfg.Gateway.UsageRecord.WorkerCount = 64
 
-	// 自动扩缩容关闭时，这些字段应被忽略，不应导致校验失败。
 	cfg.Gateway.UsageRecord.AutoScaleMinWorkers = 0
 	cfg.Gateway.UsageRecord.AutoScaleMaxWorkers = 0
 	cfg.Gateway.UsageRecord.AutoScaleUpQueuePercent = 0

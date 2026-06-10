@@ -30,8 +30,8 @@ func TestValidateDingTalkConfig_V1_InternalOnlyRequiresInternalAppType(t *testin
 	require.ErrorIs(t, err, ErrDingTalkV1AppTypeMismatch)
 }
 
-// TestValidateDingTalkConfig_V3_InternalOnlyAllowsEmptyCorpID 验证方案 A：
-// internal_only 策略下，InternalCorpID="" 应通过校验（企业隔离由钉钉 AppType=internal 保证）。
+// TestValidateDingTalkConfig_V3_InternalOnlyAllowsEmptyCorpID
+// internal_only ="" =internal
 func TestValidateDingTalkConfig_V3_InternalOnlyAllowsEmptyCorpID(t *testing.T) {
 	err := ValidateDingTalkConfig(DingTalkConnectConfig{
 		Enabled:               true,

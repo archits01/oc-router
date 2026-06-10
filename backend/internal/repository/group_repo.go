@@ -69,12 +69,10 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		SetModelsListConfig(groupIn.ModelsListConfig).
 		SetRpmLimit(groupIn.RPMLimit)
 
-	// 设置模型路由配置
 	if groupIn.ModelRouting != nil {
 		builder = builder.SetModelRouting(groupIn.ModelRouting)
 	}
 
-	// 设置支持的模型系列（始终设置，空数组表示不限制）
 	builder = builder.SetSupportedModelScopes(groupIn.SupportedModelScopes)
 
 	created, err := builder.Save(ctx)
@@ -145,7 +143,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		SetModelsListConfig(groupIn.ModelsListConfig).
 		SetRpmLimit(groupIn.RPMLimit)
 
-	// 显式处理可空字段：nil 需要 clear，非 nil 需要 set。
+	//
 	if groupIn.DailyLimitUSD != nil {
 		builder = builder.SetDailyLimitUsd(*groupIn.DailyLimitUSD)
 	} else {
@@ -177,27 +175,27 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		builder = builder.ClearImagePrice4k()
 	}
 
-	// 处理 FallbackGroupID：nil 时清除，否则设置
+	//
 	if groupIn.FallbackGroupID != nil {
 		builder = builder.SetFallbackGroupID(*groupIn.FallbackGroupID)
 	} else {
 		builder = builder.ClearFallbackGroupID()
 	}
-	// 处理 FallbackGroupIDOnInvalidRequest：nil 时清除，否则设置
+	//
 	if groupIn.FallbackGroupIDOnInvalidRequest != nil {
 		builder = builder.SetFallbackGroupIDOnInvalidRequest(*groupIn.FallbackGroupIDOnInvalidRequest)
 	} else {
 		builder = builder.ClearFallbackGroupIDOnInvalidRequest()
 	}
 
-	// 处理 ModelRouting：nil 时清除，否则设置
+	//
 	if groupIn.ModelRouting != nil {
 		builder = builder.SetModelRouting(groupIn.ModelRouting)
 	} else {
 		builder = builder.ClearModelRouting()
 	}
 
-	// 处理 SupportedModelScopes（始终设置，空数组表示不限制）
+	//
 	builder = builder.SetSupportedModelScopes(groupIn.SupportedModelScopes)
 
 	updated, err := builder.Save(ctx)
@@ -288,7 +286,7 @@ func (r *groupRepository) ListWithFilters(ctx context.Context, params pagination
 }
 
 func (r *groupRepository) listWithAccountCountSort(ctx context.Context, q *dbent.GroupQuery, params pagination.PaginationParams, total int) ([]service.Group, *pagination.PaginationResult, error) {
-	// 第一步：只查 ID + sort_order（轻量，不做分页 — 需要全量排序 account_count）。
+	// + sort_order（—
 	rows, err := q.Clone().
 		Select(group.FieldID, group.FieldSortOrder).
 		Order(dbent.Asc(group.FieldSortOrder), dbent.Asc(group.FieldID)).
@@ -309,7 +307,7 @@ func (r *groupRepository) listWithAccountCountSort(ctx context.Context, q *dbent
 		entries = append(entries, sortEntry{id: r.ID, sortOrder: r.SortOrder})
 	}
 
-	// 第二步：批量加载 account counts（一次 SQL）。
+	//
 	counts, err := r.loadAccountCounts(ctx, groupIDs)
 	if err != nil {
 		return nil, nil, err
@@ -321,7 +319,7 @@ func (r *groupRepository) listWithAccountCountSort(ctx context.Context, q *dbent
 		}
 	}
 
-	// 第三步：Go 侧排序（数据量 = Group 总数，通常 < 200，安全）。
+	// = Group < 200，
 	sortOrder := params.NormalizedSortOrder(pagination.SortOrderDesc)
 	tieCmp := func(a, b sortEntry) bool {
 		if a.sortOrder == b.sortOrder {
@@ -339,7 +337,7 @@ func (r *groupRepository) listWithAccountCountSort(ctx context.Context, q *dbent
 		return entries[i].accountCount > entries[j].accountCount
 	})
 
-	// 第四步：分页，只加载当前页需要的完整 Group。
+	//
 	page := paginateSlice(entries, params)
 	if len(page) == 0 {
 		return nil, paginationResultFromTotal(int64(total), params), nil
@@ -492,8 +490,8 @@ func (r *groupRepository) ExistsByName(ctx context.Context, name string) (bool, 
 	return r.client.Group.Query().Where(group.NameEQ(name)).Exist(ctx)
 }
 
-// ExistsByIDs 批量检查分组是否存在（仅检查未软删除记录）。
-// 返回结构：map[groupID]exists。
+// ExistsByIDs
+// [groupID]exists。
 func (r *groupRepository) ExistsByIDs(ctx context.Context, ids []int64) (map[int64]bool, error) {
 	result := make(map[int64]bool, len(ids))
 	if len(ids) == 0 {
@@ -572,8 +570,7 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 	}
 	groupSvc := groupEntityToService(g)
 
-	// 使用 ent 事务统一包裹：避免手工基于 *sql.Tx 构造 ent client 带来的驱动断言问题，
-	// 同时保证级联删除的原子性。
+	// *sql.Tx
 	tx, err := r.client.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return nil, err
@@ -585,10 +582,10 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 		exec = tx.Client()
 		txClient = exec
 	}
-	// err 为 dbent.ErrTxStarted 时，复用当前 client 参与同一事务。
+	// err
 
 	// Lock the group row to avoid concurrent writes while we cascade.
-	// 这里使用 exec.QueryContext 手动扫描，确保同一事务内加锁并能区分"未找到"与其他错误。
+	// ""
 	rows, err := exec.QueryContext(ctx, "SELECT id FROM groups WHERE id = $1 AND deleted_at IS NULL FOR UPDATE", id)
 	if err != nil {
 		return nil, err
@@ -612,7 +609,6 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 
 	var affectedUserIDs []int64
 	if groupSvc.IsSubscriptionType() {
-		// 只查询未软删除的订阅，避免通知已取消订阅的用户
 		rows, err := exec.QueryContext(ctx, "SELECT user_id FROM user_subscriptions WHERE group_id = $1 AND deleted_at IS NULL", id)
 		if err != nil {
 			return nil, err
@@ -632,14 +628,14 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 			return nil, err
 		}
 
-		// 软删除订阅：设置 deleted_at 而非硬删除
+		//
 		if _, err := exec.ExecContext(ctx, "UPDATE user_subscriptions SET deleted_at = NOW() WHERE group_id = $1 AND deleted_at IS NULL", id); err != nil {
 			return nil, err
 		}
 	}
 
 	// 2. Remove the group id from user_allowed_groups join table.
-	// Legacy users.allowed_groups 列已弃用，不再同步。
+	// Legacy users.allowed_groups
 	if _, err := exec.ExecContext(ctx, "DELETE FROM user_allowed_groups WHERE group_id = $1", id); err != nil {
 		return nil, err
 	}
@@ -673,7 +669,7 @@ type groupAccountCounts struct {
 }
 
 const (
-	// 分组页的"可用"账号数必须与账号仓储的 ListSchedulableByGroupID 过滤口径一致。
+	// ""
 	groupAccountAvailableSQL = `a.deleted_at IS NULL
 				AND a.status = 'active'
 				AND a.schedulable = true
@@ -682,7 +678,7 @@ const (
 				AND (a.overload_until IS NULL OR a.overload_until <= NOW())
 				AND (a.temp_unschedulable_until IS NULL OR a.temp_unschedulable_until <= NOW())`
 
-	// 这里沿用历史字段名 RateLimitedAccountCount，但统计的是会让账号暂时退出调度的时间窗口。
+	//
 	groupAccountTemporarilyLimitedSQL = `a.deleted_at IS NULL
 				AND a.status = 'active'
 				AND a.schedulable = true
@@ -737,7 +733,7 @@ func (r *groupRepository) loadAccountCounts(ctx context.Context, groupIDs []int6
 	return counts, nil
 }
 
-// GetAccountIDsByGroupIDs 获取多个分组的所有账号 ID（去重）
+// GetAccountIDsByGroupIDs
 func (r *groupRepository) GetAccountIDsByGroupIDs(ctx context.Context, groupIDs []int64) ([]int64, error) {
 	if len(groupIDs) == 0 {
 		return nil, nil
@@ -768,13 +764,13 @@ func (r *groupRepository) GetAccountIDsByGroupIDs(ctx context.Context, groupIDs 
 	return accountIDs, nil
 }
 
-// BindAccountsToGroup 将多个账号绑定到指定分组（批量插入，忽略已存在的绑定）
+// BindAccountsToGroup
 func (r *groupRepository) BindAccountsToGroup(ctx context.Context, groupID int64, accountIDs []int64) error {
 	if len(accountIDs) == 0 {
 		return nil
 	}
 
-	// 使用 INSERT ... ON CONFLICT DO NOTHING 忽略已存在的绑定
+	//
 	_, err := r.sql.ExecContext(
 		ctx,
 		`INSERT INTO account_groups (account_id, group_id, priority, created_at)
@@ -787,7 +783,6 @@ func (r *groupRepository) BindAccountsToGroup(ctx context.Context, groupID int64
 		return err
 	}
 
-	// 发送调度器事件
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupID, nil); err != nil {
 		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue bind accounts to group failed: group=%d err=%v", groupID, err)
 	}
@@ -795,13 +790,13 @@ func (r *groupRepository) BindAccountsToGroup(ctx context.Context, groupID int64
 	return nil
 }
 
-// UpdateSortOrders 批量更新分组排序
+// UpdateSortOrders
 func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []service.GroupSortOrderUpdate) error {
 	if len(updates) == 0 {
 		return nil
 	}
 
-	// 去重后保留最后一次排序值，避免重复 ID 造成 CASE 分支冲突。
+	//
 	sortOrderByID := make(map[int64]int, len(updates))
 	groupIDs := make([]int64, 0, len(updates))
 	for _, u := range updates {
@@ -817,7 +812,7 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 		return nil
 	}
 
-	// 与旧实现保持一致：任何不存在/已删除的分组都返回 not found，且不执行更新。
+	//
 	var existingCount int
 	if err := scanSingleRow(
 		ctx,

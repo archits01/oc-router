@@ -14,10 +14,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// 测试用 TTL 配置（15 分钟，与默认值一致）
+//
 const testSlotTTLMinutes = 15
 
-// 测试用 TTL Duration，用于 TTL 断言
+//
 var testSlotTTL = time.Duration(testSlotTTLMinutes) * time.Minute
 
 type ConcurrencyCacheSuite struct {

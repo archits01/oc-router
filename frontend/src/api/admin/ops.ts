@@ -780,8 +780,8 @@ export interface OpsAlertRuntimeSettings {
 }
 
 export interface OpsOpenAIAccountQuotaAutoPauseSettings {
-  default_threshold_5h: number // 0~1，0 表示不启用全局默认 5h 阈值
-  default_threshold_7d: number // 0~1，0 表示不启用全局默认 7d 阈值
+  default_threshold_5h: number // 0~1，0 表示不Enable全局默认 5h 阈值
+  default_threshold_7d: number // 0~1，0 表示不Enable全局默认 7d 阈值
 }
 
 export interface OpsAdvancedSettings {

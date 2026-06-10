@@ -143,7 +143,7 @@ func TestStartOfWeek_Boundaries(t *testing.T) {
 	t.Cleanup(func() { _ = Init("UTC") })
 
 	loc := Location()
-	wantMon := time.Date(2026, 5, 18, 0, 0, 0, 0, loc) // 2026-05-18 是周一
+	wantMon := time.Date(2026, 5, 18, 0, 0, 0, 0, loc) // 2026-05-18 is Monday
 
 	cases := []struct {
 		name string

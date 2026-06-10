@@ -29,8 +29,8 @@ type Account struct {
 	ProxyFallbackOriginName *string // 仅展示用
 	Concurrency             int
 	Priority                int
-	// RateMultiplier 账号计费倍率（>=0，允许 0 表示该账号计费为 0）。
-	// 使用指针用于兼容旧版本调度缓存（Redis）中缺字段的情况：nil 表示按 1.0 处理。
+	// RateMultiplier >=0，
+	//
 	RateMultiplier     *float64
 	LoadFactor         *int // 调度负载因子；nil 表示使用 Concurrency
 	Status             string
@@ -59,7 +59,7 @@ type Account struct {
 	GroupIDs      []int64
 	Groups        []*Group
 
-	// model_mapping 热路径缓存（非持久化字段）
+	// model_mapping
 	modelMappingCache               map[string]string
 	modelMappingCacheReady          bool
 	modelMappingCacheCredentialsPtr uintptr
@@ -88,10 +88,10 @@ func (a *Account) IsActive() bool {
 	return a.Status == StatusActive
 }
 
-// BillingRateMultiplier 返回账号计费倍率。
-// - nil 表示未配置/旧缓存缺字段，按 1.0 处理
-// - 允许 0，表示该账号计费为 0
-// - 负数属于非法数据，出于安全考虑按 1.0 处理
+// BillingRateMultiplier
+// - nil
+// -
+// -
 func (a *Account) BillingRateMultiplier() float64 {
 	if a == nil || a.RateMultiplier == nil {
 		return 1.0
@@ -156,10 +156,10 @@ func (a *Account) IsOAuth() bool {
 	return a.Type == AccountTypeOAuth || a.Type == AccountTypeSetupToken
 }
 
-// IsPrivacySet 检查账号的 privacy 是否已成功设置。
+// IsPrivacySet
 // OpenAI: privacy_mode == "training_off"
 // Antigravity: privacy_mode == "privacy_set"
-// 其他平台: 无 privacy 概念，始终返回 true
+//
 func (a *Account) IsPrivacySet() bool {
 	switch a.Platform {
 	case PlatformOpenAI:
@@ -215,15 +215,15 @@ func (a *Account) GetCredential(key string) string {
 		return ""
 	}
 
-	// 支持多种类型（兼容历史数据中 expires_at 等字段可能是数字或字符串）
+	//
 	switch val := v.(type) {
 	case string:
 		return val
 	case json.Number:
-		// GORM datatypes.JSONMap 使用 UseNumber() 解析，数字类型为 json.Number
+		// GORM datatypes.JSONMap ()
 		return val.String()
 	case float64:
-		// JSON 解析后数字默认为 float64
+		// JSON
 		return strconv.FormatInt(int64(val), 10)
 	case int64:
 		return strconv.FormatInt(val, 10)
@@ -234,21 +234,20 @@ func (a *Account) GetCredential(key string) string {
 	}
 }
 
-// GetCredentialAsTime 解析凭证中的时间戳字段，支持多种格式
-// 兼容以下格式：
-//   - RFC3339 字符串: "2025-01-01T00:00:00Z"
-//   - Unix 时间戳字符串: "1735689600"
-//   - Unix 时间戳数字: 1735689600 (float64/int64/json.Number)
+// GetCredentialAsTime
+//   - RFC3339 "2025-01-01T00:00:00Z"
+//   - Unix "1735689600"
+//   - Unix (float64/int64/json.Number)
 func (a *Account) GetCredentialAsTime(key string) *time.Time {
 	s := a.GetCredential(key)
 	if s == "" {
 		return nil
 	}
-	// 尝试 RFC3339 格式
+	//
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return &t
 	}
-	// 尝试 Unix 时间戳（纯数字字符串）
+	//
 	if ts, err := strconv.ParseInt(s, 10, 64); err == nil {
 		t := time.Unix(ts, 0)
 		return &t
@@ -256,8 +255,8 @@ func (a *Account) GetCredentialAsTime(key string) *time.Time {
 	return nil
 }
 
-// GetCredentialAsInt64 解析凭证中的 int64 字段
-// 用于读取 _token_version 等内部字段
+// GetCredentialAsInt64
+//
 func (a *Account) GetCredentialAsInt64(key string) int64 {
 	if a == nil || a.Credentials == nil {
 		return 0
@@ -489,15 +488,15 @@ func (a *Account) GetModelMapping() map[string]string {
 
 func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]string {
 	if a.Credentials == nil {
-		// Antigravity 平台使用默认映射
+		// Antigravity
 		if a.Platform == domain.PlatformAntigravity {
 			return domain.DefaultAntigravityModelMapping
 		}
-		// Bedrock 默认映射由 forwardBedrock 统一处理（需配合 region prefix 调整）
+		// Bedrock
 		return nil
 	}
 	if len(rawMapping) == 0 {
-		// Antigravity 平台使用默认映射
+		// Antigravity
 		if a.Platform == domain.PlatformAntigravity {
 			return domain.DefaultAntigravityModelMapping
 		}
@@ -521,7 +520,7 @@ func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]stri
 		return result
 	}
 
-	// Antigravity 平台使用默认映射
+	// Antigravity
 	if a.Platform == domain.PlatformAntigravity {
 		return domain.DefaultAntigravityModelMapping
 	}
@@ -619,8 +618,8 @@ func resolveRequestedModelInMapping(mapping map[string]string, requestedModel st
 	return matchWildcardMappingResult(mapping, requestedModel)
 }
 
-// IsModelSupported 检查模型是否在 model_mapping 中（支持通配符）
-// 如果未配置 mapping，返回 true（允许所有模型）
+// IsModelSupported
+//
 func (a *Account) IsModelSupported(requestedModel string) bool {
 	mapping := a.GetModelMapping()
 	if len(mapping) == 0 {
@@ -633,15 +632,15 @@ func (a *Account) IsModelSupported(requestedModel string) bool {
 	return normalized != requestedModel && mappingSupportsRequestedModel(mapping, normalized)
 }
 
-// GetMappedModel 获取映射后的模型名（支持通配符，最长优先匹配）
-// 如果未配置 mapping，返回原始模型名
+// GetMappedModel
+//
 func (a *Account) GetMappedModel(requestedModel string) string {
 	mappedModel, _ := a.ResolveMappedModel(requestedModel)
 	return mappedModel
 }
 
-// ResolveMappedModel 获取映射后的模型名，并返回是否命中了账号级映射。
-// matched=true 表示命中了精确映射或通配符映射，即使映射结果与原模型名相同。
+// ResolveMappedModel
+// matched=true
 func (a *Account) ResolveMappedModel(requestedModel string) (mappedModel string, matched bool) {
 	mapping := a.GetModelMapping()
 	if len(mapping) == 0 {
@@ -744,8 +743,8 @@ func (a *Account) GetBaseURL() string {
 	return baseURL
 }
 
-// GetGeminiBaseURL 返回 Gemini 兼容端点的 base URL。
-// Antigravity 平台的 APIKey 账号自动拼接 /antigravity。
+// GetGeminiBaseURL
+// Antigravity
 func (a *Account) GetGeminiBaseURL(defaultBaseURL string) string {
 	baseURL := strings.TrimSpace(a.GetCredential("base_url"))
 	if baseURL == "" {
@@ -785,8 +784,8 @@ func (a *Account) GetClaudeUserID() string {
 	return ""
 }
 
-// matchAntigravityWildcard 通配符匹配（仅支持末尾 *）
-// 用于 model_mapping 的通配符匹配
+// matchAntigravityWildcard *）
+//
 func matchAntigravityWildcard(pattern, str string) bool {
 	if strings.HasSuffix(pattern, "*") {
 		prefix := pattern[:len(pattern)-1]
@@ -795,14 +794,14 @@ func matchAntigravityWildcard(pattern, str string) bool {
 	return pattern == str
 }
 
-// matchWildcard 通用通配符匹配（仅支持末尾 *）
-// 复用 Antigravity 的通配符逻辑，供其他平台使用
+// matchWildcard *）
+//
 func matchWildcard(pattern, str string) bool {
 	return matchAntigravityWildcard(pattern, str)
 }
 
 func matchWildcardMappingResult(mapping map[string]string, requestedModel string) (string, bool) {
-	// 收集所有匹配的 pattern，按长度降序排序（最长优先）
+	//
 	type patternMatch struct {
 		pattern string
 		target  string
@@ -816,10 +815,10 @@ func matchWildcardMappingResult(mapping map[string]string, requestedModel string
 	}
 
 	if len(matches) == 0 {
-		return requestedModel, false // 无匹配，返回原始模型名
+		return requestedModel, false // 无匹配，returned原始model名
 	}
 
-	// 按 pattern 长度降序排序
+	//
 	sort.Slice(matches, func(i, j int) bool {
 		if len(matches[i].pattern) != len(matches[j].pattern) {
 			return len(matches[i].pattern) > len(matches[j].pattern)
@@ -842,8 +841,7 @@ func (a *Account) IsCustomErrorCodesEnabled() bool {
 	return false
 }
 
-// IsPoolMode 检查 API Key 账号是否启用池模式。
-// 池模式下，上游错误不标记本地账号状态，而是在同一账号上重试。
+// IsPoolMode
 func (a *Account) IsPoolMode() bool {
 	if !a.IsAPIKeyOrBedrock() || a.Credentials == nil {
 		return false
@@ -861,8 +859,8 @@ const (
 	maxPoolModeRetryCount     = 10
 )
 
-// GetPoolModeRetryCount 返回池模式同账号重试次数。
-// 未配置或配置非法时回退为默认值 3；小于 0 按 0 处理；过大则截断到 10。
+// GetPoolModeRetryCount
+//
 func (a *Account) GetPoolModeRetryCount() int {
 	if a == nil || !a.IsPoolMode() || a.Credentials == nil {
 		return defaultPoolModeRetryCount
@@ -901,11 +899,11 @@ func parsePoolModeRetryCount(value any) int {
 	return defaultPoolModeRetryCount
 }
 
-// defaultPoolModeRetryableStatusCodes 池模式下默认触发同账号重试的状态码。
-// 未在 Account.Credentials 中显式配置 pool_mode_retry_status_codes 时使用。
+// defaultPoolModeRetryableStatusCodes
+//
 var defaultPoolModeRetryableStatusCodes = []int{401, 403, 429}
 
-// isPoolModeRetryableStatus 池模式下应触发同账号重试的状态码（默认列表）。
+// isPoolModeRetryableStatus
 func isPoolModeRetryableStatus(statusCode int) bool {
 	for _, c := range defaultPoolModeRetryableStatusCodes {
 		if c == statusCode {
@@ -915,12 +913,11 @@ func isPoolModeRetryableStatus(statusCode int) bool {
 	return false
 }
 
-// GetPoolModeRetryStatusCodes 返回账号自定义的池模式同账号重试状态码列表。
+// GetPoolModeRetryStatusCodes
 //
-// 返回值语义：
-//   - nil：未配置 → 调用方应回退到默认值 [401, 403, 429]
-//   - 长度为 0 的切片：管理员显式置空 → 关闭按状态码触发的同账号重试
-//   - 非空切片：去重、过滤为合法 HTTP 状态码（100-599）后的覆盖列表
+//   - nil：→ [401, 403, 429]
+//   - →
+//   -
 func (a *Account) GetPoolModeRetryStatusCodes() []int {
 	if a == nil || a.Credentials == nil {
 		return nil
@@ -972,8 +969,8 @@ func (a *Account) GetPoolModeRetryStatusCodes() []int {
 	return codes
 }
 
-// IsPoolModeRetryableStatus 在账号上下文中判断给定状态码是否应触发同账号重试。
-// 若账号未配置 pool_mode_retry_status_codes，则回退到默认列表。
+// IsPoolModeRetryableStatus
+//
 func (a *Account) IsPoolModeRetryableStatus(statusCode int) bool {
 	codes := a.GetPoolModeRetryStatusCodes()
 	if codes == nil {
@@ -1043,7 +1040,7 @@ func (a *Account) IsBedrockAPIKey() bool {
 	return a.IsBedrock() && a.GetCredential("auth_mode") == "apikey"
 }
 
-// IsAPIKeyOrBedrock 返回账号类型是否支持配额和池模式等特性
+// IsAPIKeyOrBedrock
 func (a *Account) IsAPIKeyOrBedrock() bool {
 	return a.Type == AccountTypeAPIKey || a.Type == AccountTypeBedrock
 }
@@ -1248,8 +1245,8 @@ func (a *Account) IsOpenAITokenExpired() bool {
 	return time.Now().Add(60 * time.Second).After(*expiresAt)
 }
 
-// IsMixedSchedulingEnabled 检查 antigravity 账户是否启用混合调度
-// 启用后可参与 anthropic/gemini 分组的账户调度
+// IsMixedSchedulingEnabled
+//
 func (a *Account) IsMixedSchedulingEnabled() bool {
 	if a.Platform != PlatformAntigravity {
 		return false
@@ -1265,7 +1262,7 @@ func (a *Account) IsMixedSchedulingEnabled() bool {
 	return false
 }
 
-// IsOveragesEnabled 检查 Antigravity 账号是否启用 AI Credits 超量请求。
+// IsOveragesEnabled
 func (a *Account) IsOveragesEnabled() bool {
 	if a.Platform != PlatformAntigravity {
 		return false
@@ -1281,11 +1278,11 @@ func (a *Account) IsOveragesEnabled() bool {
 	return false
 }
 
-// IsOpenAIPassthroughEnabled 返回 OpenAI 账号是否启用"自动透传（仅替换认证）"。
+// IsOpenAIPassthroughEnabled ""。
 //
-// 新字段：accounts.extra.openai_passthrough。
-// 兼容字段：accounts.extra.openai_oauth_passthrough（历史 OAuth 开关）。
-// 字段缺失或类型不正确时，按 false（关闭）处理。
+//
+//
+//
 func (a *Account) IsOpenAIPassthroughEnabled() bool {
 	if a == nil || !a.IsOpenAI() || a.Extra == nil {
 		return false
@@ -1299,19 +1296,14 @@ func (a *Account) IsOpenAIPassthroughEnabled() bool {
 	return false
 }
 
-// IsOpenAIResponsesWebSocketV2Enabled 返回 OpenAI 账号是否开启 Responses WebSocket v2。
+// IsOpenAIResponsesWebSocketV2Enabled
 //
-// 分类型新字段：
-// - OAuth 账号：accounts.extra.openai_oauth_responses_websockets_v2_enabled
-// - API Key 账号：accounts.extra.openai_apikey_responses_websockets_v2_enabled
+// - OAuth
+// - API Key
 //
-// 兼容字段：
 // - accounts.extra.responses_websockets_v2_enabled
-// - accounts.extra.openai_ws_enabled（历史开关）
+// - accounts.extra.openai_ws_enabled（
 //
-// 优先级：
-// 1. 按账号类型读取分类型字段
-// 2. 分类型字段缺失时，回退兼容字段
 func (a *Account) IsOpenAIResponsesWebSocketV2Enabled() bool {
 	if a == nil || !a.IsOpenAI() || a.Extra == nil {
 		return false
@@ -1370,13 +1362,12 @@ func normalizeOpenAIWSIngressDefaultMode(mode string) string {
 	return OpenAIWSIngressModeCtxPool
 }
 
-// ResolveOpenAIResponsesWebSocketV2Mode 返回账号在 WSv2 ingress 下的有效模式（off/ctx_pool/passthrough）。
+// ResolveOpenAIResponsesWebSocketV2Mode
 //
-// 优先级：
-// 1. 分类型 mode 新字段（string）
-// 2. 分类型 enabled 旧字段（bool）
-// 3. 兼容 enabled 旧字段（bool）
-// 4. defaultMode（非法时回退 ctx_pool）
+// 1.
+// 2.
+// 3.
+// 4. defaultMode（
 func (a *Account) ResolveOpenAIResponsesWebSocketV2Mode(defaultMode string) string {
 	resolvedDefault := normalizeOpenAIWSIngressDefaultMode(defaultMode)
 	if a == nil || !a.IsOpenAI() {
@@ -1438,15 +1429,15 @@ func (a *Account) ResolveOpenAIResponsesWebSocketV2Mode(defaultMode string) stri
 	if mode, ok := resolveBoolMode("openai_ws_enabled"); ok {
 		return mode
 	}
-	// 兼容旧值：shared/dedicated 语义都归并到 ctx_pool。
+	//
 	if resolvedDefault == OpenAIWSIngressModeShared || resolvedDefault == OpenAIWSIngressModeDedicated {
 		return OpenAIWSIngressModeCtxPool
 	}
 	return resolvedDefault
 }
 
-// IsOpenAIWSForceHTTPEnabled 返回账号级"强制 HTTP"开关。
-// 字段：accounts.extra.openai_ws_force_http。
+// IsOpenAIWSForceHTTPEnabled ""
+//
 func (a *Account) IsOpenAIWSForceHTTPEnabled() bool {
 	if a == nil || !a.IsOpenAI() || a.Extra == nil {
 		return false
@@ -1455,8 +1446,8 @@ func (a *Account) IsOpenAIWSForceHTTPEnabled() bool {
 	return ok && enabled
 }
 
-// IsOpenAIWSAllowStoreRecoveryEnabled 返回账号级 store 恢复开关。
-// 字段：accounts.extra.openai_ws_allow_store_recovery。
+// IsOpenAIWSAllowStoreRecoveryEnabled
+//
 func (a *Account) IsOpenAIWSAllowStoreRecoveryEnabled() bool {
 	if a == nil || !a.IsOpenAI() || a.Extra == nil {
 		return false
@@ -1465,14 +1456,14 @@ func (a *Account) IsOpenAIWSAllowStoreRecoveryEnabled() bool {
 	return ok && enabled
 }
 
-// IsOpenAIOAuthPassthroughEnabled 兼容旧接口，等价于 OAuth 账号的 IsOpenAIPassthroughEnabled。
+// IsOpenAIOAuthPassthroughEnabled
 func (a *Account) IsOpenAIOAuthPassthroughEnabled() bool {
 	return a != nil && a.IsOpenAIOAuth() && a.IsOpenAIPassthroughEnabled()
 }
 
-// IsAnthropicAPIKeyPassthroughEnabled 返回 Anthropic API Key 账号是否启用"自动透传（仅替换认证）"。
-// 字段：accounts.extra.anthropic_passthrough。
-// 字段缺失或类型不正确时，按 false（关闭）处理。
+// IsAnthropicAPIKeyPassthroughEnabled ""。
+//
+//
 func (a *Account) IsAnthropicAPIKeyPassthroughEnabled() bool {
 	if a == nil || a.Platform != PlatformAnthropic || a.Type != AccountTypeAPIKey || a.Extra == nil {
 		return false
@@ -1481,16 +1472,16 @@ func (a *Account) IsAnthropicAPIKeyPassthroughEnabled() bool {
 	return ok && enabled
 }
 
-// WebSearch 模拟三态常量
+// WebSearch
 const (
-	WebSearchModeDefault  = "default"  // 跟随渠道配置
+	WebSearchModeDefault  = "default"  // 跟随渠道configuration
 	WebSearchModeEnabled  = "enabled"  // 强制开启
-	WebSearchModeDisabled = "disabled" // 强制关闭
+	WebSearchModeDisabled = "disabled" // 强制shutting down
 )
 
-// GetWebSearchEmulationMode 返回账号的 WebSearch 模拟模式。
-// 三态：default（跟随渠道）/ enabled（强制开启）/ disabled（强制关闭）。
-// 兼容旧 bool 值：true→enabled, false→default（并记录 debug 日志）。
+// GetWebSearchEmulationMode
+//
+// →enabled, false→default（
 func (a *Account) GetWebSearchEmulationMode() string {
 	if a == nil || a.Platform != PlatformAnthropic || a.Type != AccountTypeAPIKey || a.Extra == nil {
 		return WebSearchModeDefault
@@ -1516,9 +1507,9 @@ func (a *Account) GetWebSearchEmulationMode() string {
 	}
 }
 
-// IsCodexCLIOnlyEnabled 返回 OpenAI OAuth 账号是否启用"仅允许 Codex 官方客户端"。
-// 字段：accounts.extra.codex_cli_only。
-// 字段缺失或类型不正确时，按 false（关闭）处理。
+// IsCodexCLIOnlyEnabled ""。
+//
+//
 func (a *Account) IsCodexCLIOnlyEnabled() bool {
 	if a == nil || !a.IsOpenAIOAuth() || a.Extra == nil {
 		return false
@@ -1527,9 +1518,9 @@ func (a *Account) IsCodexCLIOnlyEnabled() bool {
 	return ok && enabled
 }
 
-// GetCodexCLIOnlyAllowedClients 返回 codex_cli_only 之上额外放行的命名客户端预设 ID 列表。
-// 仅 OpenAI OAuth 账号生效；缺失或类型不符时返回空。预设 ID 的具体匹配规则由
-// openai 包的 registry 固化，配置只能引用预设键、不能自定义规则。
+// GetCodexCLIOnlyAllowedClients
+//
+// openai
 func (a *Account) GetCodexCLIOnlyAllowedClients() []string {
 	if a == nil || !a.IsOpenAIOAuth() || a.Extra == nil {
 		return nil
@@ -1559,29 +1550,28 @@ func (a *Account) GetCodexCLIOnlyAllowedClients() []string {
 	return nil
 }
 
-// WindowCostSchedulability 窗口费用调度状态
+// WindowCostSchedulability
 type WindowCostSchedulability int
 
 const (
-	// WindowCostSchedulable 可正常调度
+	// WindowCostSchedulable
 	WindowCostSchedulable WindowCostSchedulability = iota
-	// WindowCostStickyOnly 仅允许粘性会话
+	// WindowCostStickyOnly
 	WindowCostStickyOnly
-	// WindowCostNotSchedulable 完全不可调度
+	// WindowCostNotSchedulable
 	WindowCostNotSchedulable
 )
 
-// IsAnthropicOAuthOrSetupToken 判断是否为 Anthropic OAuth 或 SetupToken 类型账号
-// 仅这两类账号支持 5h 窗口额度控制和会话数量控制
+// IsAnthropicOAuthOrSetupToken
 func (a *Account) IsAnthropicOAuthOrSetupToken() bool {
 	return a.Platform == PlatformAnthropic && (a.Type == AccountTypeOAuth || a.Type == AccountTypeSetupToken)
 }
 
-// IsTLSFingerprintEnabled 检查是否启用 TLS 指纹伪装
-// 仅适用于 Anthropic OAuth/SetupToken 类型账号
-// 启用后将模拟 Claude Code (Node.js) 客户端的 TLS 握手特征
+// IsTLSFingerprintEnabled
+//
+// (Node.js)
 func (a *Account) IsTLSFingerprintEnabled() bool {
-	// 仅支持 Anthropic OAuth/SetupToken 账号
+	//
 	if !a.IsAnthropicOAuthOrSetupToken() {
 		return false
 	}
@@ -1596,8 +1586,8 @@ func (a *Account) IsTLSFingerprintEnabled() bool {
 	return false
 }
 
-// GetTLSFingerprintProfileID 获取账号绑定的 TLS 指纹模板 ID
-// 返回 0 表示未绑定（使用内置默认 profile）
+// GetTLSFingerprintProfileID
+//
 func (a *Account) GetTLSFingerprintProfileID() int64 {
 	if a.Extra == nil {
 		return 0
@@ -1621,30 +1611,29 @@ func (a *Account) GetTLSFingerprintProfileID() int64 {
 	return 0
 }
 
-// GetUserMsgQueueMode 获取用户消息队列模式
-// "serialize" = 串行队列, "throttle" = 软性限速, "" = 未设置（使用全局配置）
+// GetUserMsgQueueMode
+// "serialize" = "throttle" = "" =
 func (a *Account) GetUserMsgQueueMode() string {
 	if a.Extra == nil {
 		return ""
 	}
-	// 优先读取新字段 user_msg_queue_mode（白名单校验，非法值视为未设置）
+	//
 	if mode, ok := a.Extra["user_msg_queue_mode"].(string); ok && mode != "" {
 		if mode == config.UMQModeSerialize || mode == config.UMQModeThrottle {
 			return mode
 		}
-		return "" // 非法值 fallback 到全局配置
+		return "" // 非法值 fallback 到全局configuration
 	}
-	// 向后兼容: user_msg_queue_enabled: true → "serialize"
+	// → "serialize"
 	if enabled, ok := a.Extra["user_msg_queue_enabled"].(bool); ok && enabled {
 		return config.UMQModeSerialize
 	}
 	return ""
 }
 
-// IsSessionIDMaskingEnabled 检查是否启用会话ID伪装
-// 仅适用于 Anthropic OAuth/SetupToken 类型账号
-// 启用后将在一段时间内（15分钟）固定 metadata.user_id 中的 session ID，
-// 使上游认为请求来自同一个会话
+// IsSessionIDMaskingEnabled
+//
+//
 func (a *Account) IsSessionIDMaskingEnabled() bool {
 	if !a.IsAnthropicOAuthOrSetupToken() {
 		return false
@@ -1660,8 +1649,8 @@ func (a *Account) IsSessionIDMaskingEnabled() bool {
 	return false
 }
 
-// IsCustomBaseURLEnabled 检查是否启用自定义 base URL 中继转发
-// 仅适用于 Anthropic OAuth/SetupToken 类型账号
+// IsCustomBaseURLEnabled
+//
 func (a *Account) IsCustomBaseURLEnabled() bool {
 	if !a.IsAnthropicOAuthOrSetupToken() {
 		return false
@@ -1677,14 +1666,14 @@ func (a *Account) IsCustomBaseURLEnabled() bool {
 	return false
 }
 
-// GetCustomBaseURL 返回自定义中继服务的 base URL
+// GetCustomBaseURL
 func (a *Account) GetCustomBaseURL() string {
 	return a.GetExtraString("custom_base_url")
 }
 
-// IsCacheTTLOverrideEnabled 检查是否启用缓存 TTL 强制替换
-// 仅适用于 Anthropic OAuth/SetupToken 类型账号
-// 启用后将所有 cache creation tokens 归入指定的 TTL 类型（5m 或 1h）
+// IsCacheTTLOverrideEnabled
+//
+//
 func (a *Account) IsCacheTTLOverrideEnabled() bool {
 	if !a.IsAnthropicOAuthOrSetupToken() {
 		return false
@@ -1700,8 +1689,8 @@ func (a *Account) IsCacheTTLOverrideEnabled() bool {
 	return false
 }
 
-// GetCacheTTLOverrideTarget 获取缓存 TTL 强制替换的目标类型
-// 返回 "5m" 或 "1h"，默认 "5m"
+// GetCacheTTLOverrideTarget
+// "5m" "1h"，"5m"
 func (a *Account) GetCacheTTLOverrideTarget() string {
 	if a.Extra == nil {
 		return "5m"
@@ -1714,38 +1703,37 @@ func (a *Account) GetCacheTTLOverrideTarget() string {
 	return "5m"
 }
 
-// GetQuotaLimit 获取 API Key 账号的配额限制（美元）
-// 返回 0 表示未启用
+// GetQuotaLimit
 func (a *Account) GetQuotaLimit() float64 {
 	return a.getExtraFloat64("quota_limit")
 }
 
-// GetQuotaUsed 获取 API Key 账号的已用配额（美元）
+// GetQuotaUsed
 func (a *Account) GetQuotaUsed() float64 {
 	return a.getExtraFloat64("quota_used")
 }
 
-// GetQuotaDailyLimit 获取日额度限制（美元），0 表示未启用
+// GetQuotaDailyLimit
 func (a *Account) GetQuotaDailyLimit() float64 {
 	return a.getExtraFloat64("quota_daily_limit")
 }
 
-// GetQuotaDailyUsed 获取当日已用额度（美元）
+// GetQuotaDailyUsed
 func (a *Account) GetQuotaDailyUsed() float64 {
 	return a.getExtraFloat64("quota_daily_used")
 }
 
-// GetQuotaWeeklyLimit 获取周额度限制（美元），0 表示未启用
+// GetQuotaWeeklyLimit
 func (a *Account) GetQuotaWeeklyLimit() float64 {
 	return a.getExtraFloat64("quota_weekly_limit")
 }
 
-// GetQuotaWeeklyUsed 获取本周已用额度（美元）
+// GetQuotaWeeklyUsed
 func (a *Account) GetQuotaWeeklyUsed() float64 {
 	return a.getExtraFloat64("quota_weekly_used")
 }
 
-// getExtraFloat64 从 Extra 中读取指定 key 的 float64 值
+// getExtraFloat64
 func (a *Account) getExtraFloat64(key string) float64 {
 	if a.Extra == nil {
 		return 0
@@ -1756,7 +1744,7 @@ func (a *Account) getExtraFloat64(key string) float64 {
 	return 0
 }
 
-// getExtraTime 从 Extra 中读取 RFC3339 时间戳
+// getExtraTime
 func (a *Account) getExtraTime(key string) time.Time {
 	if a.Extra == nil {
 		return time.Time{}
@@ -1774,7 +1762,7 @@ func (a *Account) getExtraTime(key string) time.Time {
 	return time.Time{}
 }
 
-// getExtraBool 从 Extra 中读取指定 key 的 bool 值
+// getExtraBool
 func (a *Account) getExtraBool(key string) bool {
 	if a.Extra == nil {
 		return false
@@ -1787,7 +1775,7 @@ func (a *Account) getExtraBool(key string) bool {
 	return false
 }
 
-// getExtraString 从 Extra 中读取指定 key 的字符串值
+// getExtraString
 func (a *Account) getExtraString(key string) string {
 	if a.Extra == nil {
 		return ""
@@ -1800,7 +1788,7 @@ func (a *Account) getExtraString(key string) string {
 	return ""
 }
 
-// getExtraStringDefault 从 Extra 中读取指定 key 的字符串值，不存在时返回 defaultVal
+// getExtraStringDefault
 func (a *Account) getExtraStringDefault(key, defaultVal string) string {
 	if v := a.getExtraString(key); v != "" {
 		return v
@@ -1808,7 +1796,7 @@ func (a *Account) getExtraStringDefault(key, defaultVal string) string {
 	return defaultVal
 }
 
-// getExtraInt 从 Extra 中读取指定 key 的 int 值
+// getExtraInt
 func (a *Account) getExtraInt(key string) int {
 	if a.Extra == nil {
 		return 0
@@ -1819,7 +1807,7 @@ func (a *Account) getExtraInt(key string) int {
 	return 0
 }
 
-// GetQuotaDailyResetMode 获取日额度重置模式："rolling"（默认）或 "fixed"
+// GetQuotaDailyResetMode "rolling"（"fixed"
 func (a *Account) GetQuotaDailyResetMode() string {
 	if m := a.getExtraString("quota_daily_reset_mode"); m == "fixed" {
 		return "fixed"
@@ -1827,12 +1815,12 @@ func (a *Account) GetQuotaDailyResetMode() string {
 	return "rolling"
 }
 
-// GetQuotaDailyResetHour 获取固定重置的小时（0-23），默认 0
+// GetQuotaDailyResetHour
 func (a *Account) GetQuotaDailyResetHour() int {
 	return a.getExtraInt("quota_daily_reset_hour")
 }
 
-// GetQuotaWeeklyResetMode 获取周额度重置模式："rolling"（默认）或 "fixed"
+// GetQuotaWeeklyResetMode "rolling"（"fixed"
 func (a *Account) GetQuotaWeeklyResetMode() string {
 	if m := a.getExtraString("quota_weekly_reset_mode"); m == "fixed" {
 		return "fixed"
@@ -1840,7 +1828,7 @@ func (a *Account) GetQuotaWeeklyResetMode() string {
 	return "rolling"
 }
 
-// GetQuotaWeeklyResetDay 获取固定重置的星期几（0=周日, 1=周一, ..., 6=周六），默认 1（周一）
+// GetQuotaWeeklyResetDay ===
 func (a *Account) GetQuotaWeeklyResetDay() int {
 	if a.Extra == nil {
 		return 1
@@ -1851,12 +1839,12 @@ func (a *Account) GetQuotaWeeklyResetDay() int {
 	return a.getExtraInt("quota_weekly_reset_day")
 }
 
-// GetQuotaWeeklyResetHour 获取周配额固定重置的小时（0-23），默认 0
+// GetQuotaWeeklyResetHour
 func (a *Account) GetQuotaWeeklyResetHour() int {
 	return a.getExtraInt("quota_weekly_reset_hour")
 }
 
-// GetQuotaResetTimezone 获取固定重置的时区名（IANA），默认 "UTC"
+// GetQuotaResetTimezone "UTC"
 func (a *Account) GetQuotaResetTimezone() string {
 	if tz := a.getExtraString("quota_reset_timezone"); tz != "" {
 		return tz
@@ -1920,7 +1908,7 @@ func (a *Account) GetQuotaNotifyTotalThresholdType() string {
 	return tt
 }
 
-// nextFixedDailyReset 计算在 after 之后的下一个每日固定重置时间点
+// nextFixedDailyReset
 func nextFixedDailyReset(hour int, tz *time.Location, after time.Time) time.Time {
 	t := after.In(tz)
 	today := time.Date(t.Year(), t.Month(), t.Day(), hour, 0, 0, 0, tz)
@@ -1930,7 +1918,7 @@ func nextFixedDailyReset(hour int, tz *time.Location, after time.Time) time.Time
 	return today
 }
 
-// lastFixedDailyReset 计算 now 之前最近一次的每日固定重置时间点
+// lastFixedDailyReset
 func lastFixedDailyReset(hour int, tz *time.Location, now time.Time) time.Time {
 	t := now.In(tz)
 	today := time.Date(t.Year(), t.Month(), t.Day(), hour, 0, 0, 0, tz)
@@ -1940,7 +1928,7 @@ func lastFixedDailyReset(hour int, tz *time.Location, now time.Time) time.Time {
 	return today
 }
 
-// nextFixedWeeklyReset 计算在 after 之后的下一个每周固定重置时间点
+// nextFixedWeeklyReset
 // day: 0=Sunday, 1=Monday, ..., 6=Saturday
 func nextFixedWeeklyReset(day, hour int, tz *time.Location, after time.Time) time.Time {
 	t := after.In(tz)
@@ -1954,7 +1942,7 @@ func nextFixedWeeklyReset(day, hour int, tz *time.Location, after time.Time) tim
 	return todayReset.AddDate(0, 0, daysForward)
 }
 
-// lastFixedWeeklyReset 计算 now 之前最近一次的每周固定重置时间点
+// lastFixedWeeklyReset
 func lastFixedWeeklyReset(day, hour int, tz *time.Location, now time.Time) time.Time {
 	t := now.In(tz)
 	todayReset := time.Date(t.Year(), t.Month(), t.Day(), hour, 0, 0, 0, tz)
@@ -1967,7 +1955,7 @@ func lastFixedWeeklyReset(day, hour int, tz *time.Location, now time.Time) time.
 	return todayReset.AddDate(0, 0, -daysBack)
 }
 
-// isFixedDailyPeriodExpired 检查日配额是否在固定时间模式下已过期
+// isFixedDailyPeriodExpired
 func (a *Account) isFixedDailyPeriodExpired(periodStart time.Time) bool {
 	if periodStart.IsZero() {
 		return true
@@ -1980,7 +1968,7 @@ func (a *Account) isFixedDailyPeriodExpired(periodStart time.Time) bool {
 	return periodStart.Before(lastReset)
 }
 
-// isFixedWeeklyPeriodExpired 检查周配额是否在固定时间模式下已过期
+// isFixedWeeklyPeriodExpired
 func (a *Account) isFixedWeeklyPeriodExpired(periodStart time.Time) bool {
 	if periodStart.IsZero() {
 		return true
@@ -1993,8 +1981,7 @@ func (a *Account) isFixedWeeklyPeriodExpired(periodStart time.Time) bool {
 	return periodStart.Before(lastReset)
 }
 
-// ComputeQuotaResetAt 根据当前配置计算并填充 extra 中的 quota_daily_reset_at / quota_weekly_reset_at
-// 在保存账号配置时调用
+// ComputeQuotaResetAt
 func ComputeQuotaResetAt(extra map[string]any) {
 	now := time.Now()
 	tzName, _ := extra["quota_reset_timezone"].(string)
@@ -2006,7 +1993,6 @@ func ComputeQuotaResetAt(extra map[string]any) {
 		tz = time.UTC
 	}
 
-	// 日配额固定重置时间
 	if mode, _ := extra["quota_daily_reset_mode"].(string); mode == "fixed" {
 		hour := int(parseExtraFloat64(extra["quota_daily_reset_hour"]))
 		if hour < 0 || hour > 23 {
@@ -2018,7 +2004,6 @@ func ComputeQuotaResetAt(extra map[string]any) {
 		delete(extra, "quota_daily_reset_at")
 	}
 
-	// 周配额固定重置时间
 	if mode, _ := extra["quota_weekly_reset_mode"].(string); mode == "fixed" {
 		day := 1 // 默认周一
 		if d, ok := extra["quota_weekly_reset_day"]; ok {
@@ -2092,44 +2077,38 @@ func NormalizeFixedQuotaWindows(extra map[string]any) {
 	}
 }
 
-// ValidateQuotaResetConfig 校验配额固定重置时间配置的合法性
+// ValidateQuotaResetConfig
 func ValidateQuotaResetConfig(extra map[string]any) error {
 	if extra == nil {
 		return nil
 	}
-	// 校验时区
 	if tz, ok := extra["quota_reset_timezone"].(string); ok && tz != "" {
 		if _, err := time.LoadLocation(tz); err != nil {
 			return errors.New("invalid quota_reset_timezone: must be a valid IANA timezone name")
 		}
 	}
-	// 日配额重置模式
 	if mode, ok := extra["quota_daily_reset_mode"].(string); ok {
 		if mode != "rolling" && mode != "fixed" {
 			return errors.New("quota_daily_reset_mode must be 'rolling' or 'fixed'")
 		}
 	}
-	// 日配额重置小时
 	if v, ok := extra["quota_daily_reset_hour"]; ok {
 		hour := int(parseExtraFloat64(v))
 		if hour < 0 || hour > 23 {
 			return errors.New("quota_daily_reset_hour must be between 0 and 23")
 		}
 	}
-	// 周配额重置模式
 	if mode, ok := extra["quota_weekly_reset_mode"].(string); ok {
 		if mode != "rolling" && mode != "fixed" {
 			return errors.New("quota_weekly_reset_mode must be 'rolling' or 'fixed'")
 		}
 	}
-	// 周配额重置星期几
 	if v, ok := extra["quota_weekly_reset_day"]; ok {
 		day := int(parseExtraFloat64(v))
 		if day < 0 || day > 6 {
 			return errors.New("quota_weekly_reset_day must be between 0 (Sunday) and 6 (Saturday)")
 		}
 	}
-	// 周配额重置小时
 	if v, ok := extra["quota_weekly_reset_hour"]; ok {
 		hour := int(parseExtraFloat64(v))
 		if hour < 0 || hour > 23 {
@@ -2139,20 +2118,20 @@ func ValidateQuotaResetConfig(extra map[string]any) error {
 	return nil
 }
 
-// HasAnyQuotaLimit 检查是否配置了任一维度的配额限制
+// HasAnyQuotaLimit
 func (a *Account) HasAnyQuotaLimit() bool {
 	return a.GetQuotaLimit() > 0 || a.GetQuotaDailyLimit() > 0 || a.GetQuotaWeeklyLimit() > 0
 }
 
-// isPeriodExpired 检查指定周期（自 periodStart 起经过 dur）是否已过期
+// isPeriodExpired
 func isPeriodExpired(periodStart time.Time, dur time.Duration) bool {
 	if periodStart.IsZero() {
-		return true // 从未使用过，视为过期（下次 increment 会初始化）
+		return true // 从未使用过，视为过期（下次 increment 会initialization）
 	}
 	return time.Since(periodStart) >= dur
 }
 
-// IsDailyQuotaPeriodExpired 检查日配额周期是否已过期（用于显示层判断是否需要将 used 归零）
+// IsDailyQuotaPeriodExpired
 func (a *Account) IsDailyQuotaPeriodExpired() bool {
 	start := a.getExtraTime("quota_daily_start")
 	if a.GetQuotaDailyResetMode() == "fixed" {
@@ -2161,7 +2140,7 @@ func (a *Account) IsDailyQuotaPeriodExpired() bool {
 	return isPeriodExpired(start, 24*time.Hour)
 }
 
-// IsWeeklyQuotaPeriodExpired 检查周配额周期是否已过期（用于显示层判断是否需要将 used 归零）
+// IsWeeklyQuotaPeriodExpired
 func (a *Account) IsWeeklyQuotaPeriodExpired() bool {
 	start := a.getExtraTime("quota_weekly_start")
 	if a.GetQuotaWeeklyResetMode() == "fixed" {
@@ -2170,13 +2149,12 @@ func (a *Account) IsWeeklyQuotaPeriodExpired() bool {
 	return isPeriodExpired(start, 7*24*time.Hour)
 }
 
-// IsQuotaExceeded 检查 API Key 账号配额是否已超限（任一维度超限即返回 true）
+// IsQuotaExceeded
 func (a *Account) IsQuotaExceeded() bool {
-	// 总额度
 	if limit := a.GetQuotaLimit(); limit > 0 && a.GetQuotaUsed() >= limit {
 		return true
 	}
-	// 日额度（周期过期视为未超限，下次 increment 会重置）
+	//
 	if limit := a.GetQuotaDailyLimit(); limit > 0 {
 		start := a.getExtraTime("quota_daily_start")
 		var expired bool
@@ -2189,7 +2167,6 @@ func (a *Account) IsQuotaExceeded() bool {
 			return true
 		}
 	}
-	// 周额度
 	if limit := a.GetQuotaWeeklyLimit(); limit > 0 {
 		start := a.getExtraTime("quota_weekly_start")
 		var expired bool
@@ -2205,8 +2182,7 @@ func (a *Account) IsQuotaExceeded() bool {
 	return false
 }
 
-// GetWindowCostLimit 获取 5h 窗口费用阈值（美元）
-// 返回 0 表示未启用
+// GetWindowCostLimit
 func (a *Account) GetWindowCostLimit() float64 {
 	if a.Extra == nil {
 		return 0
@@ -2217,8 +2193,7 @@ func (a *Account) GetWindowCostLimit() float64 {
 	return 0
 }
 
-// GetWindowCostStickyReserve 获取粘性会话预留额度（美元）
-// 默认值为 10
+// GetWindowCostStickyReserve
 func (a *Account) GetWindowCostStickyReserve() float64 {
 	if a.Extra == nil {
 		return 10.0
@@ -2232,8 +2207,7 @@ func (a *Account) GetWindowCostStickyReserve() float64 {
 	return 10.0
 }
 
-// GetMaxSessions 获取最大并发会话数
-// 返回 0 表示未启用
+// GetMaxSessions
 func (a *Account) GetMaxSessions() int {
 	if a.Extra == nil {
 		return 0
@@ -2244,8 +2218,7 @@ func (a *Account) GetMaxSessions() int {
 	return 0
 }
 
-// GetSessionIdleTimeoutMinutes 获取会话空闲超时分钟数
-// 默认值为 5 分钟
+// GetSessionIdleTimeoutMinutes
 func (a *Account) GetSessionIdleTimeoutMinutes() int {
 	if a.Extra == nil {
 		return 5
@@ -2259,8 +2232,8 @@ func (a *Account) GetSessionIdleTimeoutMinutes() int {
 	return 5
 }
 
-// GetBaseRPM 获取基础 RPM 限制
-// 返回 0 表示未启用（负数视为无效配置，按 0 处理）
+// GetBaseRPM
+//
 func (a *Account) GetBaseRPM() int {
 	if a.Extra == nil {
 		return 0
@@ -2274,8 +2247,8 @@ func (a *Account) GetBaseRPM() int {
 	return 0
 }
 
-// GetRPMStrategy 获取 RPM 策略
-// "tiered" = 三区模型（默认）, "sticky_exempt" = 粘性豁免
+// GetRPMStrategy
+// "tiered" = "sticky_exempt" =
 func (a *Account) GetRPMStrategy() string {
 	if a.Extra == nil {
 		return "tiered"
@@ -2288,15 +2261,15 @@ func (a *Account) GetRPMStrategy() string {
 	return "tiered"
 }
 
-// GetRPMStickyBuffer 获取 RPM 粘性缓冲数量
-// Cache-driven: buffer = concurrency + maxSessions（覆盖幽灵窗口 + 稳态会话需求）
-// floor = baseRPM / 5（向后兼容 maxSessions=0 且 concurrency=0 场景）
+// GetRPMStickyBuffer
+// Cache-driven: buffer = concurrency + maxSessions（+
+// floor = baseRPM / 5（=0 =0
 func (a *Account) GetRPMStickyBuffer() int {
 	if a.Extra == nil {
 		return 0
 	}
 
-	// 手动 override 最高优先级
+	//
 	if v, ok := a.Extra["rpm_sticky_buffer"]; ok {
 		val := parseExtraInt(v)
 		if val > 0 {
@@ -2321,7 +2294,7 @@ func (a *Account) GetRPMStickyBuffer() int {
 
 	buffer := conc + sess
 
-	// floor: 向后兼容
+	// floor:
 	floor := base / 5
 	if floor < 1 {
 		floor = 1
@@ -2333,8 +2306,8 @@ func (a *Account) GetRPMStickyBuffer() int {
 	return buffer
 }
 
-// CheckRPMSchedulability 根据当前 RPM 计数检查调度状态
-// 复用 WindowCostSchedulability 三态：Schedulable / StickyOnly / NotSchedulable
+// CheckRPMSchedulability
+//
 func (a *Account) CheckRPMSchedulability(currentRPM int) WindowCostSchedulability {
 	baseRPM := a.GetBaseRPM()
 	if baseRPM <= 0 {
@@ -2350,7 +2323,7 @@ func (a *Account) CheckRPMSchedulability(currentRPM int) WindowCostSchedulabilit
 		return WindowCostStickyOnly // 粘性豁免无红区
 	}
 
-	// tiered: 黄区 + 红区
+	// tiered: +
 	buffer := a.GetRPMStickyBuffer()
 	if currentRPM < baseRPM+buffer {
 		return WindowCostStickyOnly
@@ -2358,10 +2331,10 @@ func (a *Account) CheckRPMSchedulability(currentRPM int) WindowCostSchedulabilit
 	return WindowCostNotSchedulable
 }
 
-// CheckWindowCostSchedulability 根据当前窗口费用检查调度状态
-// - 费用 < 阈值: WindowCostSchedulable（可正常调度）
-// - 费用 >= 阈值 且 < 阈值+预留: WindowCostStickyOnly（仅粘性会话）
-// - 费用 >= 阈值+预留: WindowCostNotSchedulable（不可调度）
+// CheckWindowCostSchedulability
+// - <
+// - >= < +
+// - >= +
 func (a *Account) CheckWindowCostSchedulability(currentWindowCost float64) WindowCostSchedulability {
 	limit := a.GetWindowCostLimit()
 	if limit <= 0 {
@@ -2380,24 +2353,20 @@ func (a *Account) CheckWindowCostSchedulability(currentWindowCost float64) Windo
 	return WindowCostNotSchedulable
 }
 
-// GetCurrentWindowStartTime 获取当前有效的窗口开始时间
-// 逻辑：
-// 1. 如果窗口未过期（SessionWindowEnd 存在且在当前时间之后），使用记录的 SessionWindowStart
-// 2. 否则（窗口过期或未设置），使用新的预测窗口开始时间（从当前整点开始）
+// GetCurrentWindowStartTime
+// 1.
 func (a *Account) GetCurrentWindowStartTime() time.Time {
 	now := time.Now()
 
-	// 窗口未过期，使用记录的窗口开始时间
 	if a.SessionWindowStart != nil && a.SessionWindowEnd != nil && now.Before(*a.SessionWindowEnd) {
 		return *a.SessionWindowStart
 	}
 
-	// 窗口已过期或未设置，预测新的窗口开始时间（从当前整点开始）
-	// 与 ratelimit_service.go 中 UpdateSessionWindow 的预测逻辑保持一致
+	//
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, now.Location())
 }
 
-// parseExtraFloat64 从 extra 字段解析 float64 值
+// parseExtraFloat64
 func parseExtraFloat64(value any) float64 {
 	switch v := value.(type) {
 	case float64:
@@ -2432,9 +2401,9 @@ func parseExtraTime(value any) time.Time {
 	return time.Time{}
 }
 
-// parseExtraInt 从 extra 字段解析 int 值
-// ParseExtraInt 从 extra 字段的 any 值解析为 int。
-// 支持 int, int64, float64, json.Number, string 类型，无法解析时返回 0。
+// parseExtraInt
+// ParseExtraInt
+//
 func ParseExtraInt(value any) int {
 	return parseExtraInt(value)
 }

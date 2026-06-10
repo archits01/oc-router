@@ -475,7 +475,7 @@ func (h *ChannelHandler) Delete(c *gin.Context) {
 	response.Success(c, gin.H{"message": "Channel deleted successfully"})
 }
 
-// GetModelDefaultPricing 获取模型的默认定价（用于前端自动填充）
+// GetModelDefaultPricing
 // GET /api/v1/admin/channels/model-pricing?model=claude-sonnet-4
 func (h *ChannelHandler) GetModelDefaultPricing(c *gin.Context) {
 	model := strings.TrimSpace(c.Query("model"))
@@ -487,7 +487,6 @@ func (h *ChannelHandler) GetModelDefaultPricing(c *gin.Context) {
 
 	pricing, err := h.billingService.GetModelPricing(model)
 	if err != nil {
-		// 模型不在定价列表中
 		response.Success(c, gin.H{"found": false})
 		return
 	}
@@ -511,7 +510,7 @@ var platformToLiteLLMProvider = map[string]string{
 	service.PlatformAntigravity: "anthropic",
 }
 
-// SyncPricingModels 返回 LiteLLM 定价目录中指定平台的最新模型列表
+// SyncPricingModels
 // GET /api/v1/admin/channels/pricing/sync-models?platform=anthropic
 func (h *ChannelHandler) SyncPricingModels(c *gin.Context) {
 	platform := strings.ToLower(strings.TrimSpace(c.Query("platform")))

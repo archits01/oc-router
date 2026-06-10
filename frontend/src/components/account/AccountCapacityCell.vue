@@ -169,7 +169,6 @@ const rpmTooltip = computed(() => {
   }
 })
 
-// 格式化费用显示
 const formatCost = (value: number | null | undefined) => {
   if (value === null || value === undefined) return '0'
   return value.toFixed(2)

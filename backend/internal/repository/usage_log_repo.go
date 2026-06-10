@@ -98,23 +98,23 @@ const rawUsageLogModelColumn = "model"
 // Historical rows may contain upstream/billing model values, while newer rows store requested_model.
 // Requested/upstream/mapping analytics must use resolveModelDimensionExpression instead.
 
-// usageLogSuccessFilterUL 用于把"失败请求 usage log"（tokens=0、cost=0、不计费的占位记录）
-// 从统计性聚合中排除，避免污染 Dashboard / 用量拆分等指标。
+// usageLogSuccessFilterUL ""（tokens=0、cost=0、
 //
-// schema 中没有 success bool 列；新增列要做迁移，风险大；这里用 actual_cost > 0 作为代理：
-// 任何成功落账的请求都会产生 actual_cost（包括 token 计费、纯图片 token 计费、按次/按图计费），
-// 反之 failed-request usage log 的 actual_cost 为 0。
-// 早期版本用 4 项 token 和 > 0 判定会把"按次/按图计费"与"image_output_tokens 独立计费"的纯图片
-// 请求误判为失败，导致这部分请求从用量统计里消失，故改用 actual_cost。
-// 配合 `FROM usage_logs ul` JOIN 查询使用。
+//
+// schema > 0
+//
+//
+// > 0 """image_output_tokens "
+//
+// `FROM usage_logs ul` JOIN
 const usageLogSuccessFilterUL = "ul.actual_cost > 0"
 
-// usageLogEffectivePlatformExpr 用于按"有效平台"维度聚合 usage_logs：
-// 优先取请求实际走的分组 platform，若分组未设置 platform 再 fallback 到 account.platform。
-// 配套要求查询里 LEFT JOIN groups g ON g.id = ul.group_id 与 LEFT JOIN accounts a ON a.id = ul.account_id。
+// usageLogEffectivePlatformExpr ""
+//
+// = ul.group_id = ul.account_id。
 const usageLogEffectivePlatformExpr = "COALESCE(NULLIF(g.platform,''), a.platform)"
 
-// dateFormatWhitelist 将 granularity 参数映射为 PostgreSQL TO_CHAR 格式字符串，防止外部输入直接拼入 SQL
+// dateFormatWhitelist
 var dateFormatWhitelist = map[string]string{
 	"hour":  "YYYY-MM-DD HH24:00",
 	"day":   "YYYY-MM-DD",
@@ -122,7 +122,7 @@ var dateFormatWhitelist = map[string]string{
 	"month": "YYYY-MM",
 }
 
-// safeDateFormat 根据白名单获取 dateFormat，未匹配时返回默认值
+// safeDateFormat
 func safeDateFormat(granularity string) string {
 	if f, ok := dateFormatWhitelist[granularity]; ok {
 		return f
@@ -251,7 +251,7 @@ func NewUsageLogRepository(client *dbent.Client, sqlDB *sql.DB) service.UsageLog
 }
 
 func newUsageLogRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *usageLogRepository {
-	// 使用 scanSingleRow 替代 QueryRowContext，保证 ent.Tx 作为 sqlExecutor 可用。
+	//
 	repo := &usageLogRepository{client: client, sql: sqlq}
 	if db, ok := sqlq.(*sql.DB); ok {
 		repo.db = db
@@ -260,7 +260,7 @@ func newUsageLogRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *usage
 	return repo
 }
 
-// getPerformanceStats 获取 RPM 和 TPM（近5分钟平均值，可选按用户过滤）
+// getPerformanceStats
 func (r *usageLogRepository) getPerformanceStats(ctx context.Context, userID int64) (rpm, tpm int64, err error) {
 	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
 	query := `
@@ -1409,8 +1409,7 @@ func (r *usageLogRepository) GetByID(ctx context.Context, id int64) (log *servic
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			log = nil
@@ -1440,7 +1439,7 @@ func (r *usageLogRepository) ListByAPIKey(ctx context.Context, apiKeyID int64, p
 	return r.listUsageLogsWithPagination(ctx, "WHERE api_key_id = $1", []any{apiKeyID}, params)
 }
 
-// UserStats 用户使用统计
+// UserStats
 type UserStats struct {
 	TotalRequests   int64   `json:"total_requests"`
 	TotalTokens     int64   `json:"total_tokens"`
@@ -1481,7 +1480,7 @@ func (r *usageLogRepository) GetUserStats(ctx context.Context, userID int64, sta
 	return stats, nil
 }
 
-// DashboardStats 仪表盘统计
+// DashboardStats
 type DashboardStats = usagestats.DashboardStats
 
 func (r *usageLogRepository) GetDashboardStats(ctx context.Context) (*DashboardStats, error) {
@@ -1510,7 +1509,7 @@ func (r *usageLogRepository) GetDashboardStatsWithRange(ctx context.Context, sta
 	startUTC := start.UTC()
 	endUTC := end.UTC()
 	if !endUTC.After(startUTC) {
-		return nil, errors.New("统计时间范围无效")
+		return nil, errors.New("invalid statistics time range")
 	}
 
 	stats := &DashboardStats{}
@@ -1865,17 +1864,12 @@ func (r *usageLogRepository) GetAPIKeyStatsAggregated(ctx context.Context, apiKe
 	return &stats, nil
 }
 
-// GetAccountStatsAggregated 使用 SQL 聚合统计账号使用数据
+// GetAccountStatsAggregated
 //
-// 性能优化说明：
-// 原实现先查询所有日志记录，再在应用层循环计算统计值：
-// 1. 需要传输大量数据到应用层
-// 2. 应用层循环计算增加 CPU 和内存开销
+// 2.
 //
-// 新实现使用 SQL 聚合函数：
-// 1. 在数据库层完成 COUNT/SUM/AVG 计算
-// 2. 只返回单行聚合结果，大幅减少数据传输量
-// 3. 利用数据库索引优化聚合查询性能
+//
+// 1.
 func (r *usageLogRepository) GetAccountStatsAggregated(ctx context.Context, accountID int64, startTime, endTime time.Time) (*usagestats.UsageStats, error) {
 	query := `
 		SELECT
@@ -1914,8 +1908,7 @@ func (r *usageLogRepository) GetAccountStatsAggregated(ctx context.Context, acco
 	return &stats, nil
 }
 
-// GetModelStatsAggregated 使用 SQL 聚合统计模型使用数据
-// 性能优化：数据库层聚合计算，避免应用层循环统计
+// GetModelStatsAggregated
 func (r *usageLogRepository) GetModelStatsAggregated(ctx context.Context, modelName string, startTime, endTime time.Time) (*usagestats.UsageStats, error) {
 	query := fmt.Sprintf(`
 		SELECT
@@ -1954,13 +1947,13 @@ func (r *usageLogRepository) GetModelStatsAggregated(ctx context.Context, modelN
 	return &stats, nil
 }
 
-// GetDailyStatsAggregated 使用 SQL 聚合统计用户的每日使用数据
-// 性能优化：使用 GROUP BY 在数据库层按日期分组聚合，避免应用层循环分组统计
+// GetDailyStatsAggregated
+//
 func (r *usageLogRepository) GetDailyStatsAggregated(ctx context.Context, userID int64, startTime, endTime time.Time) (result []map[string]any, err error) {
 	tzName := resolveUsageStatsTimezone()
 	query := `
 		SELECT
-			-- 使用应用时区分组，避免数据库会话时区导致日边界偏移。
+			-- group by application timezone to avoid day boundary shifts caused by database session timezone.
 			TO_CHAR(created_at AT TIME ZONE $4, 'YYYY-MM-DD') as date,
 			COUNT(*) as total_requests,
 			COALESCE(SUM(input_tokens), 0) as total_input_tokens,
@@ -2030,8 +2023,8 @@ func (r *usageLogRepository) GetDailyStatsAggregated(ctx context.Context, userID
 	return result, nil
 }
 
-// resolveUsageStatsTimezone 获取用于 SQL 分组的时区名称。
-// 优先使用应用初始化的时区，其次尝试读取 TZ 环境变量，最后回落为 UTC。
+// resolveUsageStatsTimezone
+//
 func resolveUsageStatsTimezone() string {
 	tzName := timezone.Name()
 	if tzName != "" && tzName != "Local" {
@@ -2066,7 +2059,7 @@ func (r *usageLogRepository) Delete(ctx context.Context, id int64) error {
 	return err
 }
 
-// GetAccountTodayStats 获取账号今日统计
+// GetAccountTodayStats
 func (r *usageLogRepository) GetAccountTodayStats(ctx context.Context, accountID int64) (*usagestats.AccountStats, error) {
 	today := timezone.Today()
 
@@ -2098,7 +2091,7 @@ func (r *usageLogRepository) GetAccountTodayStats(ctx context.Context, accountID
 	return stats, nil
 }
 
-// GetAccountWindowStats 获取账号时间窗口内的统计
+// GetAccountWindowStats
 func (r *usageLogRepository) GetAccountWindowStats(ctx context.Context, accountID int64, startTime time.Time) (*usagestats.AccountStats, error) {
 	query := `
 		SELECT
@@ -2128,8 +2121,8 @@ func (r *usageLogRepository) GetAccountWindowStats(ctx context.Context, accountI
 	return stats, nil
 }
 
-// GetAccountWindowStatsBatch 批量获取同一窗口起点下多个账号的统计数据。
-// 返回 map[accountID]*AccountStats，未命中的账号会返回零值统计，便于上层直接复用。
+// GetAccountWindowStatsBatch
+// [accountID]*AccountStats，
 func (r *usageLogRepository) GetAccountWindowStatsBatch(ctx context.Context, accountIDs []int64, startTime time.Time) (map[int64]*usagestats.AccountStats, error) {
 	result := make(map[int64]*usagestats.AccountStats, len(accountIDs))
 	if len(accountIDs) == 0 {
@@ -2181,8 +2174,8 @@ func (r *usageLogRepository) GetAccountWindowStatsBatch(ctx context.Context, acc
 	return result, nil
 }
 
-// GetGeminiUsageTotalsBatch 批量聚合 Gemini 账号在窗口内的 Pro/Flash 请求与用量。
-// 模型分类规则与 service.geminiModelClassFromName 一致：model 包含 flash/lite 视为 flash，其余视为 pro。
+// GetGeminiUsageTotalsBatch
+//
 func (r *usageLogRepository) GetGeminiUsageTotalsBatch(ctx context.Context, accountIDs []int64, startTime, endTime time.Time) (map[int64]service.GeminiUsageTotals, error) {
 	result := make(map[int64]service.GeminiUsageTotals, len(accountIDs))
 	if len(accountIDs) == 0 {
@@ -2284,8 +2277,7 @@ func (r *usageLogRepository) GetAPIKeyUsageTrend(ctx context.Context, startTime,
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			results = nil
@@ -2342,8 +2334,7 @@ func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, e
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			results = nil
@@ -2445,18 +2436,18 @@ func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTi
 	}, nil
 }
 
-// UserDashboardStats 用户仪表盘统计
+// UserDashboardStats
 type UserDashboardStats = usagestats.UserDashboardStats
 
-// PlatformDashboardStats 单平台用量明细
+// PlatformDashboardStats
 type PlatformDashboardStats = usagestats.PlatformDashboardStats
 
-// GetUserDashboardStats 获取用户专属的仪表盘统计
+// GetUserDashboardStats
 func (r *usageLogRepository) GetUserDashboardStats(ctx context.Context, userID int64) (*UserDashboardStats, error) {
 	stats := &UserDashboardStats{}
 	today := timezone.Today()
 
-	// API Key 统计
+	// API Key
 	if err := scanSingleRow(
 		ctx,
 		r.sql,
@@ -2476,7 +2467,7 @@ func (r *usageLogRepository) GetUserDashboardStats(ctx context.Context, userID i
 		return nil, err
 	}
 
-	// 累计 Token 统计
+	//
 	totalStatsQuery := `
 		SELECT
 			COUNT(*) as total_requests,
@@ -2508,7 +2499,7 @@ func (r *usageLogRepository) GetUserDashboardStats(ctx context.Context, userID i
 	}
 	stats.TotalTokens = stats.TotalInputTokens + stats.TotalOutputTokens + stats.TotalCacheCreationTokens + stats.TotalCacheReadTokens
 
-	// 今日 Token 统计
+	//
 	todayStatsQuery := `
 		SELECT
 			COUNT(*) as today_requests,
@@ -2538,7 +2529,7 @@ func (r *usageLogRepository) GetUserDashboardStats(ctx context.Context, userID i
 	}
 	stats.TodayTokens = stats.TodayInputTokens + stats.TodayOutputTokens + stats.TodayCacheCreationTokens + stats.TodayCacheReadTokens
 
-	// 性能指标：RPM 和 TPM（最近1分钟，仅统计该用户的请求）
+	//
 	rpm, tpm, err := r.getPerformanceStats(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -2546,12 +2537,12 @@ func (r *usageLogRepository) GetUserDashboardStats(ctx context.Context, userID i
 	stats.Rpm = rpm
 	stats.Tpm = tpm
 
-	// 按"有效平台"维度拆分（group.platform 优先，否则 account.platform）。
-	// 与 ops 路径口径一致；HAVING 过滤掉无法确定平台的行（避免出现空字符串平台）。
-	// 与上面 totalStatsQuery/todayStatsQuery 的总值可能略微差异，原因有二：
-	//   1) 无平台归属的极少数行（group/account 都没 platform）会被 HAVING 排除；
-	//   2) usageLogSuccessFilterUL 会把 actual_cost = 0 的失败 placeholder 行排除，
-	//      而 totalStatsQuery/todayStatsQuery 没有这层过滤、会把这些行的 request 计数算进去。
+	// ""
+	//
+	//
+	//   1)
+	//   2) usageLogSuccessFilterUL = 0
+	//
 	platformQuery := `
 		SELECT
 			` + usageLogEffectivePlatformExpr + ` as platform,
@@ -2600,7 +2591,7 @@ func (r *usageLogRepository) GetUserDashboardStats(ctx context.Context, userID i
 	return stats, nil
 }
 
-// getPerformanceStatsByAPIKey 获取指定 API Key 的 RPM 和 TPM（近5分钟平均值）
+// getPerformanceStatsByAPIKey
 func (r *usageLogRepository) getPerformanceStatsByAPIKey(ctx context.Context, apiKeyID int64) (rpm, tpm int64, err error) {
 	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
 	query := `
@@ -2619,16 +2610,16 @@ func (r *usageLogRepository) getPerformanceStatsByAPIKey(ctx context.Context, ap
 	return requestCount / 5, tokenCount / 5, nil
 }
 
-// GetAPIKeyDashboardStats 获取指定 API Key 的仪表盘统计（按 api_key_id 过滤）
+// GetAPIKeyDashboardStats
 func (r *usageLogRepository) GetAPIKeyDashboardStats(ctx context.Context, apiKeyID int64) (*UserDashboardStats, error) {
 	stats := &UserDashboardStats{}
 	today := timezone.Today()
 
-	// API Key 维度不需要统计 key 数量，设为 1
+	// API Key
 	stats.TotalAPIKeys = 1
 	stats.ActiveAPIKeys = 1
 
-	// 累计 Token 统计
+	//
 	totalStatsQuery := `
 		SELECT
 			COUNT(*) as total_requests,
@@ -2660,7 +2651,7 @@ func (r *usageLogRepository) GetAPIKeyDashboardStats(ctx context.Context, apiKey
 	}
 	stats.TotalTokens = stats.TotalInputTokens + stats.TotalOutputTokens + stats.TotalCacheCreationTokens + stats.TotalCacheReadTokens
 
-	// 今日 Token 统计
+	//
 	todayStatsQuery := `
 		SELECT
 			COUNT(*) as today_requests,
@@ -2690,7 +2681,7 @@ func (r *usageLogRepository) GetAPIKeyDashboardStats(ctx context.Context, apiKey
 	}
 	stats.TodayTokens = stats.TodayInputTokens + stats.TodayOutputTokens + stats.TodayCacheCreationTokens + stats.TodayCacheReadTokens
 
-	// 性能指标：RPM 和 TPM（最近5分钟，按 API Key 过滤）
+	//
 	rpm, tpm, err := r.getPerformanceStatsByAPIKey(ctx, apiKeyID)
 	if err != nil {
 		return nil, err
@@ -2701,7 +2692,7 @@ func (r *usageLogRepository) GetAPIKeyDashboardStats(ctx context.Context, apiKey
 	return stats, nil
 }
 
-// GetUserUsageTrendByUserID 获取指定用户的使用趋势
+// GetUserUsageTrendByUserID
 func (r *usageLogRepository) GetUserUsageTrendByUserID(ctx context.Context, userID int64, startTime, endTime time.Time, granularity string) (results []TrendDataPoint, err error) {
 	dateFormat := safeDateFormat(granularity)
 
@@ -2727,8 +2718,7 @@ func (r *usageLogRepository) GetUserUsageTrendByUserID(ctx context.Context, user
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			results = nil
@@ -2742,7 +2732,7 @@ func (r *usageLogRepository) GetUserUsageTrendByUserID(ctx context.Context, user
 	return results, nil
 }
 
-// GetUserModelStats 获取指定用户的模型统计
+// GetUserModelStats
 func (r *usageLogRepository) GetUserModelStats(ctx context.Context, userID int64, startTime, endTime time.Time) (results []ModelStat, err error) {
 	query := `
 		SELECT
@@ -2767,8 +2757,7 @@ func (r *usageLogRepository) GetUserModelStats(ctx context.Context, userID int64
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			results = nil
@@ -2847,7 +2836,6 @@ func shouldUseFastUsageLogTotal(filters UsageLogFilters) bool {
 	if filters.ExactTotal {
 		return false
 	}
-	// 强选择过滤下记录集通常较小，保留精确总数。
 	return filters.UserID == 0 && filters.APIKeyID == 0 && filters.AccountID == 0
 }
 
@@ -2888,7 +2876,6 @@ func (r *usageLogRepository) GetBatchUserUsageStats(ctx context.Context, userIDs
 		return result, nil
 	}
 
-	// 默认最近 30 天
 	if startTime.IsZero() {
 		startTime = time.Now().AddDate(0, 0, -30)
 	}
@@ -2900,8 +2887,8 @@ func (r *usageLogRepository) GetBatchUserUsageStats(ctx context.Context, userIDs
 		result[id] = &BatchUserUsageStats{UserID: id}
 	}
 
-	// GROUP BY (user_id, effective_platform) 一次查询同时得到总值与按平台拆分。
-	// 应用层把同一 user_id 的多行累加为总值，并把非空 platform 行收集到 ByPlatform。
+	// GROUP BY (user_id, effective_platform)
+	//
 	query := `
 		SELECT
 			ul.user_id,
@@ -2966,7 +2953,6 @@ func (r *usageLogRepository) GetBatchAPIKeyUsageStats(ctx context.Context, apiKe
 		return result, nil
 	}
 
-	// 默认最近 30 天
 	if startTime.IsZero() {
 		startTime = time.Now().AddDate(0, 0, -30)
 	}
@@ -3072,8 +3058,7 @@ func (r *usageLogRepository) GetUsageTrendWithFilters(ctx context.Context, start
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			results = nil
@@ -3174,7 +3159,7 @@ func (r *usageLogRepository) GetModelStatsWithFiltersBySource(ctx context.Contex
 
 func (r *usageLogRepository) getModelStatsWithFiltersBySource(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, source string) (results []ModelStat, err error) {
 	actualCostExpr := "COALESCE(SUM(actual_cost), 0) as actual_cost"
-	// 当仅按 account_id 聚合时，实际费用使用账号倍率（total_cost * account_rate_multiplier）。
+	// * account_rate_multiplier）。
 	if accountID > 0 && userID == 0 && apiKeyID == 0 {
 		actualCostExpr = "COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0) as actual_cost"
 	}
@@ -3226,8 +3211,7 @@ func (r *usageLogRepository) getModelStatsWithFiltersBySource(ctx context.Contex
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			results = nil
@@ -3567,7 +3551,6 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 
 	var endpoints, upstreamEndpoints, endpointPaths []EndpointStat
 
-	// 汇总查询:失败即致命。
 	runSummary := func(c context.Context) error {
 		return scanSingleRow(
 			c, r.sql, query, args,
@@ -3581,7 +3564,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			&stats.AverageDurationMs,
 		)
 	}
-	// endpoint 明细:best-effort(失败 log + 返空),不致命。
+	// endpoint (+ ),
 	runEndpoints := func(c context.Context) {
 		res, err := r.GetEndpointStatsWithFilters(c, start, end, filters.UserID, filters.APIKeyID, filters.AccountID, filters.GroupID, filters.Model, filters.RequestType, filters.Stream, filters.BillingType)
 		if err != nil {
@@ -3614,7 +3597,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 	}
 
 	if r.db != nil {
-		// 生产路径:r.sql 是 *sql.DB 连接池,可并发。4 条查询并行,延迟取最大值。
+		// *sql.DB
 		g, gctx := errgroup.WithContext(ctx)
 		g.Go(func() error { return runSummary(gctx) })
 		g.Go(func() error { runEndpoints(gctx); return nil })
@@ -3624,7 +3607,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			return nil, err
 		}
 	} else {
-		// 事务路径(ent.Tx 不能并发查询):顺序执行,行为与重构前一致。
+		// (ent.Tx ):
 		if err := runSummary(ctx); err != nil {
 			return nil, err
 		}
@@ -3828,8 +3811,7 @@ func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			resp = nil
@@ -4025,7 +4007,7 @@ func (r *usageLogRepository) listUsageLogsWithFastPagination(ctx context.Context
 
 	total := int64(offset) + int64(len(logs))
 	if hasMore {
-		// 只保证“还有下一页”，避免对超大表做全量 COUNT(*)。
+		// “”，(*)。
 		total = int64(offset) + int64(limit) + 1
 	}
 
@@ -4058,8 +4040,7 @@ func (r *usageLogRepository) queryUsageLogs(ctx context.Context, query string, a
 		return nil, err
 	}
 	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
+		//
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
 			logs = nil
@@ -4082,7 +4063,7 @@ func (r *usageLogRepository) queryUsageLogs(ctx context.Context, query string, a
 }
 
 func (r *usageLogRepository) hydrateUsageLogAssociations(ctx context.Context, logs []service.UsageLog) error {
-	// 关联数据使用 Ent 批量加载，避免把复杂 SQL 继续膨胀。
+	//
 	if len(logs) == 0 {
 		return nil
 	}
@@ -4176,7 +4157,7 @@ func (r *usageLogRepository) loadUsers(ctx context.Context, ids []int64) (map[in
 	if len(ids) == 0 {
 		return out, nil
 	}
-	// 无条件穿透软删除：ids 来自调用方已按 user_id 筛选的日志行；普通用户路径强制 UserID=本人（本人必为活跃用户），不会借此解析他人已删身份；仅 admin 路径可借此显示已删用户。
+	// =
 	models, err := r.client.User.Query().Where(dbuser.IDIn(ids...)).All(mixins.SkipSoftDelete(ctx))
 	if err != nil {
 		return nil, err
@@ -4387,7 +4368,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		CacheTTLOverridden:    cacheTTLOverridden,
 		CreatedAt:             createdAt,
 	}
-	// 先回填 legacy 字段，再基于 legacy + request_type 计算最终请求类型，保证历史数据兼容。
+	// + request_type
 	log.Stream = stream
 	log.OpenAIWSMode = openaiWSMode
 	log.RequestType = log.EffectiveRequestType()
@@ -4552,7 +4533,7 @@ func appendRequestTypeOrStreamQueryFilter(query string, args []any, requestType 
 	return query, args
 }
 
-// buildRequestTypeFilterCondition 在 request_type 过滤时兼容 legacy 字段，避免历史数据漏查。
+// buildRequestTypeFilterCondition
 func buildRequestTypeFilterCondition(startArgIndex int, requestType int16) (string, []any) {
 	normalized := service.RequestTypeFromInt16(requestType)
 	requestTypeArg := int16(normalized)

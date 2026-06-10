@@ -41,7 +41,7 @@ func NewTempUnschedCache(rdb *redis.Client) service.TempUnschedCache {
 	return &tempUnschedCache{rdb: rdb}
 }
 
-// SetTempUnsched 设置临时不可调度状态（只延长不缩短）
+// SetTempUnsched
 func (c *tempUnschedCache) SetTempUnsched(ctx context.Context, accountID int64, state *service.TempUnschedState) error {
 	key := fmt.Sprintf("%s%d", tempUnschedPrefix, accountID)
 
@@ -52,7 +52,7 @@ func (c *tempUnschedCache) SetTempUnsched(ctx context.Context, accountID int64, 
 
 	ttl := time.Until(time.Unix(state.UntilUnix, 0))
 	if ttl <= 0 {
-		return nil // 已过期，不设置
+		return nil // expired, do not set
 	}
 
 	ttlSeconds := int(ttl.Seconds())
@@ -64,7 +64,7 @@ func (c *tempUnschedCache) SetTempUnsched(ctx context.Context, accountID int64, 
 	return err
 }
 
-// GetTempUnsched 获取临时不可调度状态
+// GetTempUnsched
 func (c *tempUnschedCache) GetTempUnsched(ctx context.Context, accountID int64) (*service.TempUnschedState, error) {
 	key := fmt.Sprintf("%s%d", tempUnschedPrefix, accountID)
 
@@ -84,7 +84,7 @@ func (c *tempUnschedCache) GetTempUnsched(ctx context.Context, accountID int64) 
 	return &state, nil
 }
 
-// DeleteTempUnsched 删除临时不可调度状态
+// DeleteTempUnsched
 func (c *tempUnschedCache) DeleteTempUnsched(ctx context.Context, accountID int64) error {
 	key := fmt.Sprintf("%s%d", tempUnschedPrefix, accountID)
 	return c.rdb.Del(ctx, key).Err()

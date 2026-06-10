@@ -10,7 +10,7 @@ type OpsRepository interface {
 	BatchInsertErrorLogs(ctx context.Context, inputs []*OpsInsertErrorLogInput) (int64, error)
 	ListErrorLogs(ctx context.Context, filter *OpsErrorLogFilter) (*OpsErrorLogList, error)
 	GetErrorLogByID(ctx context.Context, id int64) (*OpsErrorLogDetail, error)
-	// LookupDeletedKeyAudit 按明文 key 反查最近一条已删除 key 审计;未命中返回 (nil, nil)。
+	// LookupDeletedKeyAudit (nil, nil)。
 	LookupDeletedKeyAudit(ctx context.Context, key string) (*DeletedKeyAuditResult, error)
 	ListRequestDetails(ctx context.Context, filter *OpsRequestDetailFilter) ([]*OpsRequestDetail, int64, error)
 	BatchInsertSystemLogs(ctx context.Context, inputs []*OpsInsertSystemLogInput) (int64, error)
@@ -63,7 +63,7 @@ type OpsRepository interface {
 	GetLatestDailyBucketDate(ctx context.Context) (time.Time, bool, error)
 }
 
-// DeletedKeyAuditResult 是按明文 key 反查 deleted_api_key_audits 的结果。
+// DeletedKeyAuditResult
 type DeletedKeyAuditResult struct {
 	UserID  int64
 	KeyName string
@@ -127,13 +127,13 @@ type OpsInsertErrorLogInput struct {
 
 	CreatedAt time.Time
 
-	// 已删除 key 归因(仅 INVALID_API_KEY 认证失败时可能非空)
+	// ()
 	AttemptedKeyPrefix    string // 提交 key 的脱敏前缀(前 8 位)
 	DeletedKeyOwnerUserID *int64 // 反查命中的原所有者 user_id
 	DeletedKeyName        string // 反查命中的 key 名称
 
-	// 有效(未删除)key 报错时快照的 key 脱敏前缀(前 8 位);与 AttemptedKeyPrefix 互斥。
-	// 落库快照而非读时 JOIN:key 之后被删(key 列被 tombstone 覆盖)仍保留当时前缀。
+	// ()key ();
+	// (key )
 	APIKeyPrefix string
 }
 

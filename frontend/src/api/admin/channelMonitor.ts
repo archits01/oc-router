@@ -40,7 +40,7 @@ export interface ChannelMonitor {
   availability_7d: number
   /** Latest status per extra model (used for hover tooltip) */
   extra_models_status: ExtraModelStatus[]
-  /** 请求自定义快照字段（高级设置） */
+  /** 请求自定义快照字段（高级Settings） */
   template_id: number | null
   extra_headers: Record<string, string>
   body_override_mode: BodyOverrideMode

@@ -12,7 +12,7 @@ type stubOpsRepoForUserErr struct {
 	OpsRepository // 嵌入接口，未实现的方法 panic，仅覆盖 ListErrorLogs
 	gotFilter     *OpsErrorLogFilter
 
-	// GetErrorLogByID 控制字段
+	// GetErrorLogByID
 	detailToReturn    *OpsErrorLogDetail
 	detailErrToReturn error
 }
@@ -46,31 +46,30 @@ func TestListUserErrorRequests_ForcesScopeAndRedacts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 强制按用户
 	if stub.gotFilter.UserID == nil || *stub.gotFilter.UserID != uid {
 		t.Fatalf("UserID not forced: %+v", stub.gotFilter.UserID)
 	}
-	// 强制 View=all（含业务限流/余额）
+	// =all（
 	if stub.gotFilter.View != "all" {
 		t.Fatalf("View not forced to all: %q", stub.gotFilter.View)
 	}
-	// 强制排除 count_tokens
+	//
 	if !stub.gotFilter.ExcludeCountTokens {
 		t.Fatal("ExcludeCountTokens not forced")
 	}
-	// 强制清空 Phase（防止 "upstream" 绕过 status>=400 子句 + 与 ErrorPhasesAny 双重约束）
+	// "upstream" >=400 +
 	if stub.gotFilter.Phase != "" {
 		t.Fatalf("Phase not cleared: %q", stub.gotFilter.Phase)
 	}
-	// APIKeyID 透传保留（用户可按自己 key 过滤；越权由 user_id AND api_key_id 双重防护）
+	// APIKeyID
 	if stub.gotFilter.APIKeyID == nil || *stub.gotFilter.APIKeyID != kid {
 		t.Fatalf("APIKeyID should be preserved, got %v", stub.gotFilter.APIKeyID)
 	}
-	// 调用方传入的 filter 不应被原地篡改（验证 shallow copy 隔离生效）
+	//
 	if in.View != "errors" || in.UserID != nil || in.Phase != "upstream" {
 		t.Fatalf("caller filter was mutated: View=%q UserID=%v Phase=%q", in.View, in.UserID, in.Phase)
 	}
-	// 脱敏：返回条目含 message 字段
+	//
 	if len(out.Items) != 1 || out.Items[0].Category != "rate_limit" || out.Items[0].Model != "rm" {
 		t.Fatalf("bad item: %+v", out.Items)
 	}
@@ -101,7 +100,7 @@ func TestGetUserErrorRequestDetail_OwnershipEnforced(t *testing.T) {
 	stub := &stubOpsRepoForUserErr{detailToReturn: detail}
 	svc := &OpsService{opsRepo: stub}
 
-	// 越权调用（callerUID=1,但记录属于 ownerUID=999）→ 应返回 NotFound,detail 为 nil
+	// =1,=999）→
 	got, err := svc.GetUserErrorRequestDetail(context.Background(), callerUID, 42)
 	if err == nil {
 		t.Fatal("expected error for unauthorized access, got nil")
@@ -109,12 +108,12 @@ func TestGetUserErrorRequestDetail_OwnershipEnforced(t *testing.T) {
 	if got != nil {
 		t.Fatalf("expected nil detail for unauthorized access, got %+v", got)
 	}
-	// 验证错误为 NotFound(不暴露存在性)
+	// ()
 	if !infraerrors.IsNotFound(err) {
 		t.Fatalf("expected NotFound error, got: %v", err)
 	}
 
-	// 合法调用（callerUID=999 = ownerUID）→ 应返回 non-nil detail
+	// =999 = ownerUID）→
 	got2, err2 := svc.GetUserErrorRequestDetail(context.Background(), ownerUID, 42)
 	if err2 != nil {
 		t.Fatalf("expected no error for legitimate access, got %v", err2)
@@ -180,7 +179,7 @@ func TestGetUserErrorRequestDetail_DeletedKeyOwnerAccess(t *testing.T) {
 	ownerUID := int64(777)
 	otherUID := int64(2)
 
-	// 情况2:user_id=NULL,靠 deleted_key_owner_user_id 归因到 ownerUID
+	// =NULL,
 	mk := func() *OpsErrorLogDetail {
 		return &OpsErrorLogDetail{
 			OpsErrorLog: OpsErrorLog{
@@ -197,7 +196,7 @@ func TestGetUserErrorRequestDetail_DeletedKeyOwnerAccess(t *testing.T) {
 		}
 	}
 
-	// 原所有者(经 deleted_key 归因)→ 放行
+	// ()→
 	svcOwner := &OpsService{opsRepo: &stubOpsRepoForUserErr{detailToReturn: mk()}}
 	got, err := svcOwner.GetUserErrorRequestDetail(context.Background(), ownerUID, 55)
 	if err != nil {
@@ -210,7 +209,7 @@ func TestGetUserErrorRequestDetail_DeletedKeyOwnerAccess(t *testing.T) {
 		t.Fatalf("expected KeyDeleted=true KeyName=my-old-key, got %+v", got)
 	}
 
-	// 他人 → NotFound,不泄露存在性
+	// → NotFound,
 	svcOther := &OpsService{opsRepo: &stubOpsRepoForUserErr{detailToReturn: mk()}}
 	got2, err2 := svcOther.GetUserErrorRequestDetail(context.Background(), otherUID, 55)
 	if err2 == nil || got2 != nil {

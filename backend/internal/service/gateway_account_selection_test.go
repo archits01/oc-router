@@ -75,9 +75,8 @@ func TestSortAccountsByPriorityAndLastUsed_StableSort(t *testing.T) {
 		{ID: 3, Priority: 1, LastUsedAt: nil, Type: AccountTypeAPIKey},
 	}
 
-	// sortAccountsByPriorityAndLastUsed 内部会在同组(Priority+LastUsedAt)内做随机打散，
-	// 因此这里不再断言“稳定排序”。我们只验证：
-	// 1) 元素集合不变；2) 多次运行能产生不同的顺序。
+	// sortAccountsByPriorityAndLastUsed (Priority+LastUsedAt)
+	// 1) )
 	seenFirst := map[int64]bool{}
 	for i := 0; i < 100; i++ {
 		cpy := make([]*Account, len(accounts))
@@ -103,10 +102,10 @@ func TestSortAccountsByPriorityAndLastUsed_MixedPriorityAndTime(t *testing.T) {
 		{ID: 4, Priority: 2, LastUsedAt: testTimePtr(now.Add(-2 * time.Hour))},
 	}
 	sortAccountsByPriorityAndLastUsed(accounts, false)
-	// 优先级1排前：nil < earlier
+	// < earlier
 	require.Equal(t, int64(3), accounts[0].ID, "优先级1 + 更早")
 	require.Equal(t, int64(2), accounts[1].ID, "优先级1 + 现在")
-	// 优先级2排后：nil < time
+	// < time
 	require.Equal(t, int64(1), accounts[2].ID, "优先级2 + nil")
 	require.Equal(t, int64(4), accounts[3].ID, "优先级2 + 有时间")
 }
@@ -191,7 +190,7 @@ func TestSelectByLRU_EarliestTimeWins(t *testing.T) {
 
 func TestSelectByLRU_TiePreferOAuth(t *testing.T) {
 	now := time.Now()
-	// 账号 1/2 LastUsedAt 相同，且同为最小值。
+	//
 	accounts := []accountWithLoad{
 		makeAccWithLoad(1, 1, 10, testTimePtr(now), AccountTypeAPIKey),
 		makeAccWithLoad(2, 1, 10, testTimePtr(now), AccountTypeOAuth),

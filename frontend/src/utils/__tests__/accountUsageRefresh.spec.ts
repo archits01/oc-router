@@ -50,7 +50,7 @@ describe('buildOpenAIUsageRefreshKey', () => {
     expect(buildOpenAIUsageRefreshKey(base)).not.toBe(buildOpenAIUsageRefreshKey(next))
   })
 
-  it('非 OpenAI OAuth 账号返回空 key', () => {
+  it('非 OpenAI OAuth 账号Back空 key', () => {
     expect(buildOpenAIUsageRefreshKey({
       id: 2,
       platform: 'anthropic',

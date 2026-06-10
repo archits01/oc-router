@@ -179,8 +179,8 @@ func TestApplyOpenAIFastPolicyToBody_ExplicitFilterRemovesField(t *testing.T) {
 	require.NotContains(t, string(updated), `"service_tier"`)
 }
 
-// TestApplyOpenAIFastPolicyToBody_OfficialTiersBypassDefaultRule 验证默认配置
-// 下客户端显式发送的 OpenAI 官方合法 tier 能透传到上游而不被静默剥离。
+// TestApplyOpenAIFastPolicyToBody_OfficialTiersBypassDefaultRule
+//
 func TestApplyOpenAIFastPolicyToBody_OfficialTiersBypassDefaultRule(t *testing.T) {
 	svc := newOpenAIGatewayServiceWithSettings(t, DefaultOpenAIFastPolicySettings())
 	account := &Account{Platform: PlatformOpenAI, Type: AccountTypeAPIKey}
@@ -193,16 +193,16 @@ func TestApplyOpenAIFastPolicyToBody_OfficialTiersBypassDefaultRule(t *testing.T
 			"tier %q should be preserved in body under default policy", tier)
 	}
 
-	// evaluate 层也应判定为 pass（默认配置没有内置规则）。
+	// evaluate
 	for _, tier := range []string{"auto", "default", "scale"} {
 		action, _ := svc.evaluateOpenAIFastPolicy(context.Background(), account, "gpt-5.5", tier)
 		require.Equal(t, BetaPolicyActionPass, action, "tier %q should evaluate to pass", tier)
 	}
 }
 
-// TestApplyOpenAIFastPolicyToBody_AllRuleStripsOfficialTiers 验证管理员显式配置
-// ServiceTier=all + Action=filter 规则后，auto/default/scale 等官方 tier 也会
-// 被剥离。这是符合预期的——首条匹配 short-circuit，"all" 覆盖任意已识别 tier。
+// TestApplyOpenAIFastPolicyToBody_AllRuleStripsOfficialTiers
+// ServiceTier=all + Action=filter
+// ——"all"
 func TestApplyOpenAIFastPolicyToBody_AllRuleStripsOfficialTiers(t *testing.T) {
 	settings := &OpenAIFastPolicySettings{
 		Rules: []OpenAIFastPolicyRule{{
@@ -223,19 +223,19 @@ func TestApplyOpenAIFastPolicyToBody_AllRuleStripsOfficialTiers(t *testing.T) {
 	}
 }
 
-// TestApplyOpenAIFastPolicyToBody_UnknownTierStripped 验证真未知 tier 仍被剥离
-// （normalize 返回 nil → normalizeResponsesBodyServiceTier 删除字段；
-// applyOpenAIFastPolicyToBody 在 normTier 为空时直接 no-op，因为字段已不可能存在
-// 于经过前置归一化的请求里。这里直接调 apply 验证它对未识别值不会异常）。
+// TestApplyOpenAIFastPolicyToBody_UnknownTierStripped
+// （normalize → normalizeResponsesBodyServiceTier
+// applyOpenAIFastPolicyToBody
+//
 func TestApplyOpenAIFastPolicyToBody_UnknownTierStripped(t *testing.T) {
 	svc := newOpenAIGatewayServiceWithSettings(t, DefaultOpenAIFastPolicySettings())
 	account := &Account{Platform: PlatformOpenAI, Type: AccountTypeAPIKey}
 
-	// normalize 阶段会将未知值剥离
+	// normalize
 	require.Nil(t, normalizeOpenAIServiceTier("xxx"))
 
-	// applyOpenAIFastPolicyToBody 收到未识别 tier 时不报错，body 透传不变
-	// （不属于本函数职责——上层 normalizeResponsesBodyServiceTier 已剥离）
+	// applyOpenAIFastPolicyToBody
+	// （——
 	body := []byte(`{"model":"gpt-5.5","service_tier":"xxx"}`)
 	updated, err := svc.applyOpenAIFastPolicyToBody(context.Background(), account, "gpt-5.5", body)
 	require.NoError(t, err)

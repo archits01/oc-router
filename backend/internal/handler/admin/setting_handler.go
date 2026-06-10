@@ -21,7 +21,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// semverPattern 预编译 semver 格式校验正则
+// semverPattern
 var semverPattern = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 
 // menuItemIDPattern validates custom menu item IDs: alphanumeric, hyphens, underscores only.
@@ -54,7 +54,7 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-// SettingHandler 系统设置处理器
+// SettingHandler
 type SettingHandler struct {
 	settingService           *service.SettingService
 	emailService             *service.EmailService
@@ -66,7 +66,7 @@ type SettingHandler struct {
 	notificationEmailService *service.NotificationEmailService
 }
 
-// NewSettingHandler 创建系统设置处理器
+// NewSettingHandler
 func NewSettingHandler(settingService *service.SettingService, emailService *service.EmailService, turnstileService *service.TurnstileService, opsService *service.OpsService, paymentConfigService *service.PaymentConfigService, paymentService *service.PaymentService, userAttributeService *service.UserAttributeService) *SettingHandler {
 	return &SettingHandler{
 		settingService:       settingService,
@@ -85,7 +85,7 @@ func (h *SettingHandler) SetNotificationEmailService(notificationEmailService *s
 	h.notificationEmailService = notificationEmailService
 }
 
-// GetSettings 获取所有系统设置
+// GetSettings
 // GET /api/v1/admin/settings
 func (h *SettingHandler) GetSettings(c *gin.Context) {
 	settings, err := h.settingService.GetAllSettings(c.Request.Context())
@@ -332,10 +332,10 @@ func openaiFastPolicySettingsToDTO(s *service.OpenAIFastPolicySettings) *dto.Ope
 
 // openaiFastPolicySettingsFromDTO converts dto -> service for OpenAI fast policy.
 //
-// 规范化 ServiceTier：在 DTO 进入 service 层之前统一把空字符串归一为
-// service.OpenAIFastTierAny ("all")，避免管理员保存时空串与 "all" 同时
-// 表达"匹配任意 tier"造成数据库取值的二义性。其它非空值原样透传，由
-// service.SetOpenAIFastPolicySettings 负责合法值校验。
+//
+// service.OpenAIFastTierAny ("all")，"all"
+// ""
+// service.SetOpenAIFastPolicySettings
 func openaiFastPolicySettingsFromDTO(s *dto.OpenAIFastPolicySettings) *service.OpenAIFastPolicySettings {
 	if s == nil {
 		return nil
@@ -381,9 +381,8 @@ func loginAgreementDocumentsToService(items []dto.LoginAgreementDocument) []serv
 	return result
 }
 
-// UpdateSettingsRequest 更新设置请求
+// UpdateSettingsRequest
 type UpdateSettingsRequest struct {
-	// 注册设置
 	RegistrationEnabled              bool                         `json:"registration_enabled"`
 	EmailVerifyEnabled               bool                         `json:"email_verify_enabled"`
 	RegistrationEmailSuffixWhitelist []string                     `json:"registration_email_suffix_whitelist"`
@@ -397,7 +396,6 @@ type UpdateSettingsRequest struct {
 	LoginAgreementUpdatedAt          string                       `json:"login_agreement_updated_at"`
 	LoginAgreementDocuments          []dto.LoginAgreementDocument `json:"login_agreement_documents"`
 
-	// 邮件服务设置
 	SMTPHost     string `json:"smtp_host"`
 	SMTPPort     int    `json:"smtp_port"`
 	SMTPUsername string `json:"smtp_username"`
@@ -406,21 +404,21 @@ type UpdateSettingsRequest struct {
 	SMTPFromName string `json:"smtp_from_name"`
 	SMTPUseTLS   bool   `json:"smtp_use_tls"`
 
-	// Cloudflare Turnstile 设置
+	// Cloudflare Turnstile
 	TurnstileEnabled   bool   `json:"turnstile_enabled"`
 	TurnstileSiteKey   string `json:"turnstile_site_key"`
 	TurnstileSecretKey string `json:"turnstile_secret_key"`
 
-	// API Key IP 访问控制设置
+	// API Key IP
 	APIKeyACLTrustForwardedIP *bool `json:"api_key_acl_trust_forwarded_ip"`
 
-	// LinuxDo Connect OAuth 登录
+	// LinuxDo Connect OAuth
 	LinuxDoConnectEnabled      bool   `json:"linuxdo_connect_enabled"`
 	LinuxDoConnectClientID     string `json:"linuxdo_connect_client_id"`
 	LinuxDoConnectClientSecret string `json:"linuxdo_connect_client_secret"`
 	LinuxDoConnectRedirectURL  string `json:"linuxdo_connect_redirect_url"`
 
-	// DingTalk Connect OAuth 登录
+	// DingTalk Connect OAuth
 	DingTalkConnectEnabled                 bool   `json:"dingtalk_connect_enabled"`
 	DingTalkConnectClientID                string `json:"dingtalk_connect_client_id"`
 	DingTalkConnectClientSecret            string `json:"dingtalk_connect_client_secret"`
@@ -438,7 +436,7 @@ type UpdateSettingsRequest struct {
 	DingTalkConnectSyncDisplayNameAttrName string `json:"dingtalk_connect_sync_display_name_attr_name"`
 	DingTalkConnectSyncDeptAttrName        string `json:"dingtalk_connect_sync_dept_attr_name"`
 
-	// WeChat Connect OAuth 登录
+	// WeChat Connect OAuth
 	WeChatConnectEnabled             bool   `json:"wechat_connect_enabled"`
 	WeChatConnectAppID               string `json:"wechat_connect_app_id"`
 	WeChatConnectAppSecret           string `json:"wechat_connect_app_secret"`
@@ -456,7 +454,7 @@ type UpdateSettingsRequest struct {
 	WeChatConnectRedirectURL         string `json:"wechat_connect_redirect_url"`
 	WeChatConnectFrontendRedirectURL string `json:"wechat_connect_frontend_redirect_url"`
 
-	// Generic OIDC OAuth 登录
+	// Generic OIDC OAuth
 	OIDCConnectEnabled              bool   `json:"oidc_connect_enabled"`
 	OIDCConnectProviderName         string `json:"oidc_connect_provider_name"`
 	OIDCConnectClientID             string `json:"oidc_connect_client_id"`
@@ -491,7 +489,7 @@ type UpdateSettingsRequest struct {
 	GoogleOAuthRedirectURL         string `json:"google_oauth_redirect_url"`
 	GoogleOAuthFrontendRedirectURL string `json:"google_oauth_frontend_redirect_url"`
 
-	// OEM设置
+	// OEM
 	SiteName                    string                `json:"site_name"`
 	SiteLogo                    string                `json:"site_logo"`
 	SiteSubtitle                string                `json:"site_subtitle"`
@@ -507,7 +505,6 @@ type UpdateSettingsRequest struct {
 	CustomMenuItems             *[]dto.CustomMenuItem `json:"custom_menu_items"`
 	CustomEndpoints             *[]dto.CustomEndpoint `json:"custom_endpoints"`
 
-	// 默认配置
 	DefaultConcurrency                        int                               `json:"default_concurrency"`
 	DefaultBalance                            float64                           `json:"default_balance"`
 	AffiliateRebateRate                       *float64                          `json:"affiliate_rebate_rate"`
@@ -573,7 +570,6 @@ type UpdateSettingsRequest struct {
 	MinClaudeCodeVersion string `json:"min_claude_code_version"`
 	MaxClaudeCodeVersion string `json:"max_claude_code_version"`
 
-	// 分组隔离
 	AllowUngroupedKeyScheduling bool `json:"allow_ungrouped_key_scheduling"`
 
 	// Backend Mode
@@ -598,7 +594,6 @@ type UpdateSettingsRequest struct {
 	// OpenAI account scheduling
 	OpenAIAdvancedSchedulerEnabled *bool `json:"openai_advanced_scheduler_enabled"`
 
-	// 余额不足提醒
 	BalanceLowNotifyEnabled         *bool                   `json:"balance_low_notify_enabled"`
 	BalanceLowNotifyThreshold       *float64                `json:"balance_low_notify_threshold"`
 	BalanceLowNotifyRechargeURL     *string                 `json:"balance_low_notify_recharge_url"`
@@ -640,19 +635,18 @@ type UpdateSettingsRequest struct {
 	// Available Channels feature switch (user-facing)
 	AvailableChannelsEnabled *bool `json:"available_channels_enabled"`
 
-	// Affiliate (邀请返利) feature switch
+	// Affiliate () feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
 
-	// 风控中心功能开关
 	RiskControlEnabled *bool `json:"risk_control_enabled"`
 
 	// OpenAI fast/flex policy (optional, only updated when provided)
 	OpenAIFastPolicySettings *dto.OpenAIFastPolicySettings `json:"openai_fast_policy_settings,omitempty"`
 
-	// 系统全局 platform quota 默认值（整体替换语义：nil = 不修改，non-nil = 整体覆盖）。
+	// = =
 	DefaultPlatformQuotas map[string]*service.DefaultPlatformQuotaSetting `json:"default_platform_quotas"`
 
-	// auth-source 层 platform quota 覆盖（override 语义：nil = 不修改，non-nil = 整体覆盖该 source 的 quota 配置）。
+	// auth-source = =
 	AuthSourceEmailPlatformQuotas    map[string]*service.DefaultPlatformQuotaSetting `json:"auth_source_default_email_platform_quotas"`
 	AuthSourceLinuxDoPlatformQuotas  map[string]*service.DefaultPlatformQuotaSetting `json:"auth_source_default_linuxdo_platform_quotas"`
 	AuthSourceOIDCPlatformQuotas     map[string]*service.DefaultPlatformQuotaSetting `json:"auth_source_default_oidc_platform_quotas"`
@@ -664,7 +658,7 @@ type UpdateSettingsRequest struct {
 	AllowUserViewErrorRequests *bool `json:"allow_user_view_error_requests"`
 }
 
-// UpdateSettings 更新系统设置
+// UpdateSettings
 // PUT /api/v1/admin/settings
 func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	var req UpdateSettingsRequest
@@ -684,7 +678,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	// 验证参数
 	if req.DefaultConcurrency < 1 {
 		req.DefaultConcurrency = 1
 	}
@@ -728,7 +721,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	if affiliateRebatePerInviteeCap < 0 {
 		affiliateRebatePerInviteeCap = service.AffiliateRebatePerInviteeCapDefault
 	}
-	// 通用表格配置：兼容旧客户端未传字段时保留当前值。
 	if req.TableDefaultPageSize <= 0 {
 		req.TableDefaultPageSize = previousSettings.TableDefaultPageSize
 	}
@@ -750,8 +742,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	req.AuthSourceDefaultWeChatSubscriptions = normalizeOptionalDefaultSubscriptions(req.AuthSourceDefaultWeChatSubscriptions)
 	req.AuthSourceDefaultDingTalkSubscriptions = normalizeOptionalDefaultSubscriptions(req.AuthSourceDefaultDingTalkSubscriptions)
 
-	// SMTP 配置保护：如果请求中 smtp_host 为空但数据库中已有配置，则保留已有 SMTP 配置
-	// 防止前端加载设置失败时空表单覆盖已保存的 SMTP 配置
+	// SMTP
+	//
 	if req.SMTPHost == "" && previousSettings.SMTPHost != "" {
 		req.SMTPHost = previousSettings.SMTPHost
 		req.SMTPPort = previousSettings.SMTPPort
@@ -761,14 +753,13 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		req.SMTPUseTLS = previousSettings.SMTPUseTLS
 	}
 
-	// Turnstile 参数验证
+	// Turnstile
 	if req.TurnstileEnabled {
-		// 检查必填字段
 		if req.TurnstileSiteKey == "" {
 			response.BadRequest(c, "Turnstile Site Key is required when enabled")
 			return
 		}
-		// 如果未提供 secret key，使用已保存的值（留空保留当前值）
+		//
 		if req.TurnstileSecretKey == "" {
 			if previousSettings.TurnstileSecretKey == "" {
 				response.BadRequest(c, "Turnstile Secret Key is required when enabled")
@@ -777,7 +768,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			req.TurnstileSecretKey = previousSettings.TurnstileSecretKey
 		}
 
-		// 当 site_key 或 secret_key 任一变化时验证（避免配置错误导致无法登录）
+		//
 		siteKeyChanged := previousSettings.TurnstileSiteKey != req.TurnstileSiteKey
 		secretKeyChanged := previousSettings.TurnstileSecretKey != req.TurnstileSecretKey
 		if siteKeyChanged || secretKeyChanged {
@@ -788,10 +779,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// TOTP 双因素认证参数验证
-	// 只有手动配置了加密密钥才允许启用 TOTP 功能
+	// TOTP
+	//
 	if req.TotpEnabled && !previousSettings.TotpEnabled {
-		// 尝试启用 TOTP，检查加密密钥是否已手动配置
+		//
 		if !h.settingService.IsTotpEncryptionKeyConfigured() {
 			response.BadRequest(c, "Cannot enable TOTP: TOTP_ENCRYPTION_KEY environment variable must be configured first. Generate a key with 'openssl rand -hex 32' and set it in your environment.")
 			return
@@ -836,7 +827,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	// LinuxDo Connect 参数验证
+	// LinuxDo Connect
 	if req.LinuxDoConnectEnabled {
 		req.LinuxDoConnectClientID = strings.TrimSpace(req.LinuxDoConnectClientID)
 		req.LinuxDoConnectClientSecret = strings.TrimSpace(req.LinuxDoConnectClientSecret)
@@ -855,7 +846,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			return
 		}
 
-		// 如果未提供 client_secret，则保留现有值（如有）。
+		//
 		if req.LinuxDoConnectClientSecret == "" {
 			if previousSettings.LinuxDoConnectClientSecret == "" {
 				response.BadRequest(c, "LinuxDo Client Secret is required when enabled")
@@ -865,9 +856,9 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// DingTalk Connect 参数验证
-	// 防御性：任何写入路径上把已废弃的 corp_restriction_policy=whitelist 入参 coerce 为 none，
-	// 避免任何直连 admin API 的客户端把死值写回 DB（前端 UI 已无此选项）。
+	// DingTalk Connect
+	// =whitelist
+	//
 	req.DingTalkConnectCorpRestrictionPolicy = service.CoerceDingTalkCorpPolicyForWrite(req.DingTalkConnectCorpRestrictionPolicy)
 
 	if req.DingTalkConnectEnabled {
@@ -890,7 +881,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			return
 		}
 
-		// 如果未提供 client_secret，则保留现有值（如有）。
+		//
 		if req.DingTalkConnectClientSecret == "" {
 			if previousSettings.DingTalkConnectClientSecret == "" {
 				response.BadRequest(c, "DingTalk Client Secret is required when enabled")
@@ -899,7 +890,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			req.DingTalkConnectClientSecret = previousSettings.DingTalkConnectClientSecret
 		}
 
-		// Corp 策略校验（V1/V4 fail-closed）
+		// Corp
 		dingTalkCfg := config.DingTalkConnectConfig{
 			Enabled:               true,
 			DingTalkAppKind:       "internal_app", // 硬编码：settings 层仅支持 internal_app
@@ -907,11 +898,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			CorpRestrictionPolicy: req.DingTalkConnectCorpRestrictionPolicy,
 			InternalCorpID:        req.DingTalkConnectInternalCorpID,
 		}
-		// 若未填 corp_restriction_policy，保留已有配置
+		//
 		if dingTalkCfg.CorpRestrictionPolicy == "" {
 			dingTalkCfg.CorpRestrictionPolicy = previousSettings.DingTalkConnectCorpRestrictionPolicy
 		}
-		// 对于 internal_only 策略，app_type 必须为 internal（V1 校验）
+		//
 		if dingTalkCfg.CorpRestrictionPolicy == "internal_only" {
 			dingTalkCfg.AppType = "internal"
 		} else {
@@ -922,16 +913,16 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			return
 		}
 
-		// bypass_registration 仅在 internal_only 模式下有意义；其它策略下强制为 false，
-		// 防止 admin 在切换 policy 时把 bypass 残留在 DB 中（前端 UI 也已隐藏该开关）。
+		// bypass_registration
+		//
 		if dingTalkCfg.CorpRestrictionPolicy != "internal_only" {
 			req.DingTalkConnectBypassRegistration = false
-			// 身份同步三开关同理：仅 internal_only 模式下有意义，其它策略强制 false。
+			//
 			req.DingTalkConnectSyncCorpEmail = false
 			req.DingTalkConnectSyncDisplayName = false
 			req.DingTalkConnectSyncDept = false
 		}
-		// 身份同步目标 attr key：trimSpace + 空值 fallback 到默认值
+		// +
 		req.DingTalkConnectSyncCorpEmailAttrKey = strings.TrimSpace(req.DingTalkConnectSyncCorpEmailAttrKey)
 		if req.DingTalkConnectSyncCorpEmailAttrKey == "" {
 			req.DingTalkConnectSyncCorpEmailAttrKey = "dingtalk_email"
@@ -944,18 +935,18 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		if req.DingTalkConnectSyncDeptAttrKey == "" {
 			req.DingTalkConnectSyncDeptAttrKey = "dingtalk_department"
 		}
-		// 身份同步目标 attr 显示名称：trim + 空值 fallback 到默认中文名
+		// +
 		req.DingTalkConnectSyncCorpEmailAttrName = strings.TrimSpace(req.DingTalkConnectSyncCorpEmailAttrName)
 		if req.DingTalkConnectSyncCorpEmailAttrName == "" {
-			req.DingTalkConnectSyncCorpEmailAttrName = "钉钉企业邮箱"
+			req.DingTalkConnectSyncCorpEmailAttrName = "DingTalk企业邮箱"
 		}
 		req.DingTalkConnectSyncDisplayNameAttrName = strings.TrimSpace(req.DingTalkConnectSyncDisplayNameAttrName)
 		if req.DingTalkConnectSyncDisplayNameAttrName == "" {
-			req.DingTalkConnectSyncDisplayNameAttrName = "钉钉姓名"
+			req.DingTalkConnectSyncDisplayNameAttrName = "DingTalk姓名"
 		}
 		req.DingTalkConnectSyncDeptAttrName = strings.TrimSpace(req.DingTalkConnectSyncDeptAttrName)
 		if req.DingTalkConnectSyncDeptAttrName == "" {
-			req.DingTalkConnectSyncDeptAttrName = "钉钉部门"
+			req.DingTalkConnectSyncDeptAttrName = "DingTalk部门"
 		}
 	}
 
@@ -1088,7 +1079,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// Generic OIDC 参数验证
+	// Generic OIDC
 	oidcUsePKCE, oidcValidateIDToken, err := h.settingService.OIDCSecurityWriteDefaults(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -1228,7 +1219,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// “购买订阅”页面配置验证
 	purchaseEnabled := previousSettings.PurchaseSubscriptionEnabled
 	if req.PurchaseSubscriptionEnabled != nil {
 		purchaseEnabled = *req.PurchaseSubscriptionEnabled
@@ -1238,8 +1228,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		purchaseURL = strings.TrimSpace(*req.PurchaseSubscriptionURL)
 	}
 
-	// - 启用时要求 URL 合法且非空
-	// - 禁用时允许为空；若提供了 URL 也做基本校验，避免误配置
+	// -
+	// -
 	if purchaseEnabled {
 		if purchaseURL == "" {
 			response.BadRequest(c, "Purchase Subscription URL is required when enabled")
@@ -1256,7 +1246,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// Frontend URL 验证
+	// Frontend URL
 	req.FrontendURL = strings.TrimSpace(req.FrontendURL)
 	if req.FrontendURL != "" {
 		if err := config.ValidateAbsoluteHTTPURL(req.FrontendURL); err != nil {
@@ -1265,7 +1255,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// 自定义菜单项验证
 	const (
 		maxCustomMenuItems    = 20
 		maxMenuItemLabelLen   = 50
@@ -1353,7 +1342,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		customMenuJSON = string(menuBytes)
 	}
 
-	// 自定义端点验证
 	const (
 		maxCustomEndpoints        = 10
 		maxEndpointNameLen        = 50
@@ -1421,7 +1409,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		})
 	}
 
-	// 验证最低版本号格式（空字符串=禁用，或合法 semver）
+	// =
 	if req.MinClaudeCodeVersion != "" {
 		if !semverPattern.MatchString(req.MinClaudeCodeVersion) {
 			response.Error(c, http.StatusBadRequest, "min_claude_code_version must be empty or a valid semver (e.g. 2.1.63)")
@@ -1429,7 +1417,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// 验证最高版本号格式（空字符串=禁用，或合法 semver）
+	// =
 	if req.MaxClaudeCodeVersion != "" {
 		if !semverPattern.MatchString(req.MaxClaudeCodeVersion) {
 			response.Error(c, http.StatusBadRequest, "max_claude_code_version must be empty or a valid semver (e.g. 3.0.0)")
@@ -1447,14 +1435,13 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	if req.OpenAICodexUserAgent != nil {
 		normalized := strings.TrimSpace(*req.OpenAICodexUserAgent)
 		req.OpenAICodexUserAgent = &normalized
-		// 仅做长度上限保护，不限制具体格式（运维需要可自由调整 codex 版本号）
+		//
 		if len(normalized) > 512 {
 			response.Error(c, http.StatusBadRequest, "openai_codex_user_agent must be at most 512 characters")
 			return
 		}
 	}
 
-	// 交叉验证：如果同时设置了最低和最高版本号，最高版本号必须 >= 最低版本号
 	if req.MinClaudeCodeVersion != "" && req.MaxClaudeCodeVersion != "" {
 		if service.CompareVersions(req.MaxClaudeCodeVersion, req.MinClaudeCodeVersion) < 0 {
 			response.Error(c, http.StatusBadRequest, "max_claude_code_version must be greater than or equal to min_claude_code_version")
@@ -1463,7 +1450,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	settings := &service.SystemSettings{
-		// 系统全局 platform quota 默认值（整体替换语义）
+		//
 		DefaultPlatformQuotas: req.DefaultPlatformQuotas,
 
 		RegistrationEnabled:              req.RegistrationEnabled,
@@ -1771,8 +1758,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}(),
 	}
 
-	// req.AuthSourceXxxPlatformQuotas 为 nil 表示本次请求未包含该 source 的 quota 配置（保留 previousAuthSourceDefaults 中的值）；
-	// non-nil（含 empty map）表示整体覆盖：empty map = 清空该 source 的所有 quota 配置。
+	// req.AuthSourceXxxPlatformQuotas
+	// non-nil（=
 	authSourceDefaults := &service.AuthSourceDefaultSettings{
 		Email: service.ProviderDefaultGrantSettings{
 			Balance:          float64ValueOrDefault(req.AuthSourceDefaultEmailBalance, previousAuthSourceDefaults.Email.Balance),
@@ -1883,7 +1870,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 	h.auditSettingsUpdate(c, previousSettings, settings, previousAuthSourceDefaults, authSourceDefaults, req)
 
-	// 重新获取设置返回
 	updatedSettings, err := h.settingService.GetAllSettings(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -2099,7 +2085,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		payload.OpenAIFastPolicySettings = openaiFastPolicySettingsToDTO(fastPolicy)
 	}
 
-	// Default platform quotas（JSON map）—— 与 GetSettings 一致，避免保存后响应缺失该字段
+	// Default platform quotas（JSON map）——
 	if platformQuotas, err := h.settingService.GetDefaultPlatformQuotas(c.Request.Context()); err != nil {
 		slog.Error("default_platform_quotas_get_failed", "error", err)
 	} else {
@@ -2538,7 +2524,6 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.OpenAIAdvancedSchedulerEnabled != after.OpenAIAdvancedSchedulerEnabled {
 		changed = append(changed, "openai_advanced_scheduler_enabled")
 	}
-	// 余额、订阅到期与账号限额通知
 	if before.BalanceLowNotifyEnabled != after.BalanceLowNotifyEnabled {
 		changed = append(changed, "balance_low_notify_enabled")
 	}
@@ -2572,7 +2557,7 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.RiskControlEnabled != after.RiskControlEnabled {
 		changed = append(changed, "risk_control_enabled")
 	}
-	// Default platform quotas（JSON map，整体比较）
+	// Default platform quotas（JSON map，
 	if !equalPlatformQuotaSettings(before.DefaultPlatformQuotas, after.DefaultPlatformQuotas) {
 		changed = append(changed, service.SettingKeyDefaultPlatformQuotas)
 	}
@@ -2619,7 +2604,7 @@ func appendAuthSourceDefaultChanges(changed []string, before *service.AuthSource
 		if field.before.GrantOnFirstBind != field.after.GrantOnFirstBind {
 			changed = append(changed, "auth_source_default_"+field.name+"_grant_on_first_bind")
 		}
-		// Platform quotas diff：整体替换语义，发单个 JSON key。
+		// Platform quotas diff：
 		if !equalPlatformQuotaSettings(field.before.PlatformQuotas, field.after.PlatformQuotas) {
 			changed = append(changed, service.SettingKeyAuthSourcePlatformQuotas(field.name))
 		}
@@ -2690,10 +2675,10 @@ func defaultSubscriptionsValueOrDefault(input *[]dto.DefaultSubscriptionSetting,
 	return result
 }
 
-// platformQuotasValueOrDefault 处理 auth-source platform quota 的 nil 语义：
-// nil = 请求未包含该字段（保留 fallback），non-nil（含 empty map）= 整体覆盖。
-// 注意：JSON null 与字段省略等价——两者均反序列化为 nil map，因此都保留旧值；
-// 若要清空某 source 的所有 quota 配置，须显式发空对象 {}。
+// platformQuotasValueOrDefault
+// nil = =
+// ——
+// {}。
 func platformQuotasValueOrDefault(value, fallback map[string]*service.DefaultPlatformQuotaSetting) map[string]*service.DefaultPlatformQuotaSetting {
 	if value == nil {
 		return fallback
@@ -2818,7 +2803,7 @@ func equalNotifyEmailEntries(a, b []service.NotifyEmailEntry) bool {
 	return true
 }
 
-// TestSMTPRequest 测试SMTP连接请求
+// TestSMTPRequest
 type TestSMTPRequest struct {
 	SMTPHost     string `json:"smtp_host"`
 	SMTPPort     int    `json:"smtp_port"`
@@ -2827,7 +2812,7 @@ type TestSMTPRequest struct {
 	SMTPUseTLS   bool   `json:"smtp_use_tls"`
 }
 
-// TestSMTPConnection 测试SMTP连接
+// TestSMTPConnection
 // POST /api/v1/admin/settings/test-smtp
 func (h *SettingHandler) TestSMTPConnection(c *gin.Context) {
 	var req TestSMTPRequest
@@ -2883,7 +2868,7 @@ func (h *SettingHandler) TestSMTPConnection(c *gin.Context) {
 	response.Success(c, gin.H{"message": "SMTP connection successful"})
 }
 
-// SendTestEmailRequest 发送测试邮件请求
+// SendTestEmailRequest
 type SendTestEmailRequest struct {
 	Email        string `json:"email" binding:"required,email"`
 	SMTPHost     string `json:"smtp_host"`
@@ -2895,7 +2880,7 @@ type SendTestEmailRequest struct {
 	SMTPUseTLS   bool   `json:"smtp_use_tls"`
 }
 
-// SendTestEmail 发送测试邮件
+// SendTestEmail
 // POST /api/v1/admin/settings/send-test-email
 func (h *SettingHandler) SendTestEmail(c *gin.Context) {
 	var req SendTestEmailRequest
@@ -2994,7 +2979,7 @@ func (h *SettingHandler) SendTestEmail(c *gin.Context) {
 	response.Success(c, gin.H{"message": "Test email sent successfully"})
 }
 
-// GetAdminAPIKey 获取管理员 API Key 状态
+// GetAdminAPIKey
 // GET /api/v1/admin/settings/admin-api-key
 func (h *SettingHandler) GetAdminAPIKey(c *gin.Context) {
 	maskedKey, exists, err := h.settingService.GetAdminAPIKeyStatus(c.Request.Context())
@@ -3009,7 +2994,7 @@ func (h *SettingHandler) GetAdminAPIKey(c *gin.Context) {
 	})
 }
 
-// RegenerateAdminAPIKey 生成/重新生成管理员 API Key
+// RegenerateAdminAPIKey
 // POST /api/v1/admin/settings/admin-api-key/regenerate
 func (h *SettingHandler) RegenerateAdminAPIKey(c *gin.Context) {
 	key, err := h.settingService.GenerateAdminAPIKey(c.Request.Context())
@@ -3019,11 +3004,11 @@ func (h *SettingHandler) RegenerateAdminAPIKey(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"key": key, // 完整 key 只在生成时返回一次
+		"key": key, // 完整 key 只在生成时returned一次
 	})
 }
 
-// DeleteAdminAPIKey 删除管理员 API Key
+// DeleteAdminAPIKey
 // DELETE /api/v1/admin/settings/admin-api-key
 func (h *SettingHandler) DeleteAdminAPIKey(c *gin.Context) {
 	if err := h.settingService.DeleteAdminAPIKey(c.Request.Context()); err != nil {
@@ -3034,7 +3019,7 @@ func (h *SettingHandler) DeleteAdminAPIKey(c *gin.Context) {
 	response.Success(c, gin.H{"message": "Admin API key deleted"})
 }
 
-// GetOverloadCooldownSettings 获取529过载冷却配置
+// GetOverloadCooldownSettings
 // GET /api/v1/admin/settings/overload-cooldown
 func (h *SettingHandler) GetOverloadCooldownSettings(c *gin.Context) {
 	settings, err := h.settingService.GetOverloadCooldownSettings(c.Request.Context())
@@ -3049,13 +3034,13 @@ func (h *SettingHandler) GetOverloadCooldownSettings(c *gin.Context) {
 	})
 }
 
-// UpdateOverloadCooldownSettingsRequest 更新529过载冷却配置请求
+// UpdateOverloadCooldownSettingsRequest
 type UpdateOverloadCooldownSettingsRequest struct {
 	Enabled         bool `json:"enabled"`
 	CooldownMinutes int  `json:"cooldown_minutes"`
 }
 
-// UpdateOverloadCooldownSettings 更新529过载冷却配置
+// UpdateOverloadCooldownSettings
 // PUT /api/v1/admin/settings/overload-cooldown
 func (h *SettingHandler) UpdateOverloadCooldownSettings(c *gin.Context) {
 	var req UpdateOverloadCooldownSettingsRequest
@@ -3086,7 +3071,7 @@ func (h *SettingHandler) UpdateOverloadCooldownSettings(c *gin.Context) {
 	})
 }
 
-// GetRateLimit429CooldownSettings 获取429默认回避配置
+// GetRateLimit429CooldownSettings
 // GET /api/v1/admin/settings/rate-limit-429-cooldown
 func (h *SettingHandler) GetRateLimit429CooldownSettings(c *gin.Context) {
 	settings, err := h.settingService.GetRateLimit429CooldownSettings(c.Request.Context())
@@ -3101,13 +3086,13 @@ func (h *SettingHandler) GetRateLimit429CooldownSettings(c *gin.Context) {
 	})
 }
 
-// UpdateRateLimit429CooldownSettingsRequest 更新429默认回避配置请求
+// UpdateRateLimit429CooldownSettingsRequest
 type UpdateRateLimit429CooldownSettingsRequest struct {
 	Enabled         bool `json:"enabled"`
 	CooldownSeconds int  `json:"cooldown_seconds"`
 }
 
-// UpdateRateLimit429CooldownSettings 更新429默认回避配置
+// UpdateRateLimit429CooldownSettings
 // PUT /api/v1/admin/settings/rate-limit-429-cooldown
 func (h *SettingHandler) UpdateRateLimit429CooldownSettings(c *gin.Context) {
 	var req UpdateRateLimit429CooldownSettingsRequest
@@ -3138,7 +3123,7 @@ func (h *SettingHandler) UpdateRateLimit429CooldownSettings(c *gin.Context) {
 	})
 }
 
-// GetStreamTimeoutSettings 获取流超时处理配置
+// GetStreamTimeoutSettings
 // GET /api/v1/admin/settings/stream-timeout
 func (h *SettingHandler) GetStreamTimeoutSettings(c *gin.Context) {
 	settings, err := h.settingService.GetStreamTimeoutSettings(c.Request.Context())
@@ -3156,7 +3141,7 @@ func (h *SettingHandler) GetStreamTimeoutSettings(c *gin.Context) {
 	})
 }
 
-// GetRectifierSettings 获取请求整流器配置
+// GetRectifierSettings
 // GET /api/v1/admin/settings/rectifier
 func (h *SettingHandler) GetRectifierSettings(c *gin.Context) {
 	settings, err := h.settingService.GetRectifierSettings(c.Request.Context())
@@ -3178,7 +3163,7 @@ func (h *SettingHandler) GetRectifierSettings(c *gin.Context) {
 	})
 }
 
-// UpdateRectifierSettingsRequest 更新整流器配置请求
+// UpdateRectifierSettingsRequest
 type UpdateRectifierSettingsRequest struct {
 	Enabled                  bool     `json:"enabled"`
 	ThinkingSignatureEnabled bool     `json:"thinking_signature_enabled"`
@@ -3187,7 +3172,7 @@ type UpdateRectifierSettingsRequest struct {
 	APIKeySignaturePatterns  []string `json:"apikey_signature_patterns"`
 }
 
-// UpdateRectifierSettings 更新请求整流器配置
+// UpdateRectifierSettings
 // PUT /api/v1/admin/settings/rectifier
 func (h *SettingHandler) UpdateRectifierSettings(c *gin.Context) {
 	var req UpdateRectifierSettingsRequest
@@ -3196,7 +3181,6 @@ func (h *SettingHandler) UpdateRectifierSettings(c *gin.Context) {
 		return
 	}
 
-	// 校验并清理自定义匹配关键词
 	const maxPatterns = 50
 	const maxPatternLen = 500
 	if len(req.APIKeySignaturePatterns) > maxPatterns {
@@ -3229,7 +3213,6 @@ func (h *SettingHandler) UpdateRectifierSettings(c *gin.Context) {
 		return
 	}
 
-	// 重新获取设置返回
 	updatedSettings, err := h.settingService.GetRectifierSettings(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -3249,7 +3232,7 @@ func (h *SettingHandler) UpdateRectifierSettings(c *gin.Context) {
 	})
 }
 
-// GetBetaPolicySettings 获取 Beta 策略配置
+// GetBetaPolicySettings
 // GET /api/v1/admin/settings/beta-policy
 func (h *SettingHandler) GetBetaPolicySettings(c *gin.Context) {
 	settings, err := h.settingService.GetBetaPolicySettings(c.Request.Context())
@@ -3265,12 +3248,12 @@ func (h *SettingHandler) GetBetaPolicySettings(c *gin.Context) {
 	response.Success(c, dto.BetaPolicySettings{Rules: rules})
 }
 
-// UpdateBetaPolicySettingsRequest 更新 Beta 策略配置请求
+// UpdateBetaPolicySettingsRequest
 type UpdateBetaPolicySettingsRequest struct {
 	Rules []dto.BetaPolicyRule `json:"rules"`
 }
 
-// UpdateBetaPolicySettings 更新 Beta 策略配置
+// UpdateBetaPolicySettings
 // PUT /api/v1/admin/settings/beta-policy
 func (h *SettingHandler) UpdateBetaPolicySettings(c *gin.Context) {
 	var req UpdateBetaPolicySettingsRequest
@@ -3304,7 +3287,7 @@ func (h *SettingHandler) UpdateBetaPolicySettings(c *gin.Context) {
 	response.Success(c, dto.BetaPolicySettings{Rules: outRules})
 }
 
-// UpdateStreamTimeoutSettingsRequest 更新流超时配置请求
+// UpdateStreamTimeoutSettingsRequest
 type UpdateStreamTimeoutSettingsRequest struct {
 	Enabled                bool   `json:"enabled"`
 	Action                 string `json:"action"`
@@ -3313,7 +3296,7 @@ type UpdateStreamTimeoutSettingsRequest struct {
 	ThresholdWindowMinutes int    `json:"threshold_window_minutes"`
 }
 
-// UpdateStreamTimeoutSettings 更新流超时处理配置
+// UpdateStreamTimeoutSettings
 // PUT /api/v1/admin/settings/stream-timeout
 func (h *SettingHandler) UpdateStreamTimeoutSettings(c *gin.Context) {
 	var req UpdateStreamTimeoutSettingsRequest
@@ -3335,7 +3318,6 @@ func (h *SettingHandler) UpdateStreamTimeoutSettings(c *gin.Context) {
 		return
 	}
 
-	// 重新获取设置返回
 	updatedSettings, err := h.settingService.GetStreamTimeoutSettings(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -3351,7 +3333,7 @@ func (h *SettingHandler) UpdateStreamTimeoutSettings(c *gin.Context) {
 	})
 }
 
-// GetWebSearchEmulationConfig 获取 Web Search 模拟配置
+// GetWebSearchEmulationConfig
 // GET /api/v1/admin/settings/web-search-emulation
 func (h *SettingHandler) GetWebSearchEmulationConfig(c *gin.Context) {
 	cfg, err := h.settingService.GetWebSearchEmulationConfig(c.Request.Context())
@@ -3362,7 +3344,7 @@ func (h *SettingHandler) GetWebSearchEmulationConfig(c *gin.Context) {
 	response.Success(c, service.PopulateWebSearchUsage(c.Request.Context(), cfg))
 }
 
-// UpdateWebSearchEmulationConfig 更新 Web Search 模拟配置
+// UpdateWebSearchEmulationConfig
 // PUT /api/v1/admin/settings/web-search-emulation
 func (h *SettingHandler) UpdateWebSearchEmulationConfig(c *gin.Context) {
 	var cfg service.WebSearchEmulationConfig
@@ -3385,7 +3367,7 @@ func (h *SettingHandler) UpdateWebSearchEmulationConfig(c *gin.Context) {
 	response.Success(c, service.PopulateWebSearchUsage(c.Request.Context(), updated))
 }
 
-// ResetWebSearchUsage 重置指定 provider 的配额用量
+// ResetWebSearchUsage
 // POST /api/v1/admin/settings/web-search-emulation/reset-usage
 func (h *SettingHandler) ResetWebSearchUsage(c *gin.Context) {
 	var req struct {
@@ -3406,7 +3388,7 @@ func (h *SettingHandler) ResetWebSearchUsage(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// TestWebSearchEmulation 测试 Web Search 搜索
+// TestWebSearchEmulation
 // POST /api/v1/admin/settings/web-search-emulation/test
 func (h *SettingHandler) TestWebSearchEmulation(c *gin.Context) {
 	var req struct {
@@ -3428,10 +3410,10 @@ func (h *SettingHandler) TestWebSearchEmulation(c *gin.Context) {
 	response.Success(c, result)
 }
 
-// ensureDingTalkSyncAttributes 在保存 settings 后，按 admin 配置的 (attr key, attr name)
-// 兜底 upsert 对应 user attribute definition：不存在则创建；存在但 name 不同则更新 name
-// （type/options/required 不变）。仅 internal_only + 对应 sync 开关开启时执行。
-// 失败仅记录日志，不阻塞 settings 保存。
+// ensureDingTalkSyncAttributes (attr key, attr name)
+//
+// （type/options/required +
+//
 func (h *SettingHandler) ensureDingTalkSyncAttributes(ctx context.Context, settings *service.SystemSettings) {
 	if h.userAttributeService == nil || settings == nil {
 		return
@@ -3440,13 +3422,13 @@ func (h *SettingHandler) ensureDingTalkSyncAttributes(ctx context.Context, setti
 		return
 	}
 	if settings.DingTalkConnectSyncDisplayName {
-		h.ensureUserAttributeDefinition(ctx, settings.DingTalkConnectSyncDisplayNameAttrKey, settings.DingTalkConnectSyncDisplayNameAttrName, "钉钉 internal_only 登录时同步的钉钉姓名", service.AttributeTypeText)
+		h.ensureUserAttributeDefinition(ctx, settings.DingTalkConnectSyncDisplayNameAttrKey, settings.DingTalkConnectSyncDisplayNameAttrName, "DingTalk internal_only 登录时同步的DingTalk姓名", service.AttributeTypeText)
 	}
 	if settings.DingTalkConnectSyncCorpEmail {
-		h.ensureUserAttributeDefinition(ctx, settings.DingTalkConnectSyncCorpEmailAttrKey, settings.DingTalkConnectSyncCorpEmailAttrName, "钉钉 internal_only 登录时同步的企业邮箱", service.AttributeTypeEmail)
+		h.ensureUserAttributeDefinition(ctx, settings.DingTalkConnectSyncCorpEmailAttrKey, settings.DingTalkConnectSyncCorpEmailAttrName, "DingTalk internal_only 登录时同步的企业邮箱", service.AttributeTypeEmail)
 	}
 	if settings.DingTalkConnectSyncDept {
-		h.ensureUserAttributeDefinition(ctx, settings.DingTalkConnectSyncDeptAttrKey, settings.DingTalkConnectSyncDeptAttrName, "钉钉 internal_only 登录时同步的完整部门路径（如：公司/研发部）", service.AttributeTypeText)
+		h.ensureUserAttributeDefinition(ctx, settings.DingTalkConnectSyncDeptAttrKey, settings.DingTalkConnectSyncDeptAttrName, "DingTalk internal_only 登录时同步的完整部门路径（如：公司/研发部）", service.AttributeTypeText)
 	}
 }
 

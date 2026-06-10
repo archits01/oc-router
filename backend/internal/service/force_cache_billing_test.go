@@ -48,18 +48,16 @@ func TestIsForceCacheBilling(t *testing.T) {
 func TestWithForceCacheBilling(t *testing.T) {
 	ctx := context.Background()
 
-	// 原始上下文没有标记
 	if IsForceCacheBilling(ctx) {
 		t.Error("original context should not have force cache billing")
 	}
 
-	// 使用 WithForceCacheBilling 后应该有标记
+	//
 	newCtx := WithForceCacheBilling(ctx)
 	if !IsForceCacheBilling(newCtx) {
 		t.Error("new context should have force cache billing")
 	}
 
-	// 原始上下文应该不受影响
 	if IsForceCacheBilling(ctx) {
 		t.Error("original context should still not have force cache billing")
 	}
@@ -110,13 +108,13 @@ func TestForceCacheBilling_TokenConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// 模拟 RecordUsage 中的 ForceCacheBilling 逻辑
+			//
 			usage := ClaudeUsage{
 				InputTokens:          tt.inputTokens,
 				CacheReadInputTokens: tt.cacheReadInputTokens,
 			}
 
-			// 这是 RecordUsage 中的实际逻辑
+			//
 			if tt.forceCacheBilling && usage.InputTokens > 0 {
 				usage.CacheReadInputTokens += usage.InputTokens
 				usage.InputTokens = 0

@@ -174,7 +174,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 	require.NotNil(t, result)
 	require.True(t, result.Stream)
 
-	require.Equal(t, "claude-3-haiku-20240307", gjson.GetBytes(upstream.lastBody, "model").String(), "透传模式应应用账号级模型映射")
+	require.Equal(t, "claude-3-haiku-20240307", gjson.GetBytes(upstream.lastBody, "model").String(), "透传模式应应用账号级model映射")
 
 	require.Equal(t, "upstream-anthropic-key", getHeaderRaw(upstream.lastReq.Header, "x-api-key"))
 	require.Empty(t, getHeaderRaw(upstream.lastReq.Header, "authorization"))
@@ -186,7 +186,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 
 	require.Contains(t, rec.Body.String(), `"cached_tokens":7`)
 	require.NotContains(t, rec.Body.String(), `"cache_read_input_tokens":7`, "透传输出不应被网关改写")
-	require.Equal(t, 7, result.Usage.CacheReadInputTokens, "计费 usage 解析应保留 cached_tokens 兼容")
+	require.Equal(t, 7, result.Usage.CacheReadInputTokens, "计费 usage parse应保留 cached_tokens 兼容")
 	require.Empty(t, rec.Header().Get("Set-Cookie"), "响应头应经过安全过滤")
 }
 
@@ -252,7 +252,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardCountTokensPreservesBo
 	err := svc.ForwardCountTokens(context.Background(), c, account, parsed)
 	require.NoError(t, err)
 
-	require.Equal(t, "claude-3-opus-20240229", gjson.GetBytes(upstream.lastBody, "model").String(), "count_tokens 透传模式应应用账号级模型映射")
+	require.Equal(t, "claude-3-opus-20240229", gjson.GetBytes(upstream.lastBody, "model").String(), "count_tokens 透传模式应应用账号级model映射")
 	require.Equal(t, "upstream-anthropic-key", getHeaderRaw(upstream.lastReq.Header, "x-api-key"))
 	require.Empty(t, getHeaderRaw(upstream.lastReq.Header, "authorization"))
 	require.Empty(t, getHeaderRaw(upstream.lastReq.Header, "cookie"))
@@ -261,75 +261,75 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardCountTokensPreservesBo
 	require.Empty(t, rec.Header().Get("Set-Cookie"))
 }
 
-// TestGatewayService_AnthropicAPIKeyPassthrough_ModelMappingEdgeCases 覆盖透传模式下模型映射的各种边界情况
+// TestGatewayService_AnthropicAPIKeyPassthrough_ModelMappingEdgeCases
 func TestGatewayService_AnthropicAPIKeyPassthrough_ModelMappingEdgeCases(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
 		name          string
 		model         string
-		modelMapping  map[string]any // nil = 不配置映射
+		modelMapping  map[string]any // nil = 不configuration映射
 		expectedModel string
 		endpoint      string // "messages" or "count_tokens"
 	}{
 		{
-			name:          "Forward: 无映射配置时不改写模型",
+			name:          "Forward: 无映射configuration时不改写model",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  nil,
 			expectedModel: "claude-sonnet-4-20250514",
 			endpoint:      "messages",
 		},
 		{
-			name:          "Forward: 空映射配置时不改写模型",
+			name:          "Forward: 空映射configuration时不改写model",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  map[string]any{},
 			expectedModel: "claude-sonnet-4-20250514",
 			endpoint:      "messages",
 		},
 		{
-			name:          "Forward: 模型不在映射表中时不改写",
+			name:          "Forward: model不在映射表中时不改写",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  map[string]any{"claude-3-haiku-20240307": "claude-3-opus-20240229"},
 			expectedModel: "claude-sonnet-4-20250514",
 			endpoint:      "messages",
 		},
 		{
-			name:          "Forward: 精确匹配映射应改写模型",
+			name:          "Forward: 精确匹配映射应改写model",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  map[string]any{"claude-sonnet-4-20250514": "claude-sonnet-4-5-20241022"},
 			expectedModel: "claude-sonnet-4-5-20241022",
 			endpoint:      "messages",
 		},
 		{
-			name:          "Forward: 通配符映射应改写模型",
+			name:          "Forward: 通配符映射应改写model",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  map[string]any{"claude-sonnet-4-*": "claude-sonnet-4-5-20241022"},
 			expectedModel: "claude-sonnet-4-5-20241022",
 			endpoint:      "messages",
 		},
 		{
-			name:          "CountTokens: 无映射配置时不改写模型",
+			name:          "CountTokens: 无映射configuration时不改写model",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  nil,
 			expectedModel: "claude-sonnet-4-20250514",
 			endpoint:      "count_tokens",
 		},
 		{
-			name:          "CountTokens: 模型不在映射表中时不改写",
+			name:          "CountTokens: model不在映射表中时不改写",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  map[string]any{"claude-3-haiku-20240307": "claude-3-opus-20240229"},
 			expectedModel: "claude-sonnet-4-20250514",
 			endpoint:      "count_tokens",
 		},
 		{
-			name:          "CountTokens: 精确匹配映射应改写模型",
+			name:          "CountTokens: 精确匹配映射应改写model",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  map[string]any{"claude-sonnet-4-20250514": "claude-sonnet-4-5-20241022"},
 			expectedModel: "claude-sonnet-4-5-20241022",
 			endpoint:      "count_tokens",
 		},
 		{
-			name:          "CountTokens: 通配符映射应改写模型",
+			name:          "CountTokens: 通配符映射应改写model",
 			model:         "claude-sonnet-4-20250514",
 			modelMapping:  map[string]any{"claude-sonnet-4-*": "claude-sonnet-4-5-20241022"},
 			expectedModel: "claude-sonnet-4-5-20241022",
@@ -390,7 +390,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ModelMappingEdgeCases(t *test
 				require.NoError(t, err)
 				require.NotNil(t, result)
 				require.Equal(t, tt.expectedModel, gjson.GetBytes(upstream.lastBody, "model").String(),
-					"Forward 上游请求体中的模型应为: %s", tt.expectedModel)
+					"Forward 上游请求体中的model应为: %s", tt.expectedModel)
 			} else {
 				c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages/count_tokens", nil)
 
@@ -411,14 +411,14 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ModelMappingEdgeCases(t *test
 				err := svc.ForwardCountTokens(context.Background(), c, account, parsed)
 				require.NoError(t, err)
 				require.Equal(t, tt.expectedModel, gjson.GetBytes(upstream.lastBody, "model").String(),
-					"CountTokens 上游请求体中的模型应为: %s", tt.expectedModel)
+					"CountTokens 上游请求体中的model应为: %s", tt.expectedModel)
 			}
 		})
 	}
 }
 
 // TestGatewayService_AnthropicAPIKeyPassthrough_ModelMappingPreservesOtherFields
-// 确保模型映射只替换 model 字段，不影响请求体中的其他字段
+//
 func TestGatewayService_AnthropicAPIKeyPassthrough_ModelMappingPreservesOtherFields(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -426,7 +426,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ModelMappingPreservesOtherFie
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages/count_tokens", nil)
 
-	// 包含复杂字段的请求体：system、thinking、messages
+	//
 	body := []byte(`{"model":"claude-sonnet-4-20250514","system":[{"type":"text","text":"You are a helpful assistant."}],"messages":[{"role":"user","content":[{"type":"text","text":"hello world"}]}],"thinking":{"type":"enabled","budget_tokens":5000},"max_tokens":1024}`)
 	parsed := &ParsedRequest{
 		Body:  NewRequestBodyRef(body),
@@ -537,7 +537,6 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_CountTokensFiltersGenerationF
 }
 
 // TestGatewayService_AnthropicAPIKeyPassthrough_EmptyModelSkipsMapping
-// 确保空模型名不会触发映射逻辑
 func TestGatewayService_AnthropicAPIKeyPassthrough_EmptyModelSkipsMapping(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -548,7 +547,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_EmptyModelSkipsMapping(t *tes
 	body := []byte(`{"messages":[{"role":"user","content":"hello"}]}`)
 	parsed := &ParsedRequest{
 		Body:  NewRequestBodyRef(body),
-		Model: "", // 空模型
+		Model: "", // 空model
 	}
 
 	upstreamRespBody := `{"input_tokens":10}`
@@ -584,8 +583,8 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_EmptyModelSkipsMapping(t *tes
 
 	err := svc.ForwardCountTokens(context.Background(), c, account, parsed)
 	require.NoError(t, err)
-	// 空模型名时，body 应原样透传，不应触发映射
-	require.Equal(t, body, upstream.lastBody, "空模型名时请求体不应被修改")
+	//
+	require.Equal(t, body, upstream.lastBody, "空model名时请求体不应被修改")
 }
 
 func TestGatewayService_AnthropicAPIKeyPassthrough_CountTokens404PassthroughNotError(t *testing.T) {
@@ -672,7 +671,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_CountTokens404PassthroughNotE
 			err := svc.ForwardCountTokens(context.Background(), c, account, parsed)
 
 			if tt.wantPassthrough {
-				// 返回 nil（不记录为错误），HTTP 状态码 404 + Anthropic 错误体
+				// + Anthropic
 				require.NoError(t, err)
 				require.Equal(t, http.StatusNotFound, rec.Code)
 				var errResp map[string]any
@@ -829,7 +828,7 @@ func TestGatewayService_AnthropicOAuth_ForwardPreservesBillingHeaderSystemBlock(
 			require.Equal(t, claudeCodeSystemPromptExpansion, arr[2].Get("text").String())
 			require.Equal(t, "ephemeral", arr[2].Get("cache_control.type").String())
 
-			// 原始 system prompt 应迁移至 messages 中
+			//
 			messages := gjson.GetBytes(upstream.lastBody, "messages")
 			require.True(t, messages.IsArray())
 			firstMsg := messages.Array()[0]
@@ -1068,7 +1067,7 @@ func TestGatewayService_ParseSSEUsagePassthrough_MessageDeltaSelectiveOverwrite(
 	require.Equal(t, 10, usage.InputTokens, "message_delta 中 0 值不应覆盖已有 input_tokens")
 	require.Equal(t, 5, usage.OutputTokens)
 	require.Equal(t, 8, usage.CacheCreationInputTokens)
-	require.Equal(t, 11, usage.CacheReadInputTokens, "cache_read_input_tokens 为空时应回退到 cached_tokens")
+	require.Equal(t, 11, usage.CacheReadInputTokens, "cache_read_input_tokens 为空时应fallback到 cached_tokens")
 	require.Equal(t, 1, usage.CacheCreation5mTokens)
 	require.Equal(t, 6, usage.CacheCreation1hTokens, "message_delta 中 0 值不应覆盖已有 1h 明细")
 }
@@ -1086,7 +1085,7 @@ func TestGatewayService_ParseSSEUsagePassthrough_NoopCases(t *testing.T) {
 	svc.parseSSEUsagePassthrough("not-json", usage)
 	require.Equal(t, 3, usage.InputTokens)
 
-	// nil usage 不应 panic
+	// nil usage
 	svc.parseSSEUsagePassthrough(`{"type":"message_start"}`, nil)
 }
 
@@ -1117,7 +1116,7 @@ func TestParseClaudeUsageFromResponseBody(t *testing.T) {
 		got := parseClaudeUsageFromResponseBody(body)
 		require.Equal(t, 21, got.InputTokens)
 		require.Equal(t, 34, got.OutputTokens)
-		require.Equal(t, 13, got.CacheReadInputTokens, "cache_read_input_tokens 为空时应回退 cached_tokens")
+		require.Equal(t, 13, got.CacheReadInputTokens, "cache_read_input_tokens 为空时应fallback cached_tokens")
 		require.Equal(t, 13, got.CacheCreationInputTokens, "聚合字段为空时应由 5m/1h 回填")
 		require.Equal(t, 5, got.CacheCreation5mTokens)
 		require.Equal(t, 8, got.CacheCreation1hTokens)
@@ -1127,7 +1126,7 @@ func TestParseClaudeUsageFromResponseBody(t *testing.T) {
 		body := []byte(`{"usage":{"input_tokens":1,"output_tokens":2,"cache_creation_input_tokens":9,"cache_read_input_tokens":7,"cached_tokens":99,"cache_creation":{"ephemeral_5m_input_tokens":4,"ephemeral_1h_input_tokens":5}}}`)
 		got := parseClaudeUsageFromResponseBody(body)
 		require.Equal(t, 9, got.CacheCreationInputTokens, "已显式提供聚合字段时不应被明细覆盖")
-		require.Equal(t, 7, got.CacheReadInputTokens, "已显式提供 cache_read_input_tokens 时不应回退 cached_tokens")
+		require.Equal(t, 7, got.CacheReadInputTokens, "已显式提供 cache_read_input_tokens 时不应fallback cached_tokens")
 	})
 }
 
@@ -1145,7 +1144,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_StreamingErrTooLong(t *testin
 		},
 	}
 
-	// Scanner 初始缓冲为 64KB，构造更长单行触发 bufio.ErrTooLong。
+	// Scanner
 	longLine := "data: " + strings.Repeat("x", 80*1024)
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
@@ -1342,7 +1341,6 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_StreamingTimeoutAfterClientDi
 	go func() {
 		defer close(done)
 		_, _ = pw.Write([]byte(`data: {"type":"message_start","message":{"usage":{"input_tokens":9}}}` + "\n"))
-		// 保持上游连接静默，触发数据间隔超时分支。
 		time.Sleep(1500 * time.Millisecond)
 		_ = pw.Close()
 	}()

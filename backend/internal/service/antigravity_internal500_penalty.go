@@ -10,15 +10,15 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// INTERNAL 500 渐进惩罚：连续多轮全部返回特定 500 错误时的惩罚时长
+// INTERNAL 500
 const (
-	internal500PenaltyTier1Duration  = 30 * time.Minute // 第 1 轮：临时不可调度 30 分钟
+	internal500PenaltyTier1Duration  = 30 * time.Minute // 第 1 轮：临时不可调度 30 minutes
 	internal500PenaltyTier2Duration  = 2 * time.Hour    // 第 2 轮：临时不可调度 2 小时
 	internal500PenaltyTier3Threshold = 3                // 第 3+ 轮：永久禁用
 )
 
-// isAntigravityInternalServerError 检测特定的 INTERNAL 500 错误
-// 必须同时匹配 error.code==500, error.message=="Internal error encountered.", error.status=="INTERNAL"
+// isAntigravityInternalServerError
+// ==500, error.message=="Internal error encountered.", error.status=="INTERNAL"
 func isAntigravityInternalServerError(statusCode int, body []byte) bool {
 	if statusCode != http.StatusInternalServerError {
 		return false
@@ -28,10 +28,10 @@ func isAntigravityInternalServerError(statusCode int, body []byte) bool {
 		gjson.GetBytes(body, "error.status").String() == "INTERNAL"
 }
 
-// applyInternal500Penalty 根据连续 INTERNAL 500 轮次数应用渐进惩罚
-// count=1: temp_unschedulable 10 分钟
-// count=2: temp_unschedulable 10 小时
-// count>=3: SetError 永久禁用
+// applyInternal500Penalty
+// count=1: temp_unschedulable 10
+// count=2: temp_unschedulable 10
+// count>=3: SetError
 func (s *AntigravityGatewayService) applyInternal500Penalty(
 	ctx context.Context, prefix string, account *Account, count int64,
 ) {
@@ -67,7 +67,7 @@ func (s *AntigravityGatewayService) applyInternal500Penalty(
 	}
 }
 
-// handleInternal500RetryExhausted 处理 INTERNAL 500 重试耗尽：递增计数器并应用惩罚
+// handleInternal500RetryExhausted
 func (s *AntigravityGatewayService) handleInternal500RetryExhausted(
 	ctx context.Context, prefix string, account *Account,
 ) {
@@ -83,7 +83,7 @@ func (s *AntigravityGatewayService) handleInternal500RetryExhausted(
 	s.applyInternal500Penalty(ctx, prefix, account, count)
 }
 
-// resetInternal500Counter 成功响应时清零 INTERNAL 500 计数器
+// resetInternal500Counter
 func (s *AntigravityGatewayService) resetInternal500Counter(
 	ctx context.Context, prefix string, accountID int64,
 ) {

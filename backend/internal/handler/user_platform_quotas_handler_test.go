@@ -18,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// fakeQuotaRepoForUserHandler 实现 service.UserPlatformQuotaRepository 最小子集
+// fakeQuotaRepoForUserHandler
 type fakeQuotaRepoForUserHandler struct {
 	service.UserPlatformQuotaRepository
 	records []service.UserPlatformQuotaRecord
@@ -53,8 +53,8 @@ func TestGetMyPlatformQuotas_EmptyReturns200WithEmptyArray(t *testing.T) {
 		t.Errorf("expected code=0, got %d", body.Code)
 	}
 	if body.Data.PlatformQuotas == nil {
-		// nil 和 empty slice 均视为可接受（JSON 可能序列化为 null 或 []）
-		// 此断言只验证 HTTP 200 + code=0 即可
+		// nil []）
+		// + code=0
 	}
 }
 
@@ -80,7 +80,7 @@ func TestGetMyPlatformQuotas_D14_LazyZeroForExpiredWindow(t *testing.T) {
 		t.Fatalf("expected 200, got %d. body: %s", w.Code, w.Body.String())
 	}
 
-	// 解析 response，验证过期 daily 的 usage_usd=0 且 window_resets_at=null
+	// =0 =null
 	body := w.Body.String()
 	if !strings.Contains(body, `"daily_usage_usd":0`) {
 		t.Errorf("expected daily_usage_usd:0 in body, got: %s", body)
@@ -109,7 +109,7 @@ func TestGetMyPlatformQuotas_NoAuth_Returns401(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodGet, "/user/platform-quotas", nil)
-	// 不设置 auth subject
+	//
 	h.GetMyPlatformQuotas(c)
 	if w.Code != 401 {
 		t.Fatalf("expected 401, got %d", w.Code)
@@ -142,7 +142,7 @@ func TestLazyZeroQuotaForResponse_AdminViewIncludesWindowStart(t *testing.T) {
 }
 
 func TestLazyZeroQuotaForResponse_ActiveWindowPreservesUsage(t *testing.T) {
-	// 今天的窗口起始时间（不过期）：按全局时区取当天 0 点，与 view 层同口径
+	//
 	now := time.Now()
 	today := timezone.StartOfDay(now)
 	usage := 2.5
@@ -155,7 +155,7 @@ func TestLazyZeroQuotaForResponse_ActiveWindowPreservesUsage(t *testing.T) {
 	if out["daily_usage_usd"] != usage {
 		t.Errorf("expected daily_usage_usd=%v, got %v", usage, out["daily_usage_usd"])
 	}
-	// 活跃窗口应有 resets_at（非 nil）
+	//
 	if out["daily_window_resets_at"] == nil {
 		t.Error("active window should have daily_window_resets_at set")
 	}
@@ -186,24 +186,24 @@ func TestNeedsMonthlyReset_NilStart_ReturnsFalse(t *testing.T) {
 	}
 }
 
-// TestNeedsMonthlyReset_30DayRolling 验证 30 天滚动语义（C-NEW-1）。
+// TestNeedsMonthlyReset_30DayRolling
 func TestNeedsMonthlyReset_30DayRolling_Expired(t *testing.T) {
-	start := time.Now().UTC().Add(-31 * 24 * time.Hour) // 31 天前，已过期
+	start := time.Now().UTC().Add(-31 * 24 * time.Hour) // 31 天前，expired
 	if !quotaview.NeedsMonthlyReset(&start, time.Now().UTC()) {
 		t.Error("31 days ago should need monthly reset (30-day rolling)")
 	}
 }
 
 func TestNeedsMonthlyReset_30DayRolling_Active(t *testing.T) {
-	start := time.Now().UTC().Add(-15 * 24 * time.Hour) // 15 天前，窗口有效
+	start := time.Now().UTC().Add(-15 * 24 * time.Hour) // 15 天前，窗口valid
 	if quotaview.NeedsMonthlyReset(&start, time.Now().UTC()) {
 		t.Error("15 days ago should NOT need monthly reset (30-day rolling, still active)")
 	}
 }
 
-// TestNeedsMonthlyReset_CrossMonthBoundary 验证跨自然月时 30 天未满不重置（旧自然月语义会提前重置）。
+// TestNeedsMonthlyReset_CrossMonthBoundary
 func TestNeedsMonthlyReset_CrossMonthBoundary(t *testing.T) {
-	// 窗口起始 4 月 20 日；5 月 1 日仅过了 11 天，不足 30 天，不应重置
+	//
 	windowStart := time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC)
 	now := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
 	if quotaview.NeedsMonthlyReset(&windowStart, now) {

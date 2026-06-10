@@ -33,7 +33,7 @@ func TestMaybeReset(t *testing.T) {
 	}
 }
 
-// TestMonthlyMaybeReset_NilStart 验证 prevStart=nil 时重置。
+// TestMonthlyMaybeReset_NilStart =nil
 func TestMonthlyMaybeReset_NilStart(t *testing.T) {
 	now := time.Date(2026, 5, 22, 12, 0, 0, 0, time.UTC)
 	usage, start := monthlyMaybeReset(10.0, nil, 1.5, now)
@@ -45,10 +45,10 @@ func TestMonthlyMaybeReset_NilStart(t *testing.T) {
 	}
 }
 
-// TestMonthlyMaybeReset_Expired 验证窗口满 30 天时重置（30 天恰好到期）。
+// TestMonthlyMaybeReset_Expired
 func TestMonthlyMaybeReset_Expired(t *testing.T) {
 	windowStart := time.Date(2026, 4, 22, 12, 0, 0, 0, time.UTC)
-	// now = windowStart + 30d（刚好到期）
+	// now = windowStart + 30d（
 	now := windowStart.Add(30 * 24 * time.Hour)
 	usage, start := monthlyMaybeReset(8.0, &windowStart, 2.0, now)
 	if usage != 2.0 {
@@ -59,11 +59,11 @@ func TestMonthlyMaybeReset_Expired(t *testing.T) {
 	}
 }
 
-// TestMonthlyMaybeReset_CrossMonthBoundary 验证跨自然月时也使用 30 天滚动（不提前重置）。
-// 旧行为：5 月 1 日跨月立即重置；新行为：窗口起始 4 月 20 日，5 月 1 日仅过了 11 天，应累加。
+// TestMonthlyMaybeReset_CrossMonthBoundary
+//
 func TestMonthlyMaybeReset_CrossMonthBoundary(t *testing.T) {
 	windowStart := time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC)
-	// 5 月 1 日：距起始 11 天，不足 30 天，应累加
+	// 5
 	now := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
 	usage, start := monthlyMaybeReset(5.0, &windowStart, 1.0, now)
 	if usage != 6.0 {
@@ -74,10 +74,9 @@ func TestMonthlyMaybeReset_CrossMonthBoundary(t *testing.T) {
 	}
 }
 
-// TestMonthlyMaybeReset_Active 验证窗口内正常累加。
+// TestMonthlyMaybeReset_Active
 func TestMonthlyMaybeReset_Active(t *testing.T) {
 	windowStart := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
-	// 15 天内，窗口有效
 	now := windowStart.Add(15 * 24 * time.Hour)
 	usage, start := monthlyMaybeReset(3.0, &windowStart, 0.5, now)
 	if usage != 3.5 {
@@ -88,9 +87,9 @@ func TestMonthlyMaybeReset_Active(t *testing.T) {
 	}
 }
 
-// TestUpdateLimitsRowQuery_HasDeletedAtGuard 通过读取源文件验证 updateLimitsRow
-// 的 SQL WHERE 子句包含 deleted_at IS NULL 守卫（I-NEW-1）。
-// 此防回归测试可在无 DB 的 CI 环境中运行，防止意外删除该守卫。
+// TestUpdateLimitsRowQuery_HasDeletedAtGuard
+//
+//
 func TestUpdateLimitsRowQuery_HasDeletedAtGuard(t *testing.T) {
 	src, err := os.ReadFile("user_platform_quota_repo.go")
 	if err != nil {

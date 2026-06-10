@@ -81,7 +81,7 @@ func TestSubscriptionMaintenanceQueue_TryEnqueue_NilTask(t *testing.T) {
 
 func TestSubscriptionMaintenanceQueue_Stop_NilReceiver(t *testing.T) {
 	var q *SubscriptionMaintenanceQueue
-	// 不应 panic
+	//
 	q.Stop()
 }
 
@@ -95,7 +95,7 @@ func TestNewSubscriptionMaintenanceQueue_ZeroParams(t *testing.T) {
 	q := NewSubscriptionMaintenanceQueue(0, 0)
 	t.Cleanup(q.Stop)
 
-	// workerCount/queueSize 应被修正为 1
+	// workerCount/queueSize
 	err := q.TryEnqueue(func() {})
 	require.NoError(t, err)
 }
@@ -109,7 +109,7 @@ func TestNewSubscriptionMaintenanceQueue_NegativeParams(t *testing.T) {
 }
 
 func TestSubscriptionMaintenanceQueue_ConcurrentEnqueueAndStop(t *testing.T) {
-	// 并发调用 TryEnqueue 和 Stop 不应 panic
+	//
 	for i := 0; i < 100; i++ {
 		q := NewSubscriptionMaintenanceQueue(2, 4)
 		var wg sync.WaitGroup

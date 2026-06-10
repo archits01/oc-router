@@ -25,26 +25,25 @@ const (
 	defaultSchedulerSnapshotMGetChunkSize  = 128
 	defaultSchedulerSnapshotWriteChunkSize = 256
 
-	// snapshotGraceTTLSeconds 旧快照过期的宽限期（秒）。
-	// 替代立即 DEL，让正在读取旧版本的 reader 有足够时间完成 ZRANGE。
+	// snapshotGraceTTLSeconds
+	//
 	snapshotGraceTTLSeconds = 60
 )
 
 var (
-	// activateSnapshotScript 原子 CAS 切换快照版本。
-	// 仅当新版本号 >= 当前激活版本时才切换，防止并发写入导致版本回滚。
-	// 旧快照使用 EXPIRE 设置宽限期而非立即 DEL，避免与 reader 竞态。
+	// activateSnapshotScript
+	//
 	//
 	// KEYS[1] = activeKey     (sched:active:{bucket})
 	// KEYS[2] = readyKey      (sched:ready:{bucket})
 	// KEYS[3] = bucketSetKey  (sched:buckets)
-	// KEYS[4] = snapshotKey   (新写入的快照 key)
-	// ARGV[1] = 新版本号字符串
-	// ARGV[2] = bucket 字符串 (用于 SADD)
-	// ARGV[3] = 快照 key 前缀 (用于构造旧快照 key)
-	// ARGV[4] = 宽限期 TTL 秒数
+	// KEYS[4] = snapshotKey   ()
+	// ARGV[1] =
+	// ARGV[2] = bucket ()
+	// ARGV[3] = ()
+	// ARGV[4] =
 	//
-	// 返回 1 = 已激活, 0 = 版本过旧未激活
+	// = =
 	activateSnapshotScript = redis.NewScript(`
 local currentActive = redis.call('GET', KEYS[1])
 local newVersion = tonumber(ARGV[1])
@@ -121,8 +120,6 @@ func (c *schedulerCache) GetSnapshot(ctx context.Context, bucket service.Schedul
 		return nil, false, err
 	}
 	if len(ids) == 0 {
-		// 空快照视为缓存未命中，触发数据库回退查询
-		// 这解决了新分组创建后立即绑定账号时的竞态条件问题
 		return nil, false, nil
 	}
 
@@ -151,9 +148,9 @@ func (c *schedulerCache) GetSnapshot(ctx context.Context, bucket service.Schedul
 }
 
 func (c *schedulerCache) SetSnapshot(ctx context.Context, bucket service.SchedulerBucket, accounts []service.Account) error {
-	// Phase 1: 分配新版本号并写入快照数据。
-	// INCR 保证每个调用方获得唯一递增版本号。
-	// 写入的 snapshotKey 是新的版本化 key，reader 尚不知晓，因此无竞态。
+	// Phase 1:
+	// INCR
+	//
 	versionKey := schedulerBucketKey(schedulerVersionPrefix, bucket)
 	version, err := c.rdb.Incr(ctx, versionKey).Result()
 	if err != nil {
@@ -168,7 +165,7 @@ func (c *schedulerCache) SetSnapshot(ctx context.Context, bucket service.Schedul
 	}
 
 	if len(accounts) > 0 {
-		// 使用序号作为 score，保持数据库返回的排序语义。
+		//
 		members := make([]redis.Z, 0, len(accounts))
 		for idx, account := range accounts {
 			members = append(members, redis.Z{
@@ -189,10 +186,9 @@ func (c *schedulerCache) SetSnapshot(ctx context.Context, bucket service.Schedul
 		}
 	}
 
-	// Phase 2: 原子 CAS 激活版本。
-	// Lua 脚本保证：仅当新版本 >= 当前激活版本时才切换 active 指针，
-	// 防止并发写入导致版本回滚。
-	// 旧快照使用 EXPIRE 宽限期而非立即 DEL，避免 reader 竞态。
+	// Phase 2:
+	// Lua >=
+	//
 	activeKey := schedulerBucketKey(schedulerActivePrefix, bucket)
 	readyKey := schedulerBucketKey(schedulerReadyPrefix, bucket)
 	snapshotKeyPrefix := fmt.Sprintf("%s%d:%s:%s:v", schedulerSnapshotPrefix, bucket.GroupID, bucket.Platform, bucket.Mode)

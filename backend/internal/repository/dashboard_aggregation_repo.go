@@ -20,7 +20,7 @@ type dashboardAggregationRepository struct {
 const usageLogsCleanupBatchSize = 10000
 const usageBillingDedupCleanupBatchSize = 10000
 
-// NewDashboardAggregationRepository 创建仪表盘预聚合仓储。
+// NewDashboardAggregationRepository
 func NewDashboardAggregationRepository(sqlDB *sql.DB) service.DashboardAggregationRepository {
 	if sqlDB == nil {
 		return nil
@@ -83,7 +83,7 @@ func (r *dashboardAggregationRepository) AggregateRange(ctx context.Context, sta
 }
 
 func (r *dashboardAggregationRepository) aggregateRangeInTx(ctx context.Context, hourStart, hourEnd, dayStart, dayEnd time.Time) error {
-	// 以桶边界聚合，允许覆盖 end 所在桶的剩余区间。
+	//
 	if err := r.insertHourlyActiveUsers(ctx, hourStart, hourEnd); err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (r *dashboardAggregationRepository) RecomputeRange(ctx context.Context, sta
 		dayEnd = dayEnd.Add(24 * time.Hour)
 	}
 
-	// 尽量使用事务保证范围内的一致性（允许在非 *sql.DB 的情况下退化为非事务执行）。
+	// *sql.DB
 	if db, ok := r.sql.(*sql.DB); ok {
 		tx, err := db.BeginTx(ctx, nil)
 		if err != nil {
@@ -139,7 +139,6 @@ func (r *dashboardAggregationRepository) RecomputeRange(ctx context.Context, sta
 }
 
 func (r *dashboardAggregationRepository) recomputeRangeInTx(ctx context.Context, hourStart, hourEnd, dayStart, dayEnd time.Time) error {
-	// 先清空范围内桶，再重建（避免仅增量插入导致活跃用户等指标无法回退）。
 	if _, err := r.sql.ExecContext(ctx, "DELETE FROM usage_dashboard_hourly WHERE bucket_start >= $1 AND bucket_start < $2", hourStart, hourEnd); err != nil {
 		return err
 	}

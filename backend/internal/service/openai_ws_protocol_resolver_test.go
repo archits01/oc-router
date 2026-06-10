@@ -29,7 +29,7 @@ func TestOpenAIWSProtocolResolver_Resolve(t *testing.T) {
 		require.Equal(t, "ws_v2_enabled", decision.Reason)
 	})
 
-	t.Run("v2关闭时回退v1", func(t *testing.T) {
+	t.Run("v2shutting down时fallbackv1", func(t *testing.T) {
 		cfg := *baseCfg
 		cfg.Gateway.OpenAIWS.ResponsesWebsocketsV2 = false
 		cfg.Gateway.OpenAIWS.ResponsesWebsockets = true
@@ -61,7 +61,7 @@ func TestOpenAIWSProtocolResolver_Resolve(t *testing.T) {
 		require.Equal(t, "account_force_http", decision.Reason)
 	})
 
-	t.Run("全局关闭保持HTTP", func(t *testing.T) {
+	t.Run("全局shutting down保持HTTP", func(t *testing.T) {
 		cfg := *baseCfg
 		cfg.Gateway.OpenAIWS.Enabled = false
 		decision := NewOpenAIWSProtocolResolver(&cfg).Resolve(openAIOAuthEnabled)
@@ -69,7 +69,7 @@ func TestOpenAIWSProtocolResolver_Resolve(t *testing.T) {
 		require.Equal(t, "global_disabled", decision.Reason)
 	})
 
-	t.Run("账号开关关闭保持HTTP", func(t *testing.T) {
+	t.Run("账号开关shutting down保持HTTP", func(t *testing.T) {
 		account := *openAIOAuthEnabled
 		account.Extra = map[string]any{
 			"openai_oauth_responses_websockets_v2_enabled": false,
@@ -107,7 +107,7 @@ func TestOpenAIWSProtocolResolver_Resolve(t *testing.T) {
 		require.Equal(t, "oauth_disabled", decision.Reason)
 	})
 
-	t.Run("API Key 账号关闭开关时回退HTTP", func(t *testing.T) {
+	t.Run("API Key 账号shutting down开关时fallbackHTTP", func(t *testing.T) {
 		cfg := *baseCfg
 		cfg.Gateway.OpenAIWS.APIKeyEnabled = false
 		account := &Account{
@@ -122,7 +122,7 @@ func TestOpenAIWSProtocolResolver_Resolve(t *testing.T) {
 		require.Equal(t, "apikey_disabled", decision.Reason)
 	})
 
-	t.Run("未知认证类型回退HTTP", func(t *testing.T) {
+	t.Run("未知认证类型fallbackHTTP", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     "unknown_type",

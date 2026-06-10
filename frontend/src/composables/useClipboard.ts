@@ -5,7 +5,7 @@ import { i18n } from '@/i18n'
 const { t } = i18n.global
 
 /**
- * 检测是否支持 Clipboard API（需要安全上下文：HTTPS/localhost）
+ * 检测YesNo支持 Clipboard API（需要安全上下文：HTTPS/localhost）
  */
 function isClipboardSupported(): boolean {
   return !!(navigator.clipboard && window.isSecureContext)

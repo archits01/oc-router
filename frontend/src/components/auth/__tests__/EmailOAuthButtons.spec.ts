@@ -18,7 +18,7 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, string>) => {
       if (key === 'auth.emailOAuth.signIn') {
-        return `使用 ${params?.providerName ?? ''} 登录`
+        return `使用 ${params?.providerName ?? ''} Login`
       }
       return key
     },
@@ -75,7 +75,7 @@ describe('EmailOAuthButtons', () => {
     })
 
     expect(wrapper.find('.grid').classes()).not.toContain('sm:grid-cols-2')
-    expect(wrapper.get('button').text()).toContain('使用 GitHub 登录')
+    expect(wrapper.get('button').text()).toContain('使用 GitHub Login')
   })
 
   it('uses compact labels and two columns when GitHub and Google are both enabled', () => {
@@ -96,8 +96,8 @@ describe('EmailOAuthButtons', () => {
     const buttons = wrapper.findAll('button')
     expect(buttons).toHaveLength(2)
     expect(buttons[0].text()).toContain('GitHub')
-    expect(buttons[0].text()).not.toContain('使用 GitHub 登录')
+    expect(buttons[0].text()).not.toContain('使用 GitHub Login')
     expect(buttons[1].text()).toContain('Google')
-    expect(buttons[1].text()).not.toContain('使用 Google 登录')
+    expect(buttons[1].text()).not.toContain('使用 Google Login')
   })
 })

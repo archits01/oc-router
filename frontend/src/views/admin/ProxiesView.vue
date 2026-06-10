@@ -1700,7 +1700,7 @@ const qualityStatusLabel = (status: string) => {
   return t('admin.proxies.qualityStatusFail')
 }
 
-// 有效期「选天数」⇄ 日历联动:天数自 base 起算(创建=今天;编辑=代理创建日),本地日历日 round-trip 稳定;canonical 仍是 expires_at 日期串
+// Valid期「选days数」⇄ 日历联动:days数自 base 起算(创建=今days;Edit=代理创建日),本地日历日 round-trip 稳定;canonical 仍Yes expires_at 日期串
 const EXPIRY_PRESETS = [7, 30, 90, 180]
 const toLocalDateStr = (dt: Date): string => {
   const y = dt.getFullYear()
@@ -1708,13 +1708,13 @@ const toLocalDateStr = (dt: Date): string => {
   const d = String(dt.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
-// base 为空 → 今天本地 00:00;否则该日期本地 00:00
+// base 为空 → 今days本地 00:00;No则该日期本地 00:00
 const baseDateOrToday = (baseDateStr: string): Date => {
   const base = baseDateStr ? new Date(`${baseDateStr}T00:00:00`) : new Date()
   base.setHours(0, 0, 0, 0)
   return base
 }
-// base + N 天 → 本地 YYYY-MM-DD;N≤0/空 → '' 表示永不过期
+// base + N days → 本地 YYYY-MM-DD;N≤0/空 → '' 表示永不Expired
 const addDaysToBase = (baseDateStr: string, n: number | null): string => {
   const days = Number(n)
   if (!days || days <= 0) return ''
@@ -1722,13 +1722,13 @@ const addDaysToBase = (baseDateStr: string, n: number | null): string => {
   dt.setDate(dt.getDate() + days)
   return toLocalDateStr(dt)
 }
-// target 相对 base 的整天数(本地日历差,避免时区/时刻抖动)
+// target 相对 base 的整days数(本地日历差,避免时区/时刻抖动)
 const daysFromBase = (baseDateStr: string, targetDateStr: string): number | null => {
   if (!targetDateStr) return null
   const target = new Date(`${targetDateStr}T00:00:00`)
   return Math.round((target.getTime() - baseDateOrToday(baseDateStr).getTime()) / 86400000)
 }
-// 编辑时有效期自「代理创建日」起算;创建时无 created_at → base='' 用今天
+// Edit时Valid期自「代理创建日」起算;创建时无 created_at → base='' 用今days
 const editBaseDate = computed(() =>
   editingProxy.value?.created_at ? editingProxy.value.created_at.slice(0, 10) : '',
 )
@@ -1909,7 +1909,7 @@ const handleExportData = async () => {
           }
     )
     const timestamp = formatExportTimestamp()
-    const filename = `sub2api-proxy-${timestamp}.json`
+    const filename = `oc-router-proxy-${timestamp}.json`
     const blob = new Blob([JSON.stringify(dataPayload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')

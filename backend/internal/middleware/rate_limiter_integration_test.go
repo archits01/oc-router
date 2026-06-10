@@ -122,7 +122,7 @@ func ensureDockerAvailable(t *testing.T) {
 	if dockerAvailable() {
 		return
 	}
-	t.Skip("Docker 未启用，跳过依赖 testcontainers 的集成测试")
+	t.Skip("Docker not enabled, skipping testcontainers integration test")
 }
 
 func dockerAvailable() bool {

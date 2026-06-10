@@ -33,10 +33,8 @@ describe('useNavigationLoading', () => {
 
       startNavigation()
 
-      // 立即检查，不应该显示
       expect(isLoading.value).toBe(false)
 
-      // 经过防闪烁延迟后应该显示
       vi.advanceTimersByTime(ANTI_FLICKER_DELAY)
       expect(isLoading.value).toBe(true)
     })
@@ -71,21 +69,18 @@ describe('useNavigationLoading', () => {
 
       startNavigation()
 
-      // 在防闪烁延迟之前结束导航
       vi.advanceTimersByTime(ANTI_FLICKER_DELAY - 50)
       endNavigation()
 
-      // 不应该显示加载指示器
       expect(isLoading.value).toBe(false)
 
-      // 即使继续等待也不应该显示
       vi.advanceTimersByTime(100)
       expect(isLoading.value).toBe(false)
     })
   })
 
   describe('cancelNavigation', () => {
-    it('导航取消时应正确重置状态', () => {
+    it('导航Cancel时应正确ResetStatus', () => {
       const { isLoading, startNavigation, cancelNavigation, ANTI_FLICKER_DELAY } = useNavigationLoading()
 
       startNavigation()
@@ -93,14 +88,13 @@ describe('useNavigationLoading', () => {
 
       cancelNavigation()
 
-      // 取消后不应该触发显示
       vi.advanceTimersByTime(ANTI_FLICKER_DELAY)
       expect(isLoading.value).toBe(false)
     })
   })
 
   describe('getNavigationDuration', () => {
-    it('应该返回正确的导航持续时间', () => {
+    it('应该Back正确的导航持续时间', () => {
       const { startNavigation, getNavigationDuration } = useNavigationLoading()
 
       expect(getNavigationDuration()).toBeNull()
@@ -112,7 +106,7 @@ describe('useNavigationLoading', () => {
       expect(duration).toBe(500)
     })
 
-    it('导航结束后应返回 null', () => {
+    it('导航结束后应Back null', () => {
       const { startNavigation, endNavigation, getNavigationDuration } = useNavigationLoading()
 
       startNavigation()
@@ -124,7 +118,7 @@ describe('useNavigationLoading', () => {
   })
 
   describe('resetState', () => {
-    it('应该重置所有状态', () => {
+    it('应该Reset所有Status', () => {
       const { isLoading, isNavigating, startNavigation, resetState, ANTI_FLICKER_DELAY } = useNavigationLoading()
 
       startNavigation()
@@ -141,27 +135,22 @@ describe('useNavigationLoading', () => {
   })
 
   describe('连续导航场景', () => {
-    it('连续快速导航应正确处理状态', () => {
+    it('连续快速导航应正确处理Status', () => {
       const { isLoading, startNavigation, cancelNavigation, endNavigation, ANTI_FLICKER_DELAY } = useNavigationLoading()
 
-      // 第一次导航
       startNavigation()
       vi.advanceTimersByTime(30)
 
-      // 第二次导航（取消第一次）
       cancelNavigation()
       startNavigation()
       vi.advanceTimersByTime(30)
 
-      // 第三次导航（取消第二次）
       cancelNavigation()
       startNavigation()
 
-      // 这次等待足够长时间
       vi.advanceTimersByTime(ANTI_FLICKER_DELAY)
       expect(isLoading.value).toBe(true)
 
-      // 结束导航
       endNavigation()
       expect(isLoading.value).toBe(false)
     })

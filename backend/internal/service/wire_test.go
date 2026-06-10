@@ -18,20 +18,20 @@ func TestProvideTimingWheelService_ReturnsError(t *testing.T) {
 
 	svc, err := ProvideTimingWheelService()
 	if err == nil {
-		t.Fatalf("期望返回 error，但得到 nil")
+		t.Fatalf("expected error to be returned, but got nil")
 	}
 	if svc != nil {
-		t.Fatalf("期望返回 nil svc，但得到非空")
+		t.Fatalf("expected nil svc to be returned, but got non-nil")
 	}
 }
 
 func TestProvideTimingWheelService_Success(t *testing.T) {
 	svc, err := ProvideTimingWheelService()
 	if err != nil {
-		t.Fatalf("期望 err 为 nil，但得到: %v", err)
+		t.Fatalf("expected err to be nil, but got: %v", err)
 	}
 	if svc == nil {
-		t.Fatalf("期望 svc 非空，但得到 nil")
+		t.Fatalf("expected svc to be non-nil, but got nil")
 	}
 	svc.Stop()
 }

@@ -27,31 +27,26 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
 )
 
-// 默认配置常量
-// 这些值在配置文件未指定时作为回退默认值使用
 const (
-	// directProxyKey: 无代理时的缓存键标识
+	// directProxyKey:
 	directProxyKey = "direct"
-	// defaultMaxIdleConns: 默认最大空闲连接总数
-	// HTTP/2 场景下，单连接可多路复用，240 足以支撑高并发
+	// defaultMaxIdleConns:
+	// HTTP/2
 	defaultMaxIdleConns = 240
-	// defaultMaxIdleConnsPerHost: 默认每主机最大空闲连接数
+	// defaultMaxIdleConnsPerHost:
 	defaultMaxIdleConnsPerHost = 120
-	// defaultMaxConnsPerHost: 默认每主机最大连接数（含活跃连接）
-	// 达到上限后新请求会等待，而非无限创建连接
+	// defaultMaxConnsPerHost:
 	defaultMaxConnsPerHost = 240
-	// defaultIdleConnTimeout: 默认空闲连接超时时间（90秒）
-	// 超时后连接会被关闭，释放系统资源（建议小于上游 LB 超时）
+	// defaultIdleConnTimeout:
 	defaultIdleConnTimeout = 90 * time.Second
-	// defaultResponseHeaderTimeout: 默认等待响应头超时时间（5分钟）
-	// LLM 请求可能排队较久，需要较长超时
+	// defaultResponseHeaderTimeout:
+	// LLM
 	defaultResponseHeaderTimeout = 300 * time.Second
-	// defaultMaxUpstreamClients: 默认最大客户端缓存数量
-	// 超出后会淘汰最久未使用的客户端
+	// defaultMaxUpstreamClients:
 	defaultMaxUpstreamClients = 5000
-	// defaultClientIdleTTLSeconds: 默认客户端空闲回收阈值（15分钟）
+	// defaultClientIdleTTLSeconds:
 	defaultClientIdleTTLSeconds = 900
-	// OpenAI HTTP/2 代理回退策略默认值
+	// OpenAI HTTP/2
 	defaultOpenAIHTTP2FallbackErrorThreshold = 2
 	defaultOpenAIHTTP2FallbackWindow         = 60 * time.Second
 	defaultOpenAIHTTP2FallbackTTL            = 10 * time.Minute
@@ -66,14 +61,14 @@ const (
 
 var errUpstreamClientLimitReached = errors.New("upstream client cache limit reached")
 
-// poolSettings 连接池配置参数
-// 封装 Transport 所需的各项连接池参数
+// poolSettings
+//
 type poolSettings struct {
-	maxIdleConns          int           // 最大空闲连接总数
-	maxIdleConnsPerHost   int           // 每主机最大空闲连接数
-	maxConnsPerHost       int           // 每主机最大连接数（含活跃）
-	idleConnTimeout       time.Duration // 空闲连接超时时间
-	responseHeaderTimeout time.Duration // 等待响应头超时时间
+	maxIdleConns          int           // max total idle connections
+	maxIdleConnsPerHost   int           // max idle connections per host
+	maxConnsPerHost       int           // max connections per host (including active)
+	idleConnTimeout       time.Duration // idle connection timeout
+	responseHeaderTimeout time.Duration // response header wait timeout
 }
 
 type openAIHTTP2Settings struct {
@@ -84,15 +79,14 @@ type openAIHTTP2Settings struct {
 	fallbackTTL               time.Duration
 }
 
-// upstreamClientEntry 上游客户端缓存条目
-// 记录客户端实例及其元数据，用于连接池管理和淘汰策略
+// upstreamClientEntry
 type upstreamClientEntry struct {
-	client       *http.Client // HTTP 客户端实例
-	proxyKey     string       // 代理标识（用于检测代理变更）
-	poolKey      string       // 连接池配置标识（用于检测配置变更）
-	protocolMode string       // 协议模式（default/openai_h1/openai_h2/openai_h1_fallback）
-	lastUsed     int64        // 最后使用时间戳（纳秒），用于 LRU 淘汰
-	inFlight     int64        // 当前进行中的请求数，>0 时不可淘汰
+	client       *http.Client // HTTP client instance
+	proxyKey     string       // proxy identifier (for detecting proxy changes)
+	poolKey      string       // connection pool config identifier (for detecting config changes)
+	protocolMode string       // protocol mode (default/openai_h1/openai_h2/openai_h1_fallback)
+	lastUsed     int64        // last used timestamp (nanoseconds), for LRU eviction
+	inFlight     int64        // current in-flight request count, not evictable when >0
 }
 
 type openAIHTTP2FallbackState struct {
@@ -102,39 +96,30 @@ type openAIHTTP2FallbackState struct {
 	fallbackUntil time.Time
 }
 
-// httpUpstreamService 通用 HTTP 上游服务
-// 用于向任意 HTTP API（Claude、OpenAI 等）发送请求，支持可选代理
+// httpUpstreamService
 //
-// 架构设计：
-// - 根据隔离策略（proxy/account/account_proxy）缓存客户端实例
-// - 每个客户端拥有独立的 Transport 连接池
-// - 支持 LRU + 空闲时间双重淘汰策略
 //
-// 性能优化：
-// 1. 根据隔离策略缓存客户端实例，避免频繁创建 http.Client
-// 2. 复用 Transport 连接池，减少 TCP 握手和 TLS 协商开销
-// 3. 支持账号级隔离与空闲回收，降低连接层关联风险
-// 4. 达到最大连接数后等待可用连接，而非无限创建
-// 5. 仅回收空闲客户端，避免中断活跃请求
-// 6. HTTP/2 多路复用，连接上限不等于并发请求上限
-// 7. 代理变更时清空旧连接池，避免复用错误代理
-// 8. 账号并发数与连接池上限对应（账号隔离策略下）
+// -
+// -
+// - +
+//
+// 1.
+// 2.
+// 6. HTTP/2
 type httpUpstreamService struct {
-	cfg     *config.Config                  // 全局配置
-	mu      sync.RWMutex                    // 保护 clients map 的读写锁
-	clients map[string]*upstreamClientEntry // 客户端缓存池，key 由隔离策略决定
-	// OpenAI 走 HTTP/HTTPS 代理时的 H2->H1 回退状态（key=标准化 proxyKey）
+	cfg     *config.Config                  // global config
+	mu      sync.RWMutex                    // read-write lock protecting clients map
+	clients map[string]*upstreamClientEntry // client cache pool, key determined by isolation strategy
+	// OpenAI >H1 =
 	openAIHTTP2Fallbacks sync.Map
 }
 
-// NewHTTPUpstream 创建通用 HTTP 上游服务
-// 使用配置中的连接池参数构建 Transport
+// NewHTTPUpstream
 //
-// 参数:
-//   - cfg: 全局配置，包含连接池参数和隔离策略
 //
-// 返回:
-//   - service.HTTPUpstream 接口实现
+//   - cfg:
+//
+//   - service.HTTPUpstream
 func NewHTTPUpstream(cfg *config.Config) service.HTTPUpstream {
 	return &httpUpstreamService{
 		cfg:     cfg,
@@ -142,22 +127,18 @@ func NewHTTPUpstream(cfg *config.Config) service.HTTPUpstream {
 	}
 }
 
-// Do 执行 HTTP 请求
-// 根据隔离策略获取或创建客户端，并跟踪请求生命周期
+// Do
 //
-// 参数:
-//   - req: HTTP 请求对象
-//   - proxyURL: 代理地址，空字符串表示直连
-//   - accountID: 账户 ID，用于账户级隔离
-//   - accountConcurrency: 账户并发限制，用于动态调整连接池大小
+//   - req: HTTP
+//   - proxyURL:
+//   - accountID:
+//   - accountConcurrency:
 //
-// 返回:
-//   - *http.Response: HTTP 响应（Body 已包装，关闭时自动更新计数）
-//   - error: 请求错误
+//   - *http.Response: HTTP
+//   - error:
 //
-// 注意:
-//   - 调用方必须关闭 resp.Body，否则会导致 inFlight 计数泄漏
-//   - inFlight > 0 的客户端不会被淘汰，确保活跃请求不被中断
+//   -
+//   - inFlight > 0
 func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID int64, accountConcurrency int) (*http.Response, error) {
 	if err := s.validateRequestHost(req); err != nil {
 		return nil, err
@@ -167,28 +148,23 @@ func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID i
 		profile = service.HTTPUpstreamProfileFromContext(req.Context())
 	}
 
-	// 获取或创建对应的客户端，并标记请求占用
 	entry, err := s.acquireClientWithProfile(proxyURL, accountID, accountConcurrency, profile)
 	if err != nil {
 		return nil, err
 	}
 
-	// 执行请求
 	resp, err := entry.client.Do(req)
 	if err != nil {
 		s.recordOpenAIHTTP2Failure(profile, entry.protocolMode, entry.proxyKey, err)
-		// 请求失败，立即减少计数
 		atomic.AddInt64(&entry.inFlight, -1)
 		atomic.StoreInt64(&entry.lastUsed, time.Now().UnixNano())
 		return nil, err
 	}
 	s.recordOpenAIHTTP2Success(profile, entry.protocolMode, entry.proxyKey)
 
-	// 如果上游返回了压缩内容，解压后再交给业务层
 	decompressResponseBody(resp)
 
-	// 包装响应体，在关闭时自动减少计数并更新时间戳
-	// 这确保了流式响应（如 SSE）在完全读取前不会被淘汰
+	//
 	resp.Body = wrapTrackedBody(resp.Body, func() {
 		atomic.AddInt64(&entry.inFlight, -1)
 		atomic.StoreInt64(&entry.lastUsed, time.Now().UnixNano())
@@ -197,10 +173,10 @@ func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID i
 	return resp, nil
 }
 
-// DoWithTLS 执行带 TLS 指纹伪装的 HTTP 请求
+// DoWithTLS
 //
-// profile 为 nil 时不启用 TLS 指纹，行为与 Do 方法相同。
-// profile 非 nil 时使用指定的 Profile 进行 TLS 指纹伪装。
+// profile
+// profile
 func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, accountID int64, accountConcurrency int, profile *tlsfingerprint.Profile) (*http.Response, error) {
 	if profile == nil {
 		return s.Do(req, proxyURL, accountID, accountConcurrency)
@@ -248,13 +224,13 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 	return resp, nil
 }
 
-// acquireClientWithTLS 获取或创建带 TLS 指纹的客户端
+// acquireClientWithTLS
 func (s *httpUpstreamService) acquireClientWithTLS(proxyURL string, accountID int64, accountConcurrency int, profile *tlsfingerprint.Profile, upstreamProfile service.HTTPUpstreamProfile) (*upstreamClientEntry, error) {
 	return s.getClientEntryWithTLS(proxyURL, accountID, accountConcurrency, profile, upstreamProfile, true, true)
 }
 
-// getClientEntryWithTLS 获取或创建带 TLS 指纹的客户端条目
-// TLS 指纹客户端使用独立的缓存键，与普通客户端隔离
+// getClientEntryWithTLS
+// TLS
 func (s *httpUpstreamService) getClientEntryWithTLS(proxyURL string, accountID int64, accountConcurrency int, profile *tlsfingerprint.Profile, upstreamProfile service.HTTPUpstreamProfile, markInFlight bool, enforceLimit bool) (*upstreamClientEntry, error) {
 	isolation := s.getIsolationMode()
 	proxyKey, parsedProxy, err := normalizeProxyURL(proxyURL)
@@ -263,14 +239,13 @@ func (s *httpUpstreamService) getClientEntryWithTLS(proxyURL string, accountID i
 	}
 	settings := s.resolvePoolSettings(isolation, accountConcurrency)
 	settings = s.applyProfilePoolSettings(settings, upstreamProfile)
-	// TLS 指纹客户端使用独立的缓存键，加 "tls:" 前缀
+	// TLS "tls:"
 	cacheKey := "tls:" + buildCacheKey(isolation, proxyKey, accountID, upstreamProtocolModeDefault)
 	poolKey := buildPoolKey(settings, upstreamProtocolModeDefault) + ":tls"
 
 	now := time.Now()
 	nowUnix := now.UnixNano()
 
-	// 读锁快速路径
 	s.mu.RLock()
 	if entry, ok := s.clients[cacheKey]; ok && s.shouldReuseEntry(entry, isolation, proxyKey, poolKey) {
 		atomic.StoreInt64(&entry.lastUsed, nowUnix)
@@ -283,7 +258,6 @@ func (s *httpUpstreamService) getClientEntryWithTLS(proxyURL string, accountID i
 	}
 	s.mu.RUnlock()
 
-	// 写锁慢路径
 	s.mu.Lock()
 	if entry, ok := s.clients[cacheKey]; ok {
 		if s.shouldReuseEntry(entry, isolation, proxyKey, poolKey) {
@@ -303,7 +277,6 @@ func (s *httpUpstreamService) getClientEntryWithTLS(proxyURL string, accountID i
 		s.removeClientLocked(cacheKey, entry)
 	}
 
-	// 超出缓存上限时尝试淘汰
 	if enforceLimit && s.maxUpstreamClients() > 0 {
 		s.evictIdleLocked(now)
 		if len(s.clients) >= s.maxUpstreamClients() {
@@ -314,7 +287,7 @@ func (s *httpUpstreamService) getClientEntryWithTLS(proxyURL string, accountID i
 		}
 	}
 
-	// 创建带 TLS 指纹的 Transport
+	//
 	slog.Debug("tls_fingerprint_creating_new_client", "account_id", accountID, "cache_key", cacheKey, "proxy", proxyKey)
 	transport, err := buildUpstreamTransportWithTLSFingerprint(settings, parsedProxy, profile)
 	if err != nil {
@@ -378,60 +351,51 @@ func (s *httpUpstreamService) redirectChecker(req *http.Request, via []*http.Req
 	return s.validateRequestHost(req)
 }
 
-// acquireClient 获取或创建客户端，并标记为进行中请求
-// 用于请求路径，避免在获取后被淘汰
+// acquireClient
 func (s *httpUpstreamService) acquireClient(proxyURL string, accountID int64, accountConcurrency int) (*upstreamClientEntry, error) {
 	return s.acquireClientWithProfile(proxyURL, accountID, accountConcurrency, service.HTTPUpstreamProfileDefault)
 }
 
-// acquireClientWithProfile 获取或创建客户端，并按请求 profile 选择协议策略。
+// acquireClientWithProfile
 func (s *httpUpstreamService) acquireClientWithProfile(proxyURL string, accountID int64, accountConcurrency int, profile service.HTTPUpstreamProfile) (*upstreamClientEntry, error) {
 	return s.getClientEntry(proxyURL, accountID, accountConcurrency, profile, true, true)
 }
 
-// getOrCreateClient 获取或创建客户端
-// 根据隔离策略和参数决定缓存键，处理代理变更和配置变更
+// getOrCreateClient
 //
-// 参数:
-//   - proxyURL: 代理地址
-//   - accountID: 账户 ID
-//   - accountConcurrency: 账户并发限制
+//   - proxyURL:
+//   - accountID:
+//   - accountConcurrency:
 //
-// 返回:
-//   - *upstreamClientEntry: 客户端缓存条目
+//   - *upstreamClientEntry:
 //
-// 隔离策略说明:
-//   - proxy: 按代理地址隔离，同一代理共享客户端
-//   - account: 按账户隔离，同一账户共享客户端（代理变更时重建）
-//   - account_proxy: 按账户+代理组合隔离，最细粒度
+//   - proxy:
+//   - account:
+//   - account_proxy: +
 func (s *httpUpstreamService) getOrCreateClient(proxyURL string, accountID int64, accountConcurrency int) (*upstreamClientEntry, error) {
 	return s.getClientEntry(proxyURL, accountID, accountConcurrency, service.HTTPUpstreamProfileDefault, false, false)
 }
 
-// getClientEntry 获取或创建客户端条目
-// markInFlight=true 时会标记进行中请求，用于请求路径防止被淘汰
-// enforceLimit=true 时会限制客户端数量，超限且无法淘汰时返回错误
+// getClientEntry
+// markInFlight=true
+// enforceLimit=true
 func (s *httpUpstreamService) getClientEntry(proxyURL string, accountID int64, accountConcurrency int, profile service.HTTPUpstreamProfile, markInFlight bool, enforceLimit bool) (*upstreamClientEntry, error) {
-	// 获取隔离模式
 	isolation := s.getIsolationMode()
-	// 标准化代理 URL 并解析
+	//
 	proxyKey, parsedProxy, err := normalizeProxyURL(proxyURL)
 	if err != nil {
 		return nil, err
 	}
-	// 根据请求 profile（例如 OpenAI）选择协议模式
+	//
 	protocolMode := s.resolveProtocolMode(profile, proxyKey, parsedProxy)
 	settings := s.resolvePoolSettings(isolation, accountConcurrency)
 	settings = s.applyProfilePoolSettings(settings, profile)
-	// 构建缓存键（根据隔离策略不同）
 	cacheKey := buildCacheKey(isolation, proxyKey, accountID, protocolMode)
-	// 构建连接池配置键（用于检测配置变更）
 	poolKey := buildPoolKey(settings, protocolMode)
 
 	now := time.Now()
 	nowUnix := now.UnixNano()
 
-	// 读锁快速路径：命中缓存直接返回，减少锁竞争
 	s.mu.RLock()
 	if entry, ok := s.clients[cacheKey]; ok && s.shouldReuseEntry(entry, isolation, proxyKey, poolKey) {
 		atomic.StoreInt64(&entry.lastUsed, nowUnix)
@@ -443,7 +407,6 @@ func (s *httpUpstreamService) getClientEntry(proxyURL string, accountID int64, a
 	}
 	s.mu.RUnlock()
 
-	// 写锁慢路径：创建或重建客户端
 	s.mu.Lock()
 	if entry, ok := s.clients[cacheKey]; ok {
 		if s.shouldReuseEntry(entry, isolation, proxyKey, poolKey) {
@@ -457,7 +420,6 @@ func (s *httpUpstreamService) getClientEntry(proxyURL string, accountID int64, a
 		s.removeClientLocked(cacheKey, entry)
 	}
 
-	// 超出缓存上限时尝试淘汰，无法淘汰则拒绝新建
 	if enforceLimit && s.maxUpstreamClients() > 0 {
 		s.evictIdleLocked(now)
 		if len(s.clients) >= s.maxUpstreamClients() {
@@ -468,7 +430,6 @@ func (s *httpUpstreamService) getClientEntry(proxyURL string, accountID int64, a
 		}
 	}
 
-	// 缓存未命中或需要重建，创建新客户端
 	transport, err := buildUpstreamTransport(settings, parsedProxy, protocolMode)
 	if err != nil {
 		s.mu.Unlock()
@@ -490,15 +451,13 @@ func (s *httpUpstreamService) getClientEntry(proxyURL string, accountID int64, a
 	}
 	s.clients[cacheKey] = entry
 
-	// 执行淘汰策略：先淘汰空闲超时的，再淘汰超出数量限制的
 	s.evictIdleLocked(now)
 	s.evictOverLimitLocked()
 	s.mu.Unlock()
 	return entry, nil
 }
 
-// shouldReuseEntry 判断缓存条目是否可复用
-// 若代理或连接池配置发生变化，则需要重建客户端
+// shouldReuseEntry
 func (s *httpUpstreamService) shouldReuseEntry(entry *upstreamClientEntry, isolation, proxyKey, poolKey string) bool {
 	if entry == nil {
 		return false
@@ -512,55 +471,45 @@ func (s *httpUpstreamService) shouldReuseEntry(entry *upstreamClientEntry, isola
 	return true
 }
 
-// removeClientLocked 移除客户端（需持有锁）
-// 从缓存中删除并关闭空闲连接
+// removeClientLocked
 //
-// 参数:
-//   - key: 缓存键
-//   - entry: 客户端条目
+//   - key:
+//   - entry:
 func (s *httpUpstreamService) removeClientLocked(key string, entry *upstreamClientEntry) {
 	delete(s.clients, key)
 	if entry != nil && entry.client != nil {
-		// 关闭空闲连接，释放系统资源
-		// 注意：这不会中断活跃连接
 		entry.client.CloseIdleConnections()
 	}
 }
 
-// evictIdleLocked 淘汰空闲超时的客户端（需持有锁）
-// 遍历所有客户端，移除超过 TTL 且无活跃请求的条目
+// evictIdleLocked
 //
-// 参数:
-//   - now: 当前时间
+//
+//   - now:
 func (s *httpUpstreamService) evictIdleLocked(now time.Time) {
 	ttl := s.clientIdleTTL()
 	if ttl <= 0 {
 		return
 	}
-	// 计算淘汰截止时间
 	cutoff := now.Add(-ttl).UnixNano()
 	for key, entry := range s.clients {
-		// 跳过有活跃请求的客户端
 		if atomic.LoadInt64(&entry.inFlight) != 0 {
 			continue
 		}
-		// 淘汰超时的空闲客户端
 		if atomic.LoadInt64(&entry.lastUsed) <= cutoff {
 			s.removeClientLocked(key, entry)
 		}
 	}
 }
 
-// evictOldestIdleLocked 淘汰最久未使用且无活跃请求的客户端（需持有锁）
+// evictOldestIdleLocked
 func (s *httpUpstreamService) evictOldestIdleLocked() bool {
 	var (
 		oldestKey   string
 		oldestEntry *upstreamClientEntry
 		oldestTime  int64
 	)
-	// 查找最久未使用且无活跃请求的客户端
 	for key, entry := range s.clients {
-		// 跳过有活跃请求的客户端
 		if atomic.LoadInt64(&entry.inFlight) != 0 {
 			continue
 		}
@@ -571,7 +520,6 @@ func (s *httpUpstreamService) evictOldestIdleLocked() bool {
 			oldestTime = lastUsed
 		}
 	}
-	// 所有客户端都有活跃请求，无法淘汰
 	if oldestEntry == nil {
 		return false
 	}
@@ -579,15 +527,14 @@ func (s *httpUpstreamService) evictOldestIdleLocked() bool {
 	return true
 }
 
-// evictOverLimitLocked 淘汰超出数量限制的客户端（需持有锁）
-// 使用 LRU 策略，优先淘汰最久未使用且无活跃请求的客户端
+// evictOverLimitLocked
+//
 func (s *httpUpstreamService) evictOverLimitLocked() bool {
 	maxClients := s.maxUpstreamClients()
 	if maxClients <= 0 {
 		return false
 	}
 	evicted := false
-	// 循环淘汰直到满足数量限制
 	for len(s.clients) > maxClients {
 		if !s.evictOldestIdleLocked() {
 			return evicted
@@ -597,11 +544,10 @@ func (s *httpUpstreamService) evictOverLimitLocked() bool {
 	return evicted
 }
 
-// getIsolationMode 获取连接池隔离模式
-// 从配置中读取，无效值回退到 account_proxy 模式
+// getIsolationMode
 //
-// 返回:
-//   - string: 隔离模式（proxy/account/account_proxy）
+//
+//   - string:
 func (s *httpUpstreamService) getIsolationMode() string {
 	if s.cfg == nil {
 		return config.ConnectionPoolIsolationAccountProxy
@@ -618,8 +564,7 @@ func (s *httpUpstreamService) getIsolationMode() string {
 	}
 }
 
-// maxUpstreamClients 获取最大客户端缓存数量
-// 从配置中读取，无效值使用默认值
+// maxUpstreamClients
 func (s *httpUpstreamService) maxUpstreamClients() int {
 	if s.cfg == nil {
 		return defaultMaxUpstreamClients
@@ -630,8 +575,7 @@ func (s *httpUpstreamService) maxUpstreamClients() int {
 	return defaultMaxUpstreamClients
 }
 
-// clientIdleTTL 获取客户端空闲回收阈值
-// 从配置中读取，无效值使用默认值
+// clientIdleTTL
 func (s *httpUpstreamService) clientIdleTTL() time.Duration {
 	if s.cfg == nil {
 		return time.Duration(defaultClientIdleTTLSeconds) * time.Second
@@ -642,22 +586,15 @@ func (s *httpUpstreamService) clientIdleTTL() time.Duration {
 	return time.Duration(defaultClientIdleTTLSeconds) * time.Second
 }
 
-// resolvePoolSettings 解析连接池配置
-// 根据隔离策略和账户并发数动态调整连接池参数
+// resolvePoolSettings
 //
-// 参数:
-//   - isolation: 隔离模式
-//   - accountConcurrency: 账户并发限制
+//   - isolation:
+//   - accountConcurrency:
 //
-// 返回:
-//   - poolSettings: 连接池配置
+//   - poolSettings:
 //
-// 说明:
-//   - 账户隔离模式下，连接池大小与账户并发数对应
-//   - 这确保了单账户不会占用过多连接资源
 func (s *httpUpstreamService) resolvePoolSettings(isolation string, accountConcurrency int) poolSettings {
 	settings := defaultPoolSettings(s.cfg)
-	// 账户隔离模式下，根据账户并发数调整连接池大小
 	if (isolation == config.ConnectionPoolIsolationAccount || isolation == config.ConnectionPoolIsolationAccountProxy) && accountConcurrency > 0 {
 		settings.maxIdleConns = accountConcurrency
 		settings.maxIdleConnsPerHost = accountConcurrency
@@ -677,7 +614,7 @@ func (s *httpUpstreamService) applyProfilePoolSettings(settings poolSettings, pr
 	return settings
 }
 
-// buildPoolKey 构建连接池配置键，用于检测连接池配置变更。
+// buildPoolKey
 func buildPoolKey(settings poolSettings, protocolMode string) string {
 	base := fmt.Sprintf(
 		"idle:%d|idle_host:%d|max:%d|idle_timeout:%s|header_timeout:%s",
@@ -693,21 +630,17 @@ func buildPoolKey(settings poolSettings, protocolMode string) string {
 	return base + "|proto:" + protocolMode
 }
 
-// buildCacheKey 构建客户端缓存键
-// 根据隔离策略决定缓存键的组成
+// buildCacheKey
 //
-// 参数:
-//   - isolation: 隔离模式
-//   - proxyKey: 代理标识
-//   - accountID: 账户 ID
+//   - isolation:
+//   - proxyKey:
+//   - accountID:
 //
-// 返回:
-//   - string: 缓存键
+//   - string:
 //
-// 缓存键格式:
-//   - proxy 模式: "proxy:{proxyKey}"
-//   - account 模式: "account:{accountID}"
-//   - account_proxy 模式: "account:{accountID}|proxy:{proxyKey}"
+//   - proxy "proxy:{proxyKey}"
+//   - account "account:{accountID}"
+//   - account_proxy "account:{accountID}|proxy:{proxyKey}"
 func buildCacheKey(isolation, proxyKey string, accountID int64, protocolMode string) string {
 	var base string
 	switch isolation {
@@ -949,16 +882,14 @@ func (s *openAIHTTP2FallbackState) recordFailure(now time.Time, threshold int, w
 	return true, s.fallbackUntil
 }
 
-// normalizeProxyURL 标准化代理 URL
-// 处理空值和解析错误，返回标准化的键和解析后的 URL
+// normalizeProxyURL
 //
-// 参数:
-//   - raw: 原始代理 URL 字符串
 //
-// 返回:
-//   - string: 标准化的代理键（空返回 "direct"）
-//   - *url.URL: 解析后的 URL（空返回 nil）
-//   - error: 非空代理 URL 解析失败时返回错误（禁止回退到直连）
+//   - raw:
+//
+//   - string: "direct"）
+//   - *url.URL:
+//   - error:
 func normalizeProxyURL(raw string) (string, *url.URL, error) {
 	_, parsed, err := proxyurl.Parse(raw)
 	if err != nil {
@@ -967,7 +898,7 @@ func normalizeProxyURL(raw string) (string, *url.URL, error) {
 	if parsed == nil {
 		return directProxyKey, nil, nil
 	}
-	// 规范化：小写 scheme/host，去除路径和查询参数
+	//
 	parsed.Scheme = strings.ToLower(parsed.Scheme)
 	parsed.Host = strings.ToLower(parsed.Host)
 	parsed.Path = ""
@@ -990,14 +921,11 @@ func normalizeProxyURL(raw string) (string, *url.URL, error) {
 	return parsed.String(), parsed, nil
 }
 
-// defaultPoolSettings 获取默认连接池配置
-// 从全局配置中读取，无效值使用常量默认值
+// defaultPoolSettings
 //
-// 参数:
-//   - cfg: 全局配置
+//   - cfg:
 //
-// 返回:
-//   - poolSettings: 连接池配置
+//   - poolSettings:
 func defaultPoolSettings(cfg *config.Config) poolSettings {
 	maxIdleConns := defaultMaxIdleConns
 	maxIdleConnsPerHost := defaultMaxIdleConnsPerHost
@@ -1032,23 +960,20 @@ func defaultPoolSettings(cfg *config.Config) poolSettings {
 	}
 }
 
-// buildUpstreamTransport 构建上游请求的 Transport
-// 使用配置文件中的连接池参数，支持生产环境调优
+// buildUpstreamTransport
 //
-// 参数:
-//   - settings: 连接池配置
-//   - proxyURL: 代理 URL（nil 表示直连）
+//   - settings:
+//   - proxyURL:
 //
-// 返回:
-//   - *http.Transport: 配置好的 Transport 实例
-//   - error: 代理配置错误
+//   - *http.Transport:
+//   - error:
 //
-// Transport 参数说明:
-//   - MaxIdleConns: 所有主机的最大空闲连接总数
-//   - MaxIdleConnsPerHost: 每主机最大空闲连接数（影响连接复用率）
-//   - MaxConnsPerHost: 每主机最大连接数（达到后新请求等待）
-//   - IdleConnTimeout: 空闲连接超时（超时后关闭）
-//   - ResponseHeaderTimeout: 等待响应头超时（不影响流式传输）
+// Transport
+//   - MaxIdleConns:
+//   - MaxIdleConnsPerHost:
+//   - MaxConnsPerHost:
+//   - IdleConnTimeout:
+//   - ResponseHeaderTimeout:
 func buildUpstreamTransport(settings poolSettings, proxyURL *url.URL, protocolMode string) (*http.Transport, error) {
 	transport := &http.Transport{
 		MaxIdleConns:          settings.maxIdleConns,
@@ -1064,7 +989,7 @@ func buildUpstreamTransport(settings poolSettings, proxyURL *url.URL, protocolMo
 		transport.ForceAttemptHTTP2 = false
 		transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
 	case upstreamProtocolModeOpenAIH1Fallback:
-		// 显式禁用 HTTP/2，确保代理不兼容场景回退到 HTTP/1.1。
+		//
 		transport.ForceAttemptHTTP2 = false
 		transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
 	}
@@ -1074,22 +999,19 @@ func buildUpstreamTransport(settings poolSettings, proxyURL *url.URL, protocolMo
 	return transport, nil
 }
 
-// buildUpstreamTransportWithTLSFingerprint 构建带 TLS 指纹伪装的 Transport
-// 使用 utls 库模拟 Claude CLI 的 TLS 指纹
+// buildUpstreamTransportWithTLSFingerprint
 //
-// 参数:
-//   - settings: 连接池配置
-//   - proxyURL: 代理 URL（nil 表示直连）
-//   - profile: TLS 指纹配置
 //
-// 返回:
-//   - *http.Transport: 配置好的 Transport 实例
-//   - error: 配置错误
+//   - settings:
+//   - proxyURL:
+//   - profile: TLS
 //
-// 代理类型处理:
-//   - nil/空: 直连，使用 TLSFingerprintDialer
-//   - http/https: HTTP 代理，使用 HTTPProxyDialer（CONNECT 隧道 + utls 握手）
-//   - socks5: SOCKS5 代理，使用 SOCKS5ProxyDialer（SOCKS5 隧道 + utls 握手）
+//   - *http.Transport:
+//   - error:
+//
+//   - nil/
+//   - http/https: HTTP + utls
+//   - socks5: SOCKS5 + utls
 func buildUpstreamTransportWithTLSFingerprint(settings poolSettings, proxyURL *url.URL, profile *tlsfingerprint.Profile) (*http.Transport, error) {
 	transport := &http.Transport{
 		MaxIdleConns:          settings.maxIdleConns,
@@ -1097,13 +1019,13 @@ func buildUpstreamTransportWithTLSFingerprint(settings poolSettings, proxyURL *u
 		MaxConnsPerHost:       settings.maxConnsPerHost,
 		IdleConnTimeout:       settings.idleConnTimeout,
 		ResponseHeaderTimeout: settings.responseHeaderTimeout,
-		// 禁用默认的 TLS，我们使用自定义的 DialTLSContext
+		//
 		ForceAttemptHTTP2: false,
 	}
 
-	// 根据代理类型选择合适的 TLS 指纹 Dialer
+	//
 	if proxyURL == nil {
-		// 直连：使用 TLSFingerprintDialer
+		//
 		slog.Debug("tls_fingerprint_transport_direct")
 		dialer := tlsfingerprint.NewDialer(profile, nil)
 		transport.DialTLSContext = dialer.DialTLSContext
@@ -1111,17 +1033,17 @@ func buildUpstreamTransportWithTLSFingerprint(settings poolSettings, proxyURL *u
 		scheme := strings.ToLower(proxyURL.Scheme)
 		switch scheme {
 		case "socks5", "socks5h":
-			// SOCKS5 代理：使用 SOCKS5ProxyDialer
+			// SOCKS5
 			slog.Debug("tls_fingerprint_transport_socks5", "proxy", proxyURL.Host)
 			socks5Dialer := tlsfingerprint.NewSOCKS5ProxyDialer(profile, proxyURL)
 			transport.DialTLSContext = socks5Dialer.DialTLSContext
 		case "http", "https":
-			// HTTP/HTTPS 代理：使用 HTTPProxyDialer（CONNECT 隧道）
+			// HTTP/HTTPS
 			slog.Debug("tls_fingerprint_transport_http_connect", "proxy", proxyURL.Host)
 			httpDialer := tlsfingerprint.NewHTTPProxyDialer(profile, proxyURL)
 			transport.DialTLSContext = httpDialer.DialTLSContext
 		default:
-			// 未知代理类型，回退到普通代理配置（无 TLS 指纹）
+			//
 			slog.Debug("tls_fingerprint_transport_unknown_scheme_fallback", "scheme", scheme)
 			if err := proxyutil.ConfigureTransportProxy(transport, proxyURL); err != nil {
 				return nil, err
@@ -1132,16 +1054,16 @@ func buildUpstreamTransportWithTLSFingerprint(settings poolSettings, proxyURL *u
 	return transport, nil
 }
 
-// trackedBody 带跟踪功能的响应体包装器
-// 在 Close 时执行回调，用于更新请求计数
+// trackedBody
+//
 type trackedBody struct {
-	io.ReadCloser // 原始响应体
+	io.ReadCloser // original response body
 	once          sync.Once
-	onClose       func() // 关闭时的回调函数
+	onClose       func() // callback function on close
 }
 
-// Close 关闭响应体并执行回调
-// 使用 sync.Once 确保回调只执行一次
+// Close
+//
 func (b *trackedBody) Close() error {
 	err := b.ReadCloser.Close()
 	if b.onClose != nil {
@@ -1150,15 +1072,13 @@ func (b *trackedBody) Close() error {
 	return err
 }
 
-// wrapTrackedBody 包装响应体以跟踪关闭事件
-// 用于在响应体关闭时更新 inFlight 计数
+// wrapTrackedBody
 //
-// 参数:
-//   - body: 原始响应体
-//   - onClose: 关闭时的回调函数
 //
-// 返回:
-//   - io.ReadCloser: 包装后的响应体
+//   - body:
+//   - onClose:
+//
+//   - io.ReadCloser:
 func wrapTrackedBody(body io.ReadCloser, onClose func()) io.ReadCloser {
 	if body == nil {
 		return body
@@ -1166,9 +1086,9 @@ func wrapTrackedBody(body io.ReadCloser, onClose func()) io.ReadCloser {
 	return &trackedBody{ReadCloser: body, onClose: onClose}
 }
 
-// decompressResponseBody 根据 Content-Encoding 解压响应体。
-// 当请求显式设置了 accept-encoding 时，Go 的 Transport 不会自动解压，需要手动处理。
-// 解压成功后会删除 Content-Encoding 和 Content-Length header（长度已不准确）。
+// decompressResponseBody
+//
+//
 func decompressResponseBody(resp *http.Response) {
 	if resp == nil || resp.Body == nil {
 		return
@@ -1183,7 +1103,7 @@ func decompressResponseBody(resp *http.Response) {
 	case "gzip":
 		gr, err := gzip.NewReader(resp.Body)
 		if err != nil {
-			return // 解压失败，保持原样
+			return // decompression failed, keep as-is
 		}
 		reader = gr
 	case "br":
@@ -1197,11 +1117,11 @@ func decompressResponseBody(resp *http.Response) {
 	originalBody := resp.Body
 	resp.Body = &decompressedBody{reader: reader, closer: originalBody}
 	resp.Header.Del("Content-Encoding")
-	resp.Header.Del("Content-Length") // 解压后长度不确定
+	resp.Header.Del("Content-Length") // length uncertain after decompression
 	resp.ContentLength = -1
 }
 
-// decompressedBody 组合解压 reader 和原始 body 的 close。
+// decompressedBody
 type decompressedBody struct {
 	reader io.Reader
 	closer io.Closer
@@ -1212,7 +1132,7 @@ func (d *decompressedBody) Read(p []byte) (int, error) {
 }
 
 func (d *decompressedBody) Close() error {
-	// 如果 reader 本身也是 Closer（如 gzip.Reader），先关闭它
+	//
 	if rc, ok := d.reader.(io.Closer); ok {
 		_ = rc.Close()
 	}

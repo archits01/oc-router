@@ -5,18 +5,17 @@ import (
 	"strings"
 )
 
-// CleanJSONSchema 清理 JSON Schema，移除 Antigravity/Gemini 不支持的字段
-// 参考 Antigravity-Manager/src-tauri/src/proxy/common/json_schema.rs 实现
-// 确保 schema 符合 JSON Schema draft 2020-12 且适配 Gemini v1internal
+// CleanJSONSchema
+//
+//
 func CleanJSONSchema(schema map[string]any) map[string]any {
 	if schema == nil {
 		return nil
 	}
-	// 0. 预处理：展开 $ref (Schema Flattening)
-	// (Go map 是引用的，直接修改 schema)
+	// 0. $ref (Schema Flattening)
+	// (Go map )
 	flattenRefs(schema, extractDefs(schema))
 
-	// 递归清理
 	cleaned := cleanJSONSchemaRecursive(schema)
 	result, ok := cleaned.(map[string]any)
 	if !ok {
@@ -26,7 +25,7 @@ func CleanJSONSchema(schema map[string]any) map[string]any {
 	return result
 }
 
-// extractDefs 提取并移除定义的 helper
+// extractDefs
 func extractDefs(schema map[string]any) map[string]any {
 	defs := make(map[string]any)
 	if d, ok := schema["$defs"].(map[string]any); ok {
@@ -44,34 +43,32 @@ func extractDefs(schema map[string]any) map[string]any {
 	return defs
 }
 
-// flattenRefs 递归展开 $ref
+// flattenRefs $ref
 func flattenRefs(schema map[string]any, defs map[string]any) {
 	if len(defs) == 0 {
-		return // 无需展开
+		return // nothing to expand
 	}
 
-	// 检查并替换 $ref
+	// $ref
 	if ref, ok := schema["$ref"].(string); ok {
 		delete(schema, "$ref")
-		// 解析引用名 (例如 #/$defs/MyType -> MyType)
+		// (#/$defs/MyType -> MyType)
 		parts := strings.Split(ref, "/")
 		refName := parts[len(parts)-1]
 
 		if defSchema, exists := defs[refName]; exists {
 			if defMap, ok := defSchema.(map[string]any); ok {
-				// 合并定义内容 (不覆盖现有 key)
+				// ()
 				for k, v := range defMap {
 					if _, has := schema[k]; !has {
-						schema[k] = deepCopy(v) // 需深拷贝避免共享引用
+						schema[k] = deepCopy(v) // deep copy to avoid shared references
 					}
 				}
-				// 递归处理刚刚合并进来的内容
 				flattenRefs(schema, defs)
 			}
 		}
 	}
 
-	// 遍历子节点
 	for _, v := range schema {
 		if subMap, ok := v.(map[string]any); ok {
 			flattenRefs(subMap, defs)
@@ -85,7 +82,7 @@ func flattenRefs(schema map[string]any, defs map[string]any) {
 	}
 }
 
-// deepCopy 深拷贝 (简单实现，仅针对 JSON 类型)
+// deepCopy ()
 func deepCopy(src any) any {
 	if src == nil {
 		return nil
@@ -108,41 +105,38 @@ func deepCopy(src any) any {
 	}
 }
 
-// cleanJSONSchemaRecursive 递归核心清理逻辑
-// 返回处理后的值 (通常是 input map，但可能修改内部结构)
+// cleanJSONSchemaRecursive
+// ()
 func cleanJSONSchemaRecursive(value any) any {
 	schemaMap, ok := value.(map[string]any)
 	if !ok {
 		return value
 	}
 
-	// 0. [NEW] 合并 allOf
+	// 0. [NEW]
 	mergeAllOf(schemaMap)
 
-	// 1. [CRITICAL] 深度递归处理子项
+	// 1. [CRITICAL]
 	if props, ok := schemaMap["properties"].(map[string]any); ok {
 		for _, v := range props {
 			cleanJSONSchemaRecursive(v)
 		}
-		// Go 中不需要像 Rust 那样显式处理 nullable_keys remove required，
-		// 因为我们在子项处理中会正确设置 type 和 description
+		// Go
+		//
 	} else if items, ok := schemaMap["items"]; ok {
-		// [FIX] Gemini 期望 "items" 是单个 Schema 对象（列表验证），而不是数组（元组验证）。
+		// [FIX] Gemini "items"
 		if itemsArr, ok := items.([]any); ok {
-			// 策略：将元组 [A, B] 视为 A、B 中的最佳匹配项。
+			// [A, B]
 			best := extractBestSchemaFromUnion(itemsArr)
 			if best == nil {
-				// 回退到通用字符串
 				best = map[string]any{"type": "string"}
 			}
-			// 用处理后的对象替换原有数组
 			cleanedBest := cleanJSONSchemaRecursive(best)
 			schemaMap["items"] = cleanedBest
 		} else {
 			cleanJSONSchemaRecursive(items)
 		}
 	} else {
-		// 遍历所有值递归
 		for _, v := range schemaMap {
 			if _, isMap := v.(map[string]any); isMap {
 				cleanJSONSchemaRecursive(v)
@@ -154,7 +148,7 @@ func cleanJSONSchemaRecursive(value any) any {
 		}
 	}
 
-	// 2. [FIX] 处理 anyOf/oneOf 联合类型: 合并属性而非直接删除
+	// 2. [FIX]
 	var unionArray []any
 	typeStr, _ := schemaMap["type"].(string)
 	if typeStr == "" || typeStr == "object" {
@@ -168,7 +162,6 @@ func cleanJSONSchemaRecursive(value any) any {
 	if len(unionArray) > 0 {
 		if bestBranch := extractBestSchemaFromUnion(unionArray); bestBranch != nil {
 			if bestMap, ok := bestBranch.(map[string]any); ok {
-				// 合并分支内容
 				for k, v := range bestMap {
 					if k == "properties" {
 						targetProps, _ := schemaMap["properties"].(map[string]any)
@@ -187,7 +180,6 @@ func cleanJSONSchemaRecursive(value any) any {
 						targetReq, _ := schemaMap["required"].([]any)
 						if sourceReq, ok := v.([]any); ok {
 							for _, rv := range sourceReq {
-								// 简单的去重添加
 								exists := false
 								for _, tr := range targetReq {
 									if tr == rv {
@@ -209,7 +201,7 @@ func cleanJSONSchemaRecursive(value any) any {
 		}
 	}
 
-	// 3. [SAFETY] 检查当前对象是否为 JSON Schema 节点
+	// 3. [SAFETY]
 	looksLikeSchema := hasKey(schemaMap, "type") ||
 		hasKey(schemaMap, "properties") ||
 		hasKey(schemaMap, "items") ||
@@ -219,10 +211,10 @@ func cleanJSONSchemaRecursive(value any) any {
 		hasKey(schemaMap, "allOf")
 
 	if looksLikeSchema {
-		// 4. [ROBUST] 约束迁移
+		// 4. [ROBUST]
 		migrateConstraints(schemaMap)
 
-		// 5. [CRITICAL] 白名单过滤
+		// 5. [CRITICAL]
 		allowedFields := map[string]bool{
 			"type":        true,
 			"description": true,
@@ -238,7 +230,7 @@ func cleanJSONSchemaRecursive(value any) any {
 			}
 		}
 
-		// 6. [SAFETY] 处理空 Object
+		// 6. [SAFETY]
 		if t, _ := schemaMap["type"].(string); t == "object" {
 			hasProps := false
 			if props, ok := schemaMap["properties"].(map[string]any); ok && len(props) > 0 {
@@ -255,7 +247,7 @@ func cleanJSONSchemaRecursive(value any) any {
 			}
 		}
 
-		// 7. [SAFETY] Required 字段对齐
+		// 7. [SAFETY] Required
 		if props, ok := schemaMap["properties"].(map[string]any); ok {
 			if req, ok := schemaMap["required"].([]any); ok {
 				var validReq []any
@@ -274,7 +266,7 @@ func cleanJSONSchemaRecursive(value any) any {
 			}
 		}
 
-		// 8. 处理 type 字段 (Lowercase + Nullable 提取)
+		// 8. (Lowercase + Nullable )
 		isEffectivelyNullable := false
 		if typeVal, exists := schemaMap["type"]; exists {
 			var selectedType string
@@ -305,12 +297,12 @@ func cleanJSONSchemaRecursive(value any) any {
 			}
 			schemaMap["type"] = selectedType
 		} else {
-			// 默认 object 如果有 properties (虽然上面白名单过滤可能删了 type 如果它不在... 但 type 必在 allowlist)
-			// 如果没有 type，但有 properties，补一个
+			// ()
+			//
 			if hasKey(schemaMap, "properties") {
 				schemaMap["type"] = "object"
 			} else {
-				// 默认为 string ? or object? Gemini 通常需要明确 type
+				// ? or object? Gemini
 				schemaMap["type"] = "object"
 			}
 		}
@@ -326,7 +318,7 @@ func cleanJSONSchemaRecursive(value any) any {
 			}
 		}
 
-		// 9. Enum 值强制转字符串
+		// 9. Enum
 		if enumVals, ok := schemaMap["enum"].([]any); ok {
 			hasNonString := false
 			for i, val := range enumVals {
@@ -389,7 +381,7 @@ func migrateConstraints(m map[string]any) {
 	}
 }
 
-// mergeAllOf 合并 allOf
+// mergeAllOf
 func mergeAllOf(m map[string]any) {
 	allOf, ok := m["allOf"].([]any)
 	if !ok {
@@ -463,7 +455,7 @@ func mergeAllOf(m map[string]any) {
 	}
 }
 
-// extractBestSchemaFromUnion 从 anyOf/oneOf 中选取最佳分支
+// extractBestSchemaFromUnion
 func extractBestSchemaFromUnion(unionArray []any) any {
 	var bestOption any
 	bestScore := -1
@@ -497,7 +489,7 @@ func scoreSchemaOption(val any) int {
 	return 0
 }
 
-// DeepCleanUndefined 深度清理值为 "[undefined]" 的字段
+// DeepCleanUndefined "[undefined]"
 func DeepCleanUndefined(value any) {
 	if value == nil {
 		return

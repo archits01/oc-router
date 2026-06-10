@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// resetQuotaUserSubRepoStub 支持 GetByID、ResetDailyUsage、ResetWeeklyUsage、ResetMonthlyUsage，
-// 其余方法继承 userSubRepoNoop（panic）。
+// resetQuotaUserSubRepoStub
+//
 type resetQuotaUserSubRepoStub struct {
 	userSubRepoNoop
 
@@ -140,7 +140,7 @@ func TestAdminResetQuota_ResetDailyUsageError(t *testing.T) {
 
 	require.ErrorIs(t, err, dbErr)
 	require.True(t, stub.resetDailyCalled)
-	require.False(t, stub.resetWeeklyCalled, "daily 失败后不应继续调用 weekly")
+	require.False(t, stub.resetWeeklyCalled, "daily failed后不应继续调用 weekly")
 }
 
 func TestAdminResetQuota_ResetWeeklyUsageError(t *testing.T) {
@@ -200,8 +200,8 @@ func TestAdminResetQuota_ReturnsRefreshedSub(t *testing.T) {
 	result, err := svc.AdminResetQuota(context.Background(), 6, true, false, false)
 
 	require.NoError(t, err)
-	// ResetDailyUsage stub 会将 sub.DailyUsageUSD 归零，
-	// 服务应返回第二次 GetByID 的刷新值而非初始的 99.9
-	require.Equal(t, float64(0), result.DailyUsageUSD, "返回的订阅应反映已归零的用量")
+	// ResetDailyUsage stub
+	//
+	require.Equal(t, float64(0), result.DailyUsageUSD, "returned的订阅应反映已归zero的用量")
 	require.True(t, stub.resetDailyCalled)
 }

@@ -36,7 +36,7 @@ func TestMergePreservingSensitiveCreds_OverwritesWhenIncomingProvidesSensitive(t
 	}
 	incoming := map[string]any{
 		"refresh_token": "rt-new",
-		// 显式没传 api_key —— 应保留
+		// ——
 	}
 	out := MergePreservingSensitiveCreds(existing, incoming)
 	require.Equal(t, "rt-new", out["refresh_token"], "incoming 显式传入应覆盖")
@@ -72,12 +72,12 @@ func TestMergePreservingSensitiveCreds_NonSensitiveDeletionAllowed(t *testing.T)
 	}
 	incoming := map[string]any{
 		"base_url": "https://new",
-		// 不带 project_id —— 等同删除（非敏感键由 incoming 决定）
+		// ——
 	}
 	out := MergePreservingSensitiveCreds(existing, incoming)
 	require.Equal(t, "rt", out["refresh_token"], "敏感键保留")
 	require.Equal(t, "https://new", out["base_url"])
-	require.NotContains(t, out, "project_id", "非敏感键 incoming 不传 = 删除")
+	require.NotContains(t, out, "project_id", "非敏感键 incoming 不传 = delete")
 }
 
 func TestIsSensitiveCredentialKey(t *testing.T) {

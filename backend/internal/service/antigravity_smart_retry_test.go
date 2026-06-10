@@ -13,8 +13,8 @@ import (
 	"testing"
 )
 
-// stubSmartRetryCache 用于 handleSmartRetry 测试的 GatewayCache mock
-// 仅关注 DeleteSessionAccountID 的调用记录
+// stubSmartRetryCache
+//
 type stubSmartRetryCache struct {
 	GatewayCache // 嵌入接口，未实现的方法 panic（确保只调用预期方法）
 	deleteCalls  []deleteSessionCall
@@ -30,7 +30,7 @@ func (c *stubSmartRetryCache) DeleteSessionAccountID(_ context.Context, groupID 
 	return nil
 }
 
-// mockSmartRetryUpstream 用于 handleSmartRetry 测试的 mock upstream
+// mockSmartRetryUpstream
 type mockSmartRetryUpstream struct {
 	responses      []*http.Response
 	responseBodies [][]byte // 缓存的 response body 字节（用于 repeatLast 重建）
@@ -53,7 +53,6 @@ func (m *mockSmartRetryUpstream) Do(req *http.Request, proxyURL string, accountI
 	}
 	m.callIdx++
 
-	// 确定使用哪个索引
 	respIdx := idx
 	if respIdx >= len(m.responses) {
 		if !m.repeatLast || len(m.responses) == 0 {
@@ -68,7 +67,7 @@ func (m *mockSmartRetryUpstream) Do(req *http.Request, proxyURL string, accountI
 		return nil, respErr
 	}
 
-	// 首次调用时缓存 body 字节
+	//
 	if respIdx >= len(m.responseBodies) {
 		for len(m.responseBodies) <= respIdx {
 			m.responseBodies = append(m.responseBodies, nil)
@@ -80,7 +79,7 @@ func (m *mockSmartRetryUpstream) Do(req *http.Request, proxyURL string, accountI
 		m.responseBodies[respIdx] = bodyBytes
 	}
 
-	// 用缓存的 body 重建 reader（支持重试场景多次读取）
+	//
 	cloned := *resp
 	if m.responseBodies[respIdx] != nil {
 		cloned.Body = io.NopCloser(bytes.NewReader(m.responseBodies[respIdx]))
@@ -92,7 +91,7 @@ func (m *mockSmartRetryUpstream) DoWithTLS(req *http.Request, proxyURL string, a
 	return m.Do(req, proxyURL, accountID, accountConcurrency)
 }
 
-// TestHandleSmartRetry_URLLevelRateLimit 测试 URL 级别限流切换
+// TestHandleSmartRetry_URLLevelRateLimit
 func TestHandleSmartRetry_URLLevelRateLimit(t *testing.T) {
 	account := &Account{
 		ID:       1,
@@ -132,7 +131,7 @@ func TestHandleSmartRetry_URLLevelRateLimit(t *testing.T) {
 	require.Nil(t, result.switchError)
 }
 
-// TestHandleSmartRetry_LongDelay_ReturnsSwitchError 测试 retryDelay >= 阈值时返回 switchError
+// TestHandleSmartRetry_LongDelay_ReturnsSwitchError >=
 func TestHandleSmartRetry_LongDelay_ReturnsSwitchError(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	account := &Account{
@@ -142,7 +141,7 @@ func TestHandleSmartRetry_LongDelay_ReturnsSwitchError(t *testing.T) {
 		Platform: PlatformAntigravity,
 	}
 
-	// 15s >= 7s 阈值，应该返回 switchError
+	// 15s >= 7s
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -186,12 +185,11 @@ func TestHandleSmartRetry_LongDelay_ReturnsSwitchError(t *testing.T) {
 	require.Equal(t, "claude-sonnet-4-5", result.switchError.RateLimitedModel)
 	require.True(t, result.switchError.IsStickySession)
 
-	// 验证模型限流已设置
 	require.Len(t, repo.modelRateLimitCalls, 1)
 	require.Equal(t, "claude-sonnet-4-5", repo.modelRateLimitCalls[0].modelKey)
 }
 
-// TestHandleSmartRetry_ShortDelay_SmartRetrySuccess 测试智能重试成功
+// TestHandleSmartRetry_ShortDelay_SmartRetrySuccess
 func TestHandleSmartRetry_ShortDelay_SmartRetrySuccess(t *testing.T) {
 	successResp := &http.Response{
 		StatusCode: http.StatusOK,
@@ -210,7 +208,7 @@ func TestHandleSmartRetry_ShortDelay_SmartRetrySuccess(t *testing.T) {
 		Platform: PlatformAntigravity,
 	}
 
-	// 0.5s < 7s 阈值，应该触发智能重试
+	// 0.5s < 7s
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -253,9 +251,9 @@ func TestHandleSmartRetry_ShortDelay_SmartRetrySuccess(t *testing.T) {
 	require.Len(t, upstream.calls, 1, "should have made one retry call")
 }
 
-// TestHandleSmartRetry_ShortDelay_SmartRetryFailed_ReturnsSwitchError 测试智能重试失败后返回 switchError
+// TestHandleSmartRetry_ShortDelay_SmartRetryFailed_ReturnsSwitchError
 func TestHandleSmartRetry_ShortDelay_SmartRetryFailed_ReturnsSwitchError(t *testing.T) {
-	// 智能重试后仍然返回 429（需要提供 1 个响应，因为智能重试最多 1 次）
+	//
 	failRespBody := `{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -283,7 +281,7 @@ func TestHandleSmartRetry_ShortDelay_SmartRetryFailed_ReturnsSwitchError(t *test
 		Platform: PlatformAntigravity,
 	}
 
-	// 3s < 7s 阈值，应该触发智能重试（最多 1 次）
+	// 3s < 7s
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -328,15 +326,15 @@ func TestHandleSmartRetry_ShortDelay_SmartRetryFailed_ReturnsSwitchError(t *test
 	require.Equal(t, "gemini-3-flash", result.switchError.RateLimitedModel)
 	require.False(t, result.switchError.IsStickySession)
 
-	// 验证模型限流已设置：Gemini 同时写入精确模型和家族级 scope
+	//
 	require.Len(t, repo.modelRateLimitCalls, 2)
 	require.Equal(t, "gemini-3-flash", repo.modelRateLimitCalls[0].modelKey)
 	require.Equal(t, antigravityGeminiModelRateLimitKey, repo.modelRateLimitCalls[1].modelKey)
 	require.Len(t, upstream.calls, 1, "should have made one retry call (max attempts)")
 }
 
-// TestHandleSmartRetry_503_ModelCapacityExhausted_RetrySuccess 测试 503 MODEL_CAPACITY_EXHAUSTED 重试成功
-// MODEL_CAPACITY_EXHAUSTED 使用固定 1s 间隔重试，不切换账号
+// TestHandleSmartRetry_503_ModelCapacityExhausted_RetrySuccess
+// MODEL_CAPACITY_EXHAUSTED
 func TestHandleSmartRetry_503_ModelCapacityExhausted_RetrySuccess(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	account := &Account{
@@ -346,7 +344,7 @@ func TestHandleSmartRetry_503_ModelCapacityExhausted_RetrySuccess(t *testing.T) 
 		Platform: PlatformAntigravity,
 	}
 
-	// 503 + MODEL_CAPACITY_EXHAUSTED + 39s（上游 retryDelay 应被忽略，使用固定 1s）
+	// 503 + MODEL_CAPACITY_EXHAUSTED + 39s（
 	respBody := []byte(`{
 		"error": {
 			"code": 503,
@@ -364,7 +362,7 @@ func TestHandleSmartRetry_503_ModelCapacityExhausted_RetrySuccess(t *testing.T) 
 		Body:       io.NopCloser(bytes.NewReader(respBody)),
 	}
 
-	// mock: 第 1 次重试返回 200 成功
+	// mock:
 	upstream := &mockSmartRetryUpstream{
 		responses: []*http.Response{
 			{StatusCode: http.StatusOK, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(`{"ok":true}`))},
@@ -399,12 +397,11 @@ func TestHandleSmartRetry_503_ModelCapacityExhausted_RetrySuccess(t *testing.T) 
 	require.Nil(t, result.err)
 	require.Nil(t, result.switchError, "MODEL_CAPACITY_EXHAUSTED should not return switchError")
 
-	// 不应设置模型限流
 	require.Empty(t, repo.modelRateLimitCalls, "MODEL_CAPACITY_EXHAUSTED should not set model rate limit")
 	require.Len(t, upstream.calls, 1, "should have made one retry call before success")
 }
 
-// TestHandleSmartRetry_503_ModelCapacityExhausted_ContextCancel 测试 MODEL_CAPACITY_EXHAUSTED 上下文取消
+// TestHandleSmartRetry_503_ModelCapacityExhausted_ContextCancel
 func TestHandleSmartRetry_503_ModelCapacityExhausted_ContextCancel(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	account := &Account{
@@ -430,7 +427,6 @@ func TestHandleSmartRetry_503_ModelCapacityExhausted_ContextCancel(t *testing.T)
 		Body:       io.NopCloser(bytes.NewReader(respBody)),
 	}
 
-	// 立即取消上下文，验证重试循环能正确退出
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -457,7 +453,7 @@ func TestHandleSmartRetry_503_ModelCapacityExhausted_ContextCancel(t *testing.T)
 	require.Empty(t, repo.modelRateLimitCalls, "should not set model rate limit on context cancel")
 }
 
-// TestHandleSmartRetry_NonAntigravityAccount_ContinuesDefaultLogic 测试非 Antigravity 平台账号走默认逻辑
+// TestHandleSmartRetry_NonAntigravityAccount_ContinuesDefaultLogic
 func TestHandleSmartRetry_NonAntigravityAccount_ContinuesDefaultLogic(t *testing.T) {
 	account := &Account{
 		ID:       4,
@@ -466,7 +462,7 @@ func TestHandleSmartRetry_NonAntigravityAccount_ContinuesDefaultLogic(t *testing
 		Platform: PlatformAnthropic,
 	}
 
-	// 即使是模型限流响应，非 OAuth 账号也应该走默认逻辑
+	//
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -506,7 +502,7 @@ func TestHandleSmartRetry_NonAntigravityAccount_ContinuesDefaultLogic(t *testing
 	require.Nil(t, result.switchError)
 }
 
-// TestHandleSmartRetry_NonModelRateLimit_ContinuesDefaultLogic 测试非模型限流响应走默认逻辑
+// TestHandleSmartRetry_NonModelRateLimit_ContinuesDefaultLogic
 func TestHandleSmartRetry_NonModelRateLimit_ContinuesDefaultLogic(t *testing.T) {
 	account := &Account{
 		ID:       5,
@@ -515,7 +511,7 @@ func TestHandleSmartRetry_NonModelRateLimit_ContinuesDefaultLogic(t *testing.T) 
 		Platform: PlatformAntigravity,
 	}
 
-	// 429 但没有 RATE_LIMIT_EXCEEDED 或 MODEL_CAPACITY_EXHAUSTED
+	// 429
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -555,7 +551,7 @@ func TestHandleSmartRetry_NonModelRateLimit_ContinuesDefaultLogic(t *testing.T) 
 	require.Nil(t, result.switchError)
 }
 
-// TestHandleSmartRetry_ExactlyAtThreshold_ReturnsSwitchError 测试刚好等于阈值时返回 switchError
+// TestHandleSmartRetry_ExactlyAtThreshold_ReturnsSwitchError
 func TestHandleSmartRetry_ExactlyAtThreshold_ReturnsSwitchError(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	account := &Account{
@@ -565,7 +561,7 @@ func TestHandleSmartRetry_ExactlyAtThreshold_ReturnsSwitchError(t *testing.T) {
 		Platform: PlatformAntigravity,
 	}
 
-	// 刚好 7s = 7s 阈值，应该返回 switchError
+	// = 7s
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -606,9 +602,9 @@ func TestHandleSmartRetry_ExactlyAtThreshold_ReturnsSwitchError(t *testing.T) {
 	require.Equal(t, "gemini-pro", result.switchError.RateLimitedModel)
 }
 
-// TestAntigravityRetryLoop_HandleSmartRetry_SwitchError_Propagates 测试 switchError 正确传播到上层
+// TestAntigravityRetryLoop_HandleSmartRetry_SwitchError_Propagates
 func TestAntigravityRetryLoop_HandleSmartRetry_SwitchError_Propagates(t *testing.T) {
-	// 模拟 429 + 长延迟的响应
+	// +
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -665,12 +661,12 @@ func TestAntigravityRetryLoop_HandleSmartRetry_SwitchError_Propagates(t *testing
 	require.True(t, switchErr.IsStickySession)
 }
 
-// TestHandleSmartRetry_NetworkError_ExhaustsRetry 测试网络错误时（maxAttempts=1）直接耗尽重试并切换账号
+// TestHandleSmartRetry_NetworkError_ExhaustsRetry =1）
 func TestHandleSmartRetry_NetworkError_ExhaustsRetry(t *testing.T) {
-	// 唯一一次重试遇到网络错误（nil response）
+	//
 	upstream := &mockSmartRetryUpstream{
-		responses: []*http.Response{nil}, // 返回 nil（模拟网络错误）
-		errors:    []error{nil},          // mock 不返回 error，靠 nil response 触发
+		responses: []*http.Response{nil}, // returned nil（模拟网络error）
+		errors:    []error{nil},          // mock 不returned error，靠 nil response 触发
 	}
 
 	repo := &stubAntigravityAccountRepo{}
@@ -681,7 +677,7 @@ func TestHandleSmartRetry_NetworkError_ExhaustsRetry(t *testing.T) {
 		Platform: PlatformAntigravity,
 	}
 
-	// 0.1s < 7s 阈值，应该触发智能重试
+	// 0.1s < 7s
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -724,12 +720,11 @@ func TestHandleSmartRetry_NetworkError_ExhaustsRetry(t *testing.T) {
 	require.Equal(t, "claude-sonnet-4-5", result.switchError.RateLimitedModel)
 	require.Len(t, upstream.calls, 1, "should have made one retry call")
 
-	// 验证模型限流已设置
 	require.Len(t, repo.modelRateLimitCalls, 1)
 	require.Equal(t, "claude-sonnet-4-5", repo.modelRateLimitCalls[0].modelKey)
 }
 
-// TestHandleSmartRetry_NoRetryDelay_UsesDefaultRateLimit 测试无 retryDelay 时使用默认 1 分钟限流
+// TestHandleSmartRetry_NoRetryDelay_UsesDefaultRateLimit
 func TestHandleSmartRetry_NoRetryDelay_UsesDefaultRateLimit(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	account := &Account{
@@ -739,7 +734,7 @@ func TestHandleSmartRetry_NoRetryDelay_UsesDefaultRateLimit(t *testing.T) {
 		Platform: PlatformAntigravity,
 	}
 
-	// 429 + RATE_LIMIT_EXCEEDED + 无 retryDelay → 使用默认 1 分钟限流
+	// 429 + RATE_LIMIT_EXCEEDED + →
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -781,25 +776,23 @@ func TestHandleSmartRetry_NoRetryDelay_UsesDefaultRateLimit(t *testing.T) {
 	require.Equal(t, "claude-sonnet-4-5", result.switchError.RateLimitedModel)
 	require.True(t, result.switchError.IsStickySession)
 
-	// 验证模型限流已设置
 	require.Len(t, repo.modelRateLimitCalls, 1)
 	require.Equal(t, "claude-sonnet-4-5", repo.modelRateLimitCalls[0].modelKey)
 }
 
 // ---------------------------------------------------------------------------
-// 以下测试覆盖本次改动：
-// 1. antigravitySmartRetryMaxAttempts = 1（仅重试 1 次）
-// 2. 智能重试失败后清除粘性会话绑定（DeleteSessionAccountID）
+// 1. antigravitySmartRetryMaxAttempts = 1（
+// 2.
 // ---------------------------------------------------------------------------
 
-// TestSmartRetryMaxAttempts_VerifyConstant 验证常量值为 1
+// TestSmartRetryMaxAttempts_VerifyConstant
 func TestSmartRetryMaxAttempts_VerifyConstant(t *testing.T) {
 	require.Equal(t, 1, antigravitySmartRetryMaxAttempts,
 		"antigravitySmartRetryMaxAttempts should be 1 to prevent repeated rate limiting")
 }
 
 // TestHandleSmartRetry_ShortDelay_StickySession_FailedRetry_ClearsSession
-// 核心场景：粘性会话 + 短延迟重试失败 → 必须清除粘性绑定
+// + →
 func TestHandleSmartRetry_ShortDelay_StickySession_FailedRetry_ClearsSession(t *testing.T) {
 	failRespBody := `{
 		"error": {
@@ -866,28 +859,26 @@ func TestHandleSmartRetry_ShortDelay_StickySession_FailedRetry_ClearsSession(t *
 	svc := &AntigravityGatewayService{cache: cache}
 	result := svc.handleSmartRetry(params, resp, respBody, "https://ag-1.test", 0, availableURLs)
 
-	// 验证返回 switchError
+	//
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
 	require.NotNil(t, result.switchError)
 	require.True(t, result.switchError.IsStickySession, "switchError should carry IsStickySession=true")
 	require.Equal(t, account.ID, result.switchError.OriginalAccountID)
 
-	// 核心断言：DeleteSessionAccountID 被调用，且参数正确
+	//
 	require.Len(t, cache.deleteCalls, 1, "should call DeleteSessionAccountID exactly once")
 	require.Equal(t, int64(42), cache.deleteCalls[0].groupID)
 	require.Equal(t, "sticky-hash-abc", cache.deleteCalls[0].sessionHash)
 
-	// 验证仅重试 1 次
 	require.Len(t, upstream.calls, 1, "should make exactly 1 retry call (maxAttempts=1)")
 
-	// 验证模型限流已设置
 	require.Len(t, repo.modelRateLimitCalls, 1)
 	require.Equal(t, "claude-sonnet-4-5", repo.modelRateLimitCalls[0].modelKey)
 }
 
 // TestHandleSmartRetry_ShortDelay_NonStickySession_FailedRetry_NoDeleteSession
-// 非粘性会话 + 短延迟重试失败 → 不应调用 DeleteSessionAccountID（sessionHash 为空）
+// + →
 func TestHandleSmartRetry_ShortDelay_NonStickySession_FailedRetry_NoDeleteSession(t *testing.T) {
 	failRespBody := `{
 		"error": {
@@ -959,12 +950,12 @@ func TestHandleSmartRetry_ShortDelay_NonStickySession_FailedRetry_NoDeleteSessio
 	require.NotNil(t, result.switchError)
 	require.False(t, result.switchError.IsStickySession)
 
-	// 核心断言：sessionHash 为空时不应调用 DeleteSessionAccountID
+	//
 	require.Len(t, cache.deleteCalls, 0, "should NOT call DeleteSessionAccountID when sessionHash is empty")
 }
 
 // TestHandleSmartRetry_ShortDelay_StickySession_FailedRetry_NilCache_NoPanic
-// 边界：cache 为 nil 时不应 panic
+//
 func TestHandleSmartRetry_ShortDelay_StickySession_FailedRetry_NilCache_NoPanic(t *testing.T) {
 	failRespBody := `{
 		"error": {
@@ -1027,7 +1018,7 @@ func TestHandleSmartRetry_ShortDelay_StickySession_FailedRetry_NilCache_NoPanic(
 
 	availableURLs := []string{"https://ag-1.test"}
 
-	// cache 为 nil，不应 panic
+	// cache
 	svc := &AntigravityGatewayService{cache: nil}
 	require.NotPanics(t, func() {
 		result := svc.handleSmartRetry(params, resp, respBody, "https://ag-1.test", 0, availableURLs)
@@ -1039,7 +1030,6 @@ func TestHandleSmartRetry_ShortDelay_StickySession_FailedRetry_NilCache_NoPanic(
 }
 
 // TestHandleSmartRetry_ShortDelay_StickySession_SuccessRetry_NoDeleteSession
-// 重试成功时不应清除粘性会话（只有失败才清除）
 func TestHandleSmartRetry_ShortDelay_StickySession_SuccessRetry_NoDeleteSession(t *testing.T) {
 	successResp := &http.Response{
 		StatusCode: http.StatusOK,
@@ -1101,12 +1091,11 @@ func TestHandleSmartRetry_ShortDelay_StickySession_SuccessRetry_NoDeleteSession(
 	require.Equal(t, http.StatusOK, result.resp.StatusCode)
 	require.Nil(t, result.switchError, "should not return switchError on success")
 
-	// 核心断言：重试成功时不应清除粘性会话
 	require.Len(t, cache.deleteCalls, 0, "should NOT call DeleteSessionAccountID on successful retry")
 }
 
 // TestHandleSmartRetry_LongDelay_StickySession_ClearsSession
-// 长延迟路径（情况1）应立即清除 sticky 绑定，避免下一次请求继续命中已限流账号。
+//
 func TestHandleSmartRetry_LongDelay_StickySession_ClearsSession(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	cache := &stubSmartRetryCache{}
@@ -1117,7 +1106,7 @@ func TestHandleSmartRetry_LongDelay_StickySession_ClearsSession(t *testing.T) {
 		Platform: PlatformAntigravity,
 	}
 
-	// 15s >= 7s 阈值 → 走长延迟路径
+	// 15s >= 7s →
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -1165,10 +1154,10 @@ func TestHandleSmartRetry_LongDelay_StickySession_ClearsSession(t *testing.T) {
 }
 
 // TestHandleSmartRetry_ShortDelay_NetworkError_StickySession_ClearsSession
-// 网络错误耗尽重试 + 粘性会话 → 也应清除粘性绑定
+// + →
 func TestHandleSmartRetry_ShortDelay_NetworkError_StickySession_ClearsSession(t *testing.T) {
 	upstream := &mockSmartRetryUpstream{
-		responses: []*http.Response{nil}, // 网络错误
+		responses: []*http.Response{nil}, // 网络error
 		errors:    []error{nil},
 	}
 
@@ -1222,7 +1211,6 @@ func TestHandleSmartRetry_ShortDelay_NetworkError_StickySession_ClearsSession(t 
 	require.NotNil(t, result.switchError)
 	require.True(t, result.switchError.IsStickySession)
 
-	// 核心断言：网络错误耗尽重试后也应清除粘性绑定
 	require.Len(t, cache.deleteCalls, 1, "should call DeleteSessionAccountID after network error exhausts retry")
 	require.Equal(t, int64(99), cache.deleteCalls[0].groupID)
 	require.Equal(t, "sticky-net-error", cache.deleteCalls[0].sessionHash)
@@ -1233,7 +1221,7 @@ func TestHandleSmartRetry_ShortDelay_NetworkError_StickySession_ClearsSession(t 
 }
 
 // TestHandleSmartRetry_ShortDelay_503_StickySession_FailedRetry_ClearsSession
-// 429 + 短延迟 + 粘性会话 + 重试失败 → 清除粘性绑定
+// 429 + + + →
 func TestHandleSmartRetry_ShortDelay_503_StickySession_FailedRetry_ClearsSession(t *testing.T) {
 	failRespBody := `{
 		"error": {
@@ -1306,22 +1294,21 @@ func TestHandleSmartRetry_ShortDelay_503_StickySession_FailedRetry_ClearsSession
 	require.NotNil(t, result.switchError)
 	require.True(t, result.switchError.IsStickySession)
 
-	// 验证粘性绑定被清除
 	require.Len(t, cache.deleteCalls, 1)
 	require.Equal(t, int64(77), cache.deleteCalls[0].groupID)
 	require.Equal(t, "sticky-503-short", cache.deleteCalls[0].sessionHash)
 
-	// 验证模型限流已设置：Gemini 同时写入精确模型和家族级 scope
+	//
 	require.Len(t, repo.modelRateLimitCalls, 2)
 	require.Equal(t, "gemini-3-pro", repo.modelRateLimitCalls[0].modelKey)
 	require.Equal(t, antigravityGeminiModelRateLimitKey, repo.modelRateLimitCalls[1].modelKey)
 }
 
 // TestAntigravityRetryLoop_SmartRetryFailed_StickySession_SwitchErrorPropagates
-// 集成测试：antigravityRetryLoop → handleSmartRetry → switchError 传播
-// 验证 IsStickySession 正确传递到上层，且粘性绑定被清除
+// → handleSmartRetry → switchError
+//
 func TestAntigravityRetryLoop_SmartRetryFailed_StickySession_SwitchErrorPropagates(t *testing.T) {
-	// 初始 429 响应
+	//
 	initialRespBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -1337,7 +1324,7 @@ func TestAntigravityRetryLoop_SmartRetryFailed_StickySession_SwitchErrorPropagat
 		Body:       io.NopCloser(bytes.NewReader(initialRespBody)),
 	}
 
-	// 智能重试也返回 429
+	//
 	retryRespBody := `{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -1397,7 +1384,6 @@ func TestAntigravityRetryLoop_SmartRetryFailed_StickySession_SwitchErrorPropagat
 	require.Equal(t, "claude-opus-4-6", switchErr.RateLimitedModel)
 	require.True(t, switchErr.IsStickySession, "IsStickySession must propagate through retryLoop")
 
-	// 验证粘性绑定被清除
 	require.Len(t, cache.deleteCalls, 1, "should clear sticky session in handleSmartRetry")
 	require.Equal(t, int64(55), cache.deleteCalls[0].groupID)
 	require.Equal(t, "sticky-loop-test", cache.deleteCalls[0].sessionHash)

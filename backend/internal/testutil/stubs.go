@@ -1,7 +1,7 @@
 //go:build unit
 
-// Package testutil 提供单元测试共享的 Stub、Fixture 和辅助函数。
-// 所有文件使用 //go:build unit 标签，确保不会被生产构建包含。
+// Package testutil
+//
 package testutil
 
 import (
@@ -12,13 +12,12 @@ import (
 )
 
 // ============================================================
-// StubConcurrencyCache — service.ConcurrencyCache 的空实现
+// StubConcurrencyCache — service.ConcurrencyCache
 // ============================================================
 
-// 编译期接口断言
 var _ service.ConcurrencyCache = StubConcurrencyCache{}
 
-// StubConcurrencyCache 是 ConcurrencyCache 的默认空实现，所有方法返回零值。
+// StubConcurrencyCache
 type StubConcurrencyCache struct{}
 
 func (c StubConcurrencyCache) AcquireAccountSlot(_ context.Context, _ int64, _ int, _ string) (bool, error) {
@@ -81,7 +80,7 @@ func (c StubConcurrencyCache) CleanupStaleProcessSlots(_ context.Context, _ stri
 }
 
 // ============================================================
-// StubGatewayCache — service.GatewayCache 的空实现
+// StubGatewayCache — service.GatewayCache
 // ============================================================
 
 var _ service.GatewayCache = StubGatewayCache{}
@@ -102,7 +101,7 @@ func (c StubGatewayCache) DeleteSessionAccountID(_ context.Context, _ int64, _ s
 }
 
 // ============================================================
-// StubSessionLimitCache — service.SessionLimitCache 的空实现
+// StubSessionLimitCache — service.SessionLimitCache
 // ============================================================
 
 var _ service.SessionLimitCache = StubSessionLimitCache{}

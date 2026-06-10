@@ -2086,7 +2086,7 @@
 
           </div>
 
-          <!-- 用户消息限速模式（独立于 RPM 开关，始终可见） -->
+          <!-- User消息限速模式（独立于 RPM 开关，始终可见） -->
           <div class="mt-4">
             <label class="input-label">{{ t('admin.accounts.quotaControl.rpmLimit.userMsgQueue') }}</label>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -3064,7 +3064,7 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     const rawAgMapping = credentials?.model_mapping as Record<string, string> | undefined
     if (rawAgMapping && typeof rawAgMapping === 'object') {
       const entries = Object.entries(rawAgMapping)
-      // 无论是白名单样式(key===value)还是真正的映射，都统一转换为映射列表
+      // 无论Yes白名单样式(key===value)还Yes真正的映射，都统一转换为映射列表
       antigravityModelMappings.value = entries.map(([from, to]) => ({ from, to }))
     } else {
       // 兼容旧数据：从 model_whitelist 读取，转换为映射格式
@@ -3487,7 +3487,7 @@ function loadQuotaControlSettings(account: Account) {
     rpmStickyBuffer.value = account.rpm_sticky_buffer ?? null
   }
 
-  // UMQ mode（独立于 RPM 加载，防止编辑无 RPM 账号时丢失已有配置）
+  // UMQ mode（独立于 RPM 加载，防止Edit无 RPM 账号时丢失已有配置）
   userMsgQueueMode.value = account.user_msg_queue_mode ?? ''
 
   // Load TLS fingerprint setting
@@ -3667,7 +3667,7 @@ const handleSubmit = async () => {
 
   const updatePayload: Record<string, unknown> = { ...form }
   try {
-    // 后端期望 proxy_id: 0 表示清除代理，而不是 null
+    // 后端期望 proxy_id: 0 表示清除代理，而不Yes null
     if (updatePayload.proxy_id === null) {
       updatePayload.proxy_id = 0
     }
@@ -3695,9 +3695,8 @@ const handleSubmit = async () => {
 
       // Handle API key
       // 后端响应已脱敏：currentCredentials 不会再包含 api_key 原文。
-      // 用户填入新值则覆盖；留空时优先看 credentials_status.has_api_key；
+      // User填入新值则覆盖；留空时优先看 credentials_status.has_api_key；
       // 若后端尚未升级（无 credentials_status），回退读旧结构 currentCredentials.api_key。
-      // 两者都无才报错。
       const hasExistingApiKey =
         props.account.credentials_status?.has_api_key ?? Boolean(currentCredentials.api_key)
       if (editApiKey.value.trim()) {
@@ -3707,7 +3706,7 @@ const handleSubmit = async () => {
         return
       }
 
-      // Add model mapping if configured（OpenAI 开启自动透传时保留现有映射，不再编辑）
+      // Add model mapping if configured（OpenAI 开启自动透传时保留现有映射，不再Edit）
       if (shouldApplyModelMapping) {
         const modelMapping = buildModelRestrictionMapping()
         if (modelMapping) {
@@ -3795,7 +3794,7 @@ const handleSubmit = async () => {
         return
       }
 
-      // SA JSON 已脱敏不再随 credentials 返回，存在性优先读 credentials_status。
+      // SA JSON 已脱敏不再随 credentials Back，存在性优先读 credentials_status。
       // 若后端尚未升级（无 credentials_status），回退读旧结构 service_account_json / service_account。
       const credentialsStatus = props.account.credentials_status
       const hasExistingServiceAccountJson = credentialsStatus
@@ -3911,7 +3910,6 @@ const handleSubmit = async () => {
           delete newCredentials.model_mapping
         }
       } else if (currentCredentials.model_mapping) {
-        // 透传模式保留现有映射
         newCredentials.model_mapping = currentCredentials.model_mapping
       }
       const compactModelMapping = buildModelMappingObject('mapping', [], openAICompactModelMappings.value)
@@ -3931,11 +3929,9 @@ const handleSubmit = async () => {
         ((props.account.credentials as Record<string, unknown>) || {})
       const newCredentials: Record<string, unknown> = { ...currentCredentials }
 
-      // 移除旧字段
       delete newCredentials.model_whitelist
       delete newCredentials.model_mapping
 
-      // 只使用映射模式
       const antigravityModelMapping = buildModelMappingObject(
         'mapping',
         [],
@@ -4006,7 +4002,7 @@ const handleSubmit = async () => {
         delete newExtra.rpm_sticky_buffer
       }
 
-      // UMQ mode（独立于 RPM 保存）
+      // UMQ mode（独立于 RPM Save）
       if (userMsgQueueMode.value) {
         newExtra.user_msg_queue_mode = userMsgQueueMode.value
       } else {
@@ -4136,12 +4132,12 @@ const handleSubmit = async () => {
         if (codexCLIOnlyEnabled.value) {
           newExtra.codex_cli_only = true
         } else if (hadCodexCLIOnlyEnabled) {
-          // 关闭时显式写 false，避免 extra 为空被后端忽略导致旧值无法清除
+          // Close时显式写 false，避免 extra 为空被后端忽略导致旧值无法清除
           newExtra.codex_cli_only = false
         } else {
           delete newExtra.codex_cli_only
         }
-        // 仅当 codex_cli_only 开启且子开关开启时写入 Claude Code 插件白名单，否则清除避免孤立字段
+        // 仅当 codex_cli_only 开启且子开关开启时写入 Claude Code 插件白名单，No则清除避免孤立字段
         if (codexCLIOnlyEnabled.value && codexCLIOnlyAllowClaudeCodeEnabled.value) {
           newExtra.codex_cli_only_allowed_clients = ['claude_code']
         } else {

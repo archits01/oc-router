@@ -17,8 +17,7 @@ type pricingRemoteClient struct {
 	httpClient *http.Client
 }
 
-// pricingRemoteClientError 代理初始化失败时的错误占位客户端
-// 所有请求直接返回初始化错误，禁止回退到直连
+// pricingRemoteClientError
 type pricingRemoteClientError struct {
 	err error
 }
@@ -31,14 +30,14 @@ func (c *pricingRemoteClientError) FetchHashText(_ context.Context, _ string) (s
 	return "", c.err
 }
 
-// NewPricingRemoteClient 创建定价数据远程客户端
-// proxyURL 为空时直连，支持 http/https/socks5/socks5h 协议
-// 代理配置失败时行为由 allowDirectOnProxyError 控制：
-//   - false（默认）：返回错误占位客户端，禁止回退到直连
-//   - true：回退到直连（仅限管理员显式开启）
+// NewPricingRemoteClient
+// proxyURL
+//
+//   - false（
+//   - true：
 func NewPricingRemoteClient(proxyURL string, allowDirectOnProxyError bool) service.PricingRemoteClient {
-	// 安全说明：httpclient.GetClient 的错误链（url.Parse / proxyutil）不含明文代理凭据，
-	// 但仍通过 slog 仅在服务端日志记录，不会暴露给 HTTP 响应。
+	//
+	//
 	sharedClient, err := httpclient.GetClient(httpclient.Options{
 		Timeout:  30 * time.Second,
 		ProxyURL: proxyURL,
@@ -95,7 +94,7 @@ func (c *pricingRemoteClient) FetchHashText(ctx context.Context, url string) (st
 		return "", err
 	}
 
-	// 哈希文件格式：hash  filename 或者纯 hash
+	//
 	hash := strings.TrimSpace(string(body))
 	parts := strings.Fields(hash)
 	if len(parts) > 0 {

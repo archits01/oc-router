@@ -4,16 +4,16 @@ import (
 	"context"
 )
 
-// QuotaFetcher 额度获取接口，各平台实现此接口
+// QuotaFetcher
 type QuotaFetcher interface {
-	// CanFetch 检查是否可以获取此账户的额度
+	// CanFetch
 	CanFetch(account *Account) bool
-	// FetchQuota 获取账户额度信息
+	// FetchQuota
 	FetchQuota(ctx context.Context, account *Account, proxyURL string) (*QuotaResult, error)
 }
 
-// QuotaResult 额度获取结果
+// QuotaResult
 type QuotaResult struct {
-	UsageInfo *UsageInfo     // 转换后的使用信息
+	UsageInfo *UsageInfo     // 转换后的使用info
 	Raw       map[string]any // 原始响应，可存入 account.Extra
 }

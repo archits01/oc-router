@@ -44,7 +44,7 @@ type UpdateCache interface {
 	SetUpdateInfo(ctx context.Context, data string, ttl time.Duration) error
 }
 
-// GitHubReleaseClient 获取 GitHub release 信息的接口
+// GitHubReleaseClient
 type GitHubReleaseClient interface {
 	FetchLatestRelease(ctx context.Context, repo string) (*GitHubRelease, error)
 	DownloadFile(ctx context.Context, url, dest string, maxSize int64) error

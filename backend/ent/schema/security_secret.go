@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-// SecuritySecret 存储系统级安全密钥（如 JWT 签名密钥、TOTP 加密密钥）。
+// SecuritySecret
 type SecuritySecret struct {
 	ent.Schema
 }

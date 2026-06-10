@@ -9,9 +9,9 @@ import (
 )
 
 func TestIsClaudeCodeClient(t *testing.T) {
-	// 合法的 legacy 格式 metadata.user_id（64位 hex + account uuid + session uuid）
+	// + account uuid + session uuid）
 	legacyUserID := "user_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2_account_550e8400-e29b-41d4-a716-446655440000_session_123e4567-e89b-12d3-a456-426614174000"
-	// 合法的 JSON 格式 metadata.user_id（2.1.78+ 版本）
+	// +
 	jsonUserID := `{"device_id":"a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2","account_uuid":"550e8400-e29b-41d4-a716-446655440000","session_id":"123e4567-e89b-12d3-a456-426614174000"}`
 
 	tests := []struct {
@@ -308,7 +308,7 @@ func TestRewriteSystemForNonClaudeCode(t *testing.T) {
 		body             string
 		system           any
 		wantSystemText   string // system array 第一个 block 的 text
-		wantMessagesLen  int    // messages 数组长度
+		wantMessagesLen  int    // messages 数组length
 		wantFirstMsgRole string // 第一条消息的 role
 		wantFirstMsgText string // 第一条消息的 content[0].text
 		wantAckMsgText   string // 第二条消息的 content[0].text
@@ -401,10 +401,10 @@ func TestRewriteSystemForNonClaudeCode(t *testing.T) {
 			err := json.Unmarshal(result, &parsed)
 			require.NoError(t, err)
 
-			// system 应为 array 格式，对齐真实 Claude Code CLI 的 3-block 形态：
+			// system
 			//   [0] billing attribution block (x-anthropic-billing-header: cc_version=...;)
-			//   [1] Claude Code 身份前缀 block (不带 cache_control)
-			//   [2] 工具无关的通用提示词扩充 block (带 cache_control，作为缓存断点)
+			//   [1] Claude Code ()
+			//   [2] ()
 			systemArr, ok := parsed["system"].([]any)
 			require.True(t, ok, "system should be an array, got %T", parsed["system"])
 			require.Len(t, systemArr, 3, "system array should have exactly 3 blocks (billing + cc prompt + expansion)")
@@ -432,13 +432,13 @@ func TestRewriteSystemForNonClaudeCode(t *testing.T) {
 			require.True(t, ok, "expansion block should have cache_control")
 			require.Equal(t, "ephemeral", cc["type"])
 
-			// 检查 messages
+			//
 			messages, ok := parsed["messages"].([]any)
 			require.True(t, ok, "messages should be an array")
 			require.Len(t, messages, tt.wantMessagesLen)
 
 			if tt.wantFirstMsgRole != "" && len(messages) >= 2 {
-				// 检查注入的 instruction 消息
+				//
 				firstMsg, ok := messages[0].(map[string]any)
 				require.True(t, ok)
 				require.Equal(t, tt.wantFirstMsgRole, firstMsg["role"])
@@ -450,7 +450,7 @@ func TestRewriteSystemForNonClaudeCode(t *testing.T) {
 				require.True(t, ok)
 				require.Equal(t, tt.wantFirstMsgText, firstBlock["text"])
 
-				// 检查注入的 ack 消息
+				//
 				ackMsg, ok := messages[1].(map[string]any)
 				require.True(t, ok)
 				require.Equal(t, "assistant", ackMsg["role"])

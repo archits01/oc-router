@@ -11,14 +11,14 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-// channelMonitorRequestTemplateRepository 实现 service.ChannelMonitorRequestTemplateRepository。
-// 与 channelMonitorRepository 分开一个文件，职责清晰。
+// channelMonitorRequestTemplateRepository
+//
 type channelMonitorRequestTemplateRepository struct {
 	client *dbent.Client
 	db     *sql.DB
 }
 
-// NewChannelMonitorRequestTemplateRepository 创建模板仓储实例。
+// NewChannelMonitorRequestTemplateRepository
 func NewChannelMonitorRequestTemplateRepository(client *dbent.Client, db *sql.DB) service.ChannelMonitorRequestTemplateRepository {
 	return &channelMonitorRequestTemplateRepository{client: client, db: db}
 }
@@ -108,9 +108,9 @@ func (r *channelMonitorRequestTemplateRepository) List(ctx context.Context, para
 	return out, nil
 }
 
-// ApplyToMonitors 把模板当前配置覆盖到 monitorIDs 列表里的关联监控。
-// WHERE 双重过滤：template_id = id AND id IN (monitorIDs)，防止用户传了未关联本模板的 id
-// 就被覆盖。走 ent UpdateMany 保留 hooks。
+// ApplyToMonitors
+// WHERE = id AND id IN (monitorIDs)，
+//
 func (r *channelMonitorRequestTemplateRepository) ApplyToMonitors(ctx context.Context, id int64, monitorIDs []int64) (int64, error) {
 	if len(monitorIDs) == 0 {
 		return 0, nil
@@ -146,7 +146,7 @@ func (r *channelMonitorRequestTemplateRepository) ApplyToMonitors(ctx context.Co
 	return int64(affected), nil
 }
 
-// CountAssociatedMonitors 统计关联监控数（UI 展示「N 个配置」用）。
+// CountAssociatedMonitors 「N 」
 func (r *channelMonitorRequestTemplateRepository) CountAssociatedMonitors(ctx context.Context, id int64) (int64, error) {
 	count, err := r.client.ChannelMonitor.Query().
 		Where(channelmonitor.TemplateIDEQ(id)).
@@ -157,8 +157,8 @@ func (r *channelMonitorRequestTemplateRepository) CountAssociatedMonitors(ctx co
 	return int64(count), nil
 }
 
-// ListAssociatedMonitors 列出模板关联的所有监控简略字段。
-// ORDER BY name 稳定输出方便前端展示。
+// ListAssociatedMonitors
+// ORDER BY name
 func (r *channelMonitorRequestTemplateRepository) ListAssociatedMonitors(ctx context.Context, id int64) ([]*service.AssociatedMonitorBrief, error) {
 	rows, err := r.client.ChannelMonitor.Query().
 		Where(channelmonitor.TemplateIDEQ(id)).

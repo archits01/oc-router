@@ -40,14 +40,14 @@ type SystemSettings struct {
 	TurnstileSecretKeyConfigured bool
 	APIKeyACLTrustForwardedIP    bool
 
-	// LinuxDo Connect OAuth 登录
+	// LinuxDo Connect OAuth
 	LinuxDoConnectEnabled                bool
 	LinuxDoConnectClientID               string
 	LinuxDoConnectClientSecret           string
 	LinuxDoConnectClientSecretConfigured bool
 	LinuxDoConnectRedirectURL            string
 
-	// DingTalk Connect OAuth 登录
+	// DingTalk Connect OAuth
 	DingTalkConnectEnabled                 bool
 	DingTalkConnectClientID                string
 	DingTalkConnectClientSecret            string
@@ -66,7 +66,7 @@ type SystemSettings struct {
 	DingTalkConnectSyncDisplayNameAttrName string
 	DingTalkConnectSyncDeptAttrName        string
 
-	// WeChat Connect OAuth 登录
+	// WeChat Connect OAuth
 	WeChatConnectEnabled                   bool
 	WeChatConnectAppID                     string
 	WeChatConnectAppSecret                 string
@@ -88,7 +88,7 @@ type SystemSettings struct {
 	WeChatConnectRedirectURL               string
 	WeChatConnectFrontendRedirectURL       string
 
-	// Generic OIDC OAuth 登录
+	// Generic OIDC OAuth
 	OIDCConnectEnabled                bool
 	OIDCConnectProviderName           string
 	OIDCConnectClientID               string
@@ -113,7 +113,7 @@ type SystemSettings struct {
 	OIDCConnectUserInfoIDPath         string
 	OIDCConnectUserInfoUsernamePath   string
 
-	// GitHub / Google 邮箱快捷登录
+	// GitHub / Google
 	GitHubOAuthEnabled                bool
 	GitHubOAuthClientID               string
 	GitHubOAuthClientSecret           string
@@ -181,21 +181,21 @@ type SystemSettings struct {
 	MinClaudeCodeVersion string
 	MaxClaudeCodeVersion string
 
-	// 分组隔离：允许未分组 Key 调度（默认 false → 403）
+	// → 403）
 	AllowUngroupedKeyScheduling bool
 
-	// Backend 模式：禁用用户注册和自助服务，仅管理员可登录
+	// Backend
 	BackendModeEnabled bool
 
 	// Gateway forwarding behavior
 	EnableFingerprintUnification       bool   // 是否统一 OAuth 账号的指纹头（默认 true）
-	EnableMetadataPassthrough          bool   // 是否透传客户端原始 metadata（默认 false）
-	EnableCCHSigning                   bool   // 是否对 billing header cch 进行签名（默认 false）
-	EnableAnthropicCacheTTL1hInjection bool   // 是否对 Anthropic OAuth/SetupToken 请求体注入 1h cache_control ttl（默认 false）
-	RewriteMessageCacheControl         bool   // 是否改写 messages[*].content[*].cache_control（默认 false）
-	AntigravityUserAgentVersion        string // Antigravity 上游 User-Agent 版本号；空值使用配置/默认值
+	EnableMetadataPassthrough          bool   // 是否透传客户端原始 metadata（default false）
+	EnableCCHSigning                   bool   // 是否对 billing header cch 进行签名（default false）
+	EnableAnthropicCacheTTL1hInjection bool   // 是否对 Anthropic OAuth/SetupToken 请求体注入 1h cache_control ttl（default false）
+	RewriteMessageCacheControl         bool   // 是否改写 messages[*].content[*].cache_control（default false）
+	AntigravityUserAgentVersion        string // Antigravity 上游 User-Agent 版本号；空值使用configuration/默认值
 	OpenAICodexUserAgent               string // OpenAI Codex 上游完整 User-Agent；空值使用内置默认
-	OpenAIAllowClaudeCodeCodexPlugin   bool   // 全局开关：是否额外放行 Claude Code 的 Codex 插件（默认 false）
+	OpenAIAllowClaudeCodeCodexPlugin   bool   // 全局开关：是否额外放行 Claude Code 的 Codex 插件（default false）
 
 	// Web Search Emulation
 	WebSearchEmulationEnabled bool // 是否启用 web search 模拟
@@ -206,25 +206,21 @@ type SystemSettings struct {
 	PaymentVisibleMethodAlipayEnabled bool
 	PaymentVisibleMethodWxpayEnabled  bool
 
-	// OpenAI 账号调度
+	// OpenAI
 	OpenAIAdvancedSchedulerEnabled bool
 
-	// 余额不足提醒
 	BalanceLowNotifyEnabled     bool
 	BalanceLowNotifyThreshold   float64
 	BalanceLowNotifyRechargeURL string
 
-	// 订阅到期提醒
 	SubscriptionExpiryNotifyEnabled bool
 
-	// 账号限额通知
 	AccountQuotaNotifyEnabled bool
 	AccountQuotaNotifyEmails  []NotifyEmailEntry
 
-	// 系统全局默认平台配额（key = platform，nil/缺省 = 不限制）
+	// = platform，nil/=
 	DefaultPlatformQuotas map[string]*DefaultPlatformQuotaSetting `json:"default_platform_quotas"`
 
-	// 允许终端用户在用量页查看自己的失败请求
 	AllowUserViewErrorRequests bool
 }
 
@@ -291,13 +287,11 @@ type PublicSettings struct {
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
-	// Affiliate (邀请返利) feature toggle
+	// Affiliate () feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
-	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
-	// 允许终端用户在用量页查看自己的失败请求
 	AllowUserViewErrorRequests bool `json:"allow_user_view_error_requests"`
 }
 
@@ -367,28 +361,28 @@ func (cfg WeChatConnectOAuthConfig) AppSecretForMode(mode string) string {
 	return strings.TrimSpace(firstNonEmpty(cfg.OpenAppSecret, cfg.LegacyAppSecret))
 }
 
-// StreamTimeoutSettings 流超时处理配置（仅控制超时后的处理方式，超时判定由网关配置控制）
+// StreamTimeoutSettings
 type StreamTimeoutSettings struct {
-	// Enabled 是否启用流超时处理
+	// Enabled
 	Enabled bool `json:"enabled"`
-	// Action 超时后的处理方式: "temp_unsched" | "error" | "none"
+	// Action "temp_unsched" | "error" | "none"
 	Action string `json:"action"`
-	// TempUnschedMinutes 临时不可调度持续时间（分钟）
+	// TempUnschedMinutes
 	TempUnschedMinutes int `json:"temp_unsched_minutes"`
-	// ThresholdCount 触发阈值次数（累计多少次超时才触发）
+	// ThresholdCount
 	ThresholdCount int `json:"threshold_count"`
-	// ThresholdWindowMinutes 阈值窗口时间（分钟）
+	// ThresholdWindowMinutes
 	ThresholdWindowMinutes int `json:"threshold_window_minutes"`
 }
 
-// StreamTimeoutAction 流超时处理方式常量
+// StreamTimeoutAction
 const (
 	StreamTimeoutActionTempUnsched = "temp_unsched" // 临时不可调度
-	StreamTimeoutActionError       = "error"        // 标记为错误状态
+	StreamTimeoutActionError       = "error"        // 标记为error状态
 	StreamTimeoutActionNone        = "none"         // 不处理
 )
 
-// DefaultStreamTimeoutSettings 返回默认的流超时配置
+// DefaultStreamTimeoutSettings
 func DefaultStreamTimeoutSettings() *StreamTimeoutSettings {
 	return &StreamTimeoutSettings{
 		Enabled:                false,
@@ -399,7 +393,7 @@ func DefaultStreamTimeoutSettings() *StreamTimeoutSettings {
 	}
 }
 
-// RectifierSettings 请求整流器配置
+// RectifierSettings
 type RectifierSettings struct {
 	Enabled                  bool     `json:"enabled"`                    // 总开关
 	ThinkingSignatureEnabled bool     `json:"thinking_signature_enabled"` // Thinking 签名整流
@@ -408,7 +402,7 @@ type RectifierSettings struct {
 	APIKeySignaturePatterns  []string `json:"apikey_signature_patterns"`  // API Key 自定义匹配关键词
 }
 
-// DefaultRectifierSettings 返回默认的整流器配置（全部启用）
+// DefaultRectifierSettings
 func DefaultRectifierSettings() *RectifierSettings {
 	return &RectifierSettings{
 		Enabled:                  true,
@@ -417,11 +411,11 @@ func DefaultRectifierSettings() *RectifierSettings {
 	}
 }
 
-// Beta Policy 策略常量
+// Beta Policy
 const (
 	BetaPolicyActionPass   = "pass"   // 透传，不做任何处理
 	BetaPolicyActionFilter = "filter" // 过滤，从 beta header 中移除该 token
-	BetaPolicyActionBlock  = "block"  // 拦截，直接返回错误
+	BetaPolicyActionBlock  = "block"  // 拦截，直接returnederror
 
 	BetaPolicyScopeAll     = "all"     // 所有账号类型
 	BetaPolicyScopeOAuth   = "oauth"   // 仅 OAuth 账号
@@ -429,39 +423,39 @@ const (
 	BetaPolicyScopeBedrock = "bedrock" // 仅 AWS Bedrock 账号
 )
 
-// BetaPolicyRule 单条 Beta 策略规则
+// BetaPolicyRule
 type BetaPolicyRule struct {
 	BetaToken            string   `json:"beta_token"`                       // beta token 值
 	Action               string   `json:"action"`                           // "pass" | "filter" | "block"
 	Scope                string   `json:"scope"`                            // "all" | "oauth" | "apikey" | "bedrock"
-	ErrorMessage         string   `json:"error_message,omitempty"`          // 自定义错误消息 (action=block 时生效)
-	ModelWhitelist       []string `json:"model_whitelist,omitempty"`        // 模型匹配模式列表（为空=对所有模型生效）
-	FallbackAction       string   `json:"fallback_action,omitempty"`        // 未匹配白名单的模型的处理方式
-	FallbackErrorMessage string   `json:"fallback_error_message,omitempty"` // 未匹配白名单时的自定义错误消息 (fallback_action=block 时生效)
+	ErrorMessage         string   `json:"error_message,omitempty"`          // 自定义error消息 (action=block 时生效)
+	ModelWhitelist       []string `json:"model_whitelist,omitempty"`        // model匹配模式列表（为空=对所有model生效）
+	FallbackAction       string   `json:"fallback_action,omitempty"`        // 未匹配白名单的model的处理方式
+	FallbackErrorMessage string   `json:"fallback_error_message,omitempty"` // 未匹配白名单时的自定义error消息 (fallback_action=block 时生效)
 }
 
-// BetaPolicySettings Beta 策略配置
+// BetaPolicySettings Beta
 type BetaPolicySettings struct {
 	Rules []BetaPolicyRule `json:"rules"`
 }
 
-// OverloadCooldownSettings 529过载冷却配置
+// OverloadCooldownSettings 529
 type OverloadCooldownSettings struct {
-	// Enabled 是否在收到529时暂停账号调度
+	// Enabled
 	Enabled bool `json:"enabled"`
-	// CooldownMinutes 冷却时长（分钟）
+	// CooldownMinutes
 	CooldownMinutes int `json:"cooldown_minutes"`
 }
 
-// RateLimit429CooldownSettings 429默认回避配置
+// RateLimit429CooldownSettings 429
 type RateLimit429CooldownSettings struct {
-	// Enabled 是否在无法解析上游重置时间时应用默认429回避
+	// Enabled
 	Enabled bool `json:"enabled"`
-	// CooldownSeconds 默认回避时长（秒）
+	// CooldownSeconds
 	CooldownSeconds int `json:"cooldown_seconds"`
 }
 
-// DefaultOverloadCooldownSettings 返回默认的过载冷却配置（启用，10分钟）
+// DefaultOverloadCooldownSettings
 func DefaultOverloadCooldownSettings() *OverloadCooldownSettings {
 	return &OverloadCooldownSettings{
 		Enabled:         true,
@@ -469,7 +463,7 @@ func DefaultOverloadCooldownSettings() *OverloadCooldownSettings {
 	}
 }
 
-// DefaultRateLimit429CooldownSettings 返回默认的429回避配置（启用，5秒）
+// DefaultRateLimit429CooldownSettings
 func DefaultRateLimit429CooldownSettings() *RateLimit429CooldownSettings {
 	return &RateLimit429CooldownSettings{
 		Enabled:         true,
@@ -477,7 +471,7 @@ func DefaultRateLimit429CooldownSettings() *RateLimit429CooldownSettings {
 	}
 }
 
-// DefaultBetaPolicySettings 返回默认的 Beta 策略配置
+// DefaultBetaPolicySettings
 func DefaultBetaPolicySettings() *BetaPolicySettings {
 	return &BetaPolicySettings{
 		Rules: []BetaPolicyRule{
@@ -495,39 +489,39 @@ func DefaultBetaPolicySettings() *BetaPolicySettings {
 	}
 }
 
-// OpenAI Fast Policy 策略常量
-// OpenAI 的 "fast 模式" 通过请求体中的 service_tier 字段识别：
-//   - "priority"（客户端可传 "fast"，归一化为 "priority"）：fast 模式
-//   - "flex"：低优先级模式
-//   - 省略：normal 默认
+// OpenAI Fast Policy
+// OpenAI "fast "
+//   - "priority"（"fast"，"priority"）：fast
+//   - "flex"：
+//   -
 //
-// 本策略复用 BetaPolicyAction*/BetaPolicyScope* 常量语义，只是匹配键从
-// anthropic-beta header 换成 body 的 service_tier 字段。
+// */BetaPolicyScope*
+// anthropic-beta header
 const (
 	OpenAIFastTierAny      = "all"      // 匹配任意已识别的 service_tier
 	OpenAIFastTierPriority = "priority" // 仅匹配 fast（priority）
 	OpenAIFastTierFlex     = "flex"     // 仅匹配 flex
 )
 
-// OpenAIFastPolicyRule 单条 OpenAI fast/flex 策略规则
+// OpenAIFastPolicyRule
 type OpenAIFastPolicyRule struct {
 	ServiceTier          string   `json:"service_tier"`                     // "priority" | "flex" | "auto" | "default" | "scale" | "all"
 	Action               string   `json:"action"`                           // "pass" | "filter" | "block"
 	Scope                string   `json:"scope"`                            // "all" | "oauth" | "apikey" | "bedrock"
-	ErrorMessage         string   `json:"error_message,omitempty"`          // 自定义错误消息 (action=block 时生效)
-	ModelWhitelist       []string `json:"model_whitelist,omitempty"`        // 模型匹配模式列表（为空=对所有模型生效）
-	FallbackAction       string   `json:"fallback_action,omitempty"`        // 未匹配白名单的模型的处理方式
-	FallbackErrorMessage string   `json:"fallback_error_message,omitempty"` // 未匹配白名单时的自定义错误消息 (fallback_action=block 时生效)
+	ErrorMessage         string   `json:"error_message,omitempty"`          // 自定义error消息 (action=block 时生效)
+	ModelWhitelist       []string `json:"model_whitelist,omitempty"`        // model匹配模式列表（为空=对所有model生效）
+	FallbackAction       string   `json:"fallback_action,omitempty"`        // 未匹配白名单的model的处理方式
+	FallbackErrorMessage string   `json:"fallback_error_message,omitempty"` // 未匹配白名单时的自定义error消息 (fallback_action=block 时生效)
 }
 
-// OpenAIFastPolicySettings OpenAI fast 策略配置
+// OpenAIFastPolicySettings OpenAI fast
 type OpenAIFastPolicySettings struct {
 	Rules []OpenAIFastPolicyRule `json:"rules"`
 }
 
-// DefaultOpenAIFastPolicySettings 返回默认的 OpenAI fast 策略配置。
-// 默认不配置任何规则，保留 OpenAI 上游 service_tier 语义；管理员如需
-// 限制 priority/flex，可以在 admin UI 中显式配置 filter 或 block 规则。
+// DefaultOpenAIFastPolicySettings
+//
+//
 func DefaultOpenAIFastPolicySettings() *OpenAIFastPolicySettings {
 	return &OpenAIFastPolicySettings{
 		Rules: []OpenAIFastPolicyRule{},

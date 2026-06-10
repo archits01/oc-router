@@ -16,39 +16,32 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// ConcurrencyCache 定义并发控制的缓存接口
-// 使用有序集合存储槽位，按时间戳清理过期条目
+// ConcurrencyCache
 type ConcurrencyCache interface {
-	// 账号槽位管理
-	// 键格式: concurrency:account:{accountID}（有序集合，成员为 requestID）
+	// {accountID}（
 	AcquireAccountSlot(ctx context.Context, accountID int64, maxConcurrency int, requestID string) (bool, error)
 	ReleaseAccountSlot(ctx context.Context, accountID int64, requestID string) error
 	GetAccountConcurrency(ctx context.Context, accountID int64) (int, error)
 	GetAccountConcurrencyBatch(ctx context.Context, accountIDs []int64) (map[int64]int, error)
 
-	// 账号等待队列（账号级）
 	IncrementAccountWaitCount(ctx context.Context, accountID int64, maxWait int) (bool, error)
 	DecrementAccountWaitCount(ctx context.Context, accountID int64) error
 	GetAccountWaitingCount(ctx context.Context, accountID int64) (int, error)
 
-	// 用户槽位管理
-	// 键格式: concurrency:user:{userID}（有序集合，成员为 requestID）
+	// {userID}（
 	AcquireUserSlot(ctx context.Context, userID int64, maxConcurrency int, requestID string) (bool, error)
 	ReleaseUserSlot(ctx context.Context, userID int64, requestID string) error
 	GetUserConcurrency(ctx context.Context, userID int64) (int, error)
 
-	// 等待队列计数（只在首次创建时设置 TTL）
+	//
 	IncrementWaitCount(ctx context.Context, userID int64, maxWait int) (bool, error)
 	DecrementWaitCount(ctx context.Context, userID int64) error
 
-	// 批量负载查询（只读）
 	GetAccountsLoadBatch(ctx context.Context, accounts []AccountWithConcurrency) (map[int64]*AccountLoadInfo, error)
 	GetUsersLoadBatch(ctx context.Context, users []UserWithConcurrency) (map[int64]*UserLoadInfo, error)
 
-	// 清理过期槽位（后台任务）
 	CleanupExpiredAccountSlots(ctx context.Context, accountID int64) error
 
-	// 启动时清理旧进程遗留槽位与等待计数
 	CleanupStaleProcessSlots(ctx context.Context, activeRequestPrefix string) error
 }
 
@@ -83,7 +76,6 @@ func (s *ConcurrencyService) CleanupStaleProcessSlots(ctx context.Context) error
 }
 
 const (
-	// 默认等待队列额外槽位
 	defaultExtraWaitSlots = 20
 
 	defaultAccountLoadBatchCacheTTL = 200 * time.Millisecond
@@ -91,7 +83,7 @@ const (
 	maxAccountLoadBatchCacheEntries = 256
 )
 
-// ConcurrencyService 管理账号和用户的并发限制。
+// ConcurrencyService
 type ConcurrencyService struct {
 	cache ConcurrencyCache
 
@@ -106,7 +98,7 @@ type cachedAccountLoadBatch struct {
 	expiresAt time.Time
 }
 
-// NewConcurrencyService 创建并发控制服务。
+// NewConcurrencyService
 func NewConcurrencyService(cache ConcurrencyCache) *ConcurrencyService {
 	svc := &ConcurrencyService{
 		cache:            cache,
@@ -116,7 +108,7 @@ func NewConcurrencyService(cache ConcurrencyCache) *ConcurrencyService {
 	return svc
 }
 
-// SetAccountLoadBatchCacheTTL 设置账号负载批量读取的极短 TTL 缓存；非正数表示禁用缓存。
+// SetAccountLoadBatchCacheTTL
 func (s *ConcurrencyService) SetAccountLoadBatchCacheTTL(ttl time.Duration) {
 	if s == nil {
 		return
@@ -320,12 +312,12 @@ func CalculateMaxWait(userConcurrency int) int {
 	return userConcurrency + defaultExtraWaitSlots
 }
 
-// GetAccountsLoadBatch 批量获取账号负载信息。
+// GetAccountsLoadBatch
 func (s *ConcurrencyService) GetAccountsLoadBatch(ctx context.Context, accounts []AccountWithConcurrency) (map[int64]*AccountLoadInfo, error) {
 	return s.getAccountsLoadBatch(ctx, accounts, true)
 }
 
-// GetAccountsLoadBatchFresh 绕过极短 TTL 缓存，用于抢槽失败后的实时刷新兜底。
+// GetAccountsLoadBatchFresh
 func (s *ConcurrencyService) GetAccountsLoadBatchFresh(ctx context.Context, accounts []AccountWithConcurrency) (map[int64]*AccountLoadInfo, error) {
 	return s.getAccountsLoadBatch(ctx, accounts, false)
 }

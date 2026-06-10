@@ -399,12 +399,12 @@ func (r *epTrackingRepo) SetTempUnschedulable(_ context.Context, _ int64, _ time
 // ---------------------------------------------------------------------------
 // TestCustomErrorCode599_SkippedErrors_Return500_NoRateLimit
 //
-// 核心场景：自定义错误码设为 [599]（一个不会真正出现的错误码），
-// 当上游返回 429/500/503/401 时：
-//   - 返回给客户端的状态码必须是 500（而不是透传原始状态码）
-//   - 不调用 SetRateLimited（不进入限流状态）
-//   - 不调用 SetError（不停止调度）
-//   - 不调用 handleError
+// [599]（
+//
+//   -
+//   -
+//   -
+//   -
 // ---------------------------------------------------------------------------
 
 func TestCustomErrorCode599_SkippedErrors_Return500_NoRateLimit(t *testing.T) {
@@ -443,29 +443,26 @@ func TestCustomErrorCode599_SkippedErrors_Return500_NoRateLimit(t *testing.T) {
 
 			result, err := svc.antigravityRetryLoop(p)
 
-			// 不应返回 error（Skipped 不触发账号切换）
+			//
 			require.NoError(t, err, "should not return error")
 			require.NotNil(t, result, "result should not be nil")
 			require.NotNil(t, result.resp, "response should not be nil")
 			defer func() { _ = result.resp.Body.Close() }()
 
-			// 状态码必须是 500（不透传原始状态码）
+			//
 			require.Equal(t, http.StatusInternalServerError, result.resp.StatusCode,
 				"skipped error should return 500, not %d", upstreamStatus)
 
-			// 不调用 handleError
+			//
 			require.Equal(t, 0, handleErrorCount,
 				"handleError should NOT be called for skipped errors")
 
-			// 不标记限流
 			require.Equal(t, 0, repo.rateLimitedCalls,
 				"SetRateLimited should NOT be called for skipped errors")
 
-			// 不停止调度
 			require.Equal(t, 0, repo.setErrCalls,
 				"SetError should NOT be called for skipped errors")
 
-			// 只调用一次上游（不重试）
 			require.Equal(t, 1, upstream.calls,
 				"should call upstream exactly once (no retry)")
 		})

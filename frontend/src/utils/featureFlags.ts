@@ -14,7 +14,7 @@
  *      mount as a fallback (used when injection is missing or stale).
  *
  * If the SSR injection struct forgets to include a feature flag field — the
- * exact bug that hid the "可用渠道" menu after every refresh — the frontend
+ * exact bug that hid the "Available Channels" menu after every refresh — the frontend
  * reads `undefined` until the async call resolves. An opt-in flag written as
  * `settings?.xxx_enabled === true` then evaluates to `false` and the menu
  * disappears. An opt-out flag written as `settings?.xxx_enabled !== false`

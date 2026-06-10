@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestBuildParts_ThinkingBlockWithoutSignature 测试thinking block无signature时的处理
+// TestBuildParts_ThinkingBlockWithoutSignature
 func TestBuildParts_ThinkingBlockWithoutSignature(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -25,8 +25,8 @@ func TestBuildParts_ThinkingBlockWithoutSignature(t *testing.T) {
 				{"type": "text", "text": "World"}
 			]`,
 			allowDummyThought: false,
-			expectedParts:     3, // thinking 内容降级为普通 text part
-			description:       "Claude模型缺少signature时应将thinking降级为text，并在上层禁用thinking mode",
+			expectedParts:     3, // thinking content degraded to plain text part
+			description:       "Claude model without signature should degrade thinking to text and disable thinking mode at the upper level",
 		},
 		{
 			name: "Claude model - preserve thinking block with signature",
@@ -37,7 +37,7 @@ func TestBuildParts_ThinkingBlockWithoutSignature(t *testing.T) {
 			]`,
 			allowDummyThought: false,
 			expectedParts:     3,
-			description:       "Claude模型应透传带 signature 的 thinking block（用于 Vertex 签名链路）",
+			description:       "Claude model should pass through thinking blocks with signature (for Vertex signing path)",
 		},
 		{
 			name: "Gemini model - use dummy signature",
@@ -47,8 +47,8 @@ func TestBuildParts_ThinkingBlockWithoutSignature(t *testing.T) {
 				{"type": "text", "text": "World"}
 			]`,
 			allowDummyThought: true,
-			expectedParts:     3, // 三个block都保留，thinking使用dummy signature
-			description:       "Gemini模型应该为无signature的thinking block使用dummy signature",
+			expectedParts:     3, // all three blocks preserved, thinking uses dummy signature
+			description:       "Gemini model should use dummy signature for thinking blocks without signature",
 		},
 	}
 
@@ -143,14 +143,14 @@ func TestBuildParts_ToolUseSignatureHandling(t *testing.T) {
 		if len(parts) != 1 || parts[0].FunctionCall == nil {
 			t.Fatalf("expected 1 functionCall part, got %+v", parts)
 		}
-		// Claude 模型应透传有效的 signature（Vertex/Google 需要完整签名链路）
+		// Claude
 		if parts[0].ThoughtSignature != "sig_tool_abc" {
 			t.Fatalf("expected preserved tool signature %q, got %q", "sig_tool_abc", parts[0].ThoughtSignature)
 		}
 	})
 }
 
-// TestBuildTools_CustomTypeTools 测试custom类型工具转换
+// TestBuildTools_CustomTypeTools
 func TestBuildTools_CustomTypeTools(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -173,7 +173,7 @@ func TestBuildTools_CustomTypeTools(t *testing.T) {
 				},
 			},
 			expectedLen: 1,
-			description: "标准工具格式应该正常转换",
+			description: "standard tool format should convert correctly",
 		},
 		{
 			name: "Custom type tool (MCP format)",
@@ -193,7 +193,7 @@ func TestBuildTools_CustomTypeTools(t *testing.T) {
 				},
 			},
 			expectedLen: 1,
-			description: "Custom类型工具应该从Custom字段读取description和input_schema",
+			description: "Custom type tools should read description and input_schema from Custom field",
 		},
 		{
 			name: "Mixed standard and custom tools",
@@ -212,8 +212,8 @@ func TestBuildTools_CustomTypeTools(t *testing.T) {
 					},
 				},
 			},
-			expectedLen: 1, // 返回一个GeminiToolDeclaration，包含2个function declarations
-			description: "混合标准和custom工具应该都能正确转换",
+			expectedLen: 1, // returns one GeminiToolDeclaration containing 2 function declarations
+			description: "mixed standard and custom tools should all convert correctly",
 		},
 		{
 			name: "Invalid custom tool - nil Custom field",
@@ -221,11 +221,11 @@ func TestBuildTools_CustomTypeTools(t *testing.T) {
 				{
 					Type: "custom",
 					Name: "invalid_custom",
-					// Custom 为 nil
+					// Custom
 				},
 			},
-			expectedLen: 0, // 应该被跳过
-			description: "Custom字段为nil的custom工具应该被跳过",
+			expectedLen: 0, // should be skipped
+			description: "custom tool with nil Custom field should be skipped",
 		},
 		{
 			name: "Invalid custom tool - nil InputSchema",
@@ -235,12 +235,12 @@ func TestBuildTools_CustomTypeTools(t *testing.T) {
 					Name: "invalid_custom",
 					Custom: &ClaudeCustomToolSpec{
 						Description: "Invalid",
-						// InputSchema 为 nil
+						// InputSchema
 					},
 				},
 			},
-			expectedLen: 0, // 应该被跳过
-			description: "InputSchema为nil的custom工具应该被跳过",
+			expectedLen: 0, // should be skipped
+			description: "custom tool with nil InputSchema should be skipped",
 		},
 	}
 
@@ -252,7 +252,7 @@ func TestBuildTools_CustomTypeTools(t *testing.T) {
 				t.Errorf("%s: got %d tool declarations, want %d", tt.description, len(result), tt.expectedLen)
 			}
 
-			// 验证function declarations存在
+			//
 			if len(result) > 0 && result[0].FunctionDeclarations != nil {
 				if len(result[0].FunctionDeclarations) != len(tt.tools) {
 					t.Errorf("%s: got %d function declarations, want %d",
@@ -419,7 +419,7 @@ func TestTransformClaudeToGeminiWithOptions_PreservesBillingHeaderSystemBlock(t 
 				}
 			}
 
-			require.True(t, found, "转换后的 systemInstruction 应保留 x-anthropic-billing-header 内容")
+			require.True(t, found, "converted systemInstruction should preserve x-anthropic-billing-header content")
 		})
 	}
 }

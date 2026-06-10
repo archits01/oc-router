@@ -2,7 +2,7 @@ package service
 
 import "time"
 
-// APIKeyAuthSnapshot API Key 认证缓存快照（仅包含认证所需字段）
+// APIKeyAuthSnapshot API Key
 type APIKeyAuthSnapshot struct {
 	Version     int                      `json:"version"`
 	APIKeyID    int64                    `json:"api_key_id"`
@@ -28,7 +28,7 @@ type APIKeyAuthSnapshot struct {
 	RateLimit7d float64 `json:"rate_limit_7d"`
 }
 
-// APIKeyAuthUserSnapshot 用户快照
+// APIKeyAuthUserSnapshot
 type APIKeyAuthUserSnapshot struct {
 	ID            int64   `json:"id"`
 	Status        string  `json:"status"`
@@ -46,15 +46,15 @@ type APIKeyAuthUserSnapshot struct {
 	BalanceNotifyExtraEmails   []NotifyEmailEntry `json:"balance_notify_extra_emails,omitempty"`
 	TotalRecharged             float64            `json:"total_recharged"`
 
-	// RPMLimit 用户级每分钟请求数上限（0 = 不限制）；用于 billing_cache_service.checkRPM 兜底判断。
+	// RPMLimit =
 	RPMLimit int `json:"rpm_limit"`
 
-	// UserGroupRPMOverride 该 API Key 对应的 (user, group) 专属 RPM 覆盖值。
-	// nil = 无 override（回退到 group/user 级）；0 = 不限流；>0 = 专属上限。
+	// UserGroupRPMOverride (user, group)
+	// nil = = >0 =
 	UserGroupRPMOverride *int `json:"user_group_rpm_override,omitempty"`
 }
 
-// APIKeyAuthGroupSnapshot 分组快照
+// APIKeyAuthGroupSnapshot
 type APIKeyAuthGroupSnapshot struct {
 	ID                              int64    `json:"id"`
 	Name                            string   `json:"name"`
@@ -82,20 +82,20 @@ type APIKeyAuthGroupSnapshot struct {
 	ModelRoutingEnabled bool               `json:"model_routing_enabled"`
 	MCPXMLInject        bool               `json:"mcp_xml_inject"`
 
-	// 支持的模型系列（仅 antigravity 平台使用）
+	//
 	SupportedModelScopes []string `json:"supported_model_scopes,omitempty"`
 
-	// OpenAI Messages 调度配置（仅 openai 平台使用）
+	// OpenAI Messages
 	AllowMessagesDispatch       bool                              `json:"allow_messages_dispatch"`
 	DefaultMappedModel          string                            `json:"default_mapped_model,omitempty"`
 	MessagesDispatchModelConfig OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config,omitempty"`
 	ModelsListConfig            GroupModelsListConfig             `json:"models_list_config,omitempty"`
 
-	// RPMLimit 分组级每分钟请求数上限（0 = 不限制）；用于 billing_cache_service.checkRPM 级联判断。
+	// RPMLimit =
 	RPMLimit int `json:"rpm_limit"`
 }
 
-// APIKeyAuthCacheEntry 缓存条目，支持负缓存
+// APIKeyAuthCacheEntry
 type APIKeyAuthCacheEntry struct {
 	NotFound bool                `json:"not_found"`
 	Snapshot *APIKeyAuthSnapshot `json:"snapshot,omitempty"`

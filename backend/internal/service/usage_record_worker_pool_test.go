@@ -201,7 +201,6 @@ func TestUsageRecordWorkerPool_AutoScaleUpAndDown(t *testing.T) {
 
 	block := make(chan struct{})
 
-	// 填满运行槽位 + 队列，触发扩容阈值。
 	for i := 0; i < 8; i++ {
 		require.Equal(t, UsageRecordSubmitModeEnqueued, pool.Submit(func(ctx context.Context) {
 			<-block
@@ -249,7 +248,7 @@ func TestUsageRecordWorkerPool_AutoScaleDownRequiresLowRunningUtilization(t *tes
 		}))
 	}
 
-	// 虽然 waiting=0，但 running 利用率为 100%，不应缩容。
+	// =0，%，
 	time.Sleep(200 * time.Millisecond)
 	require.Equal(t, 2, pool.Stats().MaxConcurrency)
 
@@ -476,11 +475,9 @@ func TestUsageRecordWorkerPool_ResizeAndLogDropBranches(t *testing.T) {
 	})
 	t.Cleanup(pool.Stop)
 
-	// 目标值与当前值相同，应该直接返回。
 	pool.resizePool(1, 1, 0, 0, 0, 8, "noop")
 	require.Equal(t, 1, pool.Stats().MaxConcurrency)
 
-	// 在限流窗口内应静默返回。
 	pool.lastDropLogNanos.Store(time.Now().UnixNano())
 	require.NotPanics(t, func() {
 		pool.logDrop("full")

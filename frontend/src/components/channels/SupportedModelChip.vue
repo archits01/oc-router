@@ -161,8 +161,8 @@ import {
   BILLING_MODE_IMAGE,
   type BillingMode
 } from '@/constants/channel'
-// 复用 api/channels.ts 的用户侧最小形态 DTO。
-// admin 侧 ChannelModelPricing 字段更多，但结构上是用户 DTO 的超集，admin 视图传入可直接通过结构化子类型检查。
+// 复用 api/channels.ts 的User侧最小形态 DTO。
+// admin 侧 ChannelModelPricing 字段更多，但结构上YesUser DTO 的超集，admin 视图传入可直接通过结构化子类型检查。
 import type { UserPricingInterval, UserSupportedModel } from '@/api/channels'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import type { GroupPlatform } from '@/types'
@@ -171,7 +171,7 @@ import { platformBadgeClass, platformBorderClass, platformBadgeLightClass } from
 const props = withDefaults(
   defineProps<{
     model: UserSupportedModel
-    /** i18n 前缀：管理端传 `admin.availableChannels.pricing`，用户端传 `availableChannels.pricing`。 */
+    /** i18n 前缀：管理端传 `admin.availableChannels.pricing`，User端传 `availableChannels.pricing`。 */
     pricingKeyPrefix?: string
     noPricingLabel?: string
     showPlatform?: boolean

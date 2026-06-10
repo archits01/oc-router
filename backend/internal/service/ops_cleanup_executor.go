@@ -47,10 +47,10 @@ func (c opsCleanupDeletedCounts) String() string {
 	)
 }
 
-// opsCleanupPlan 把"保留天数"翻译成具体的清理动作。
-//   - days < 0  → 跳过该项清理（ok=false），保留兼容老数据
-//   - days == 0 → TRUNCATE TABLE（O(1) 全清），truncate=true
-//   - days > 0  → 批量 DELETE 早于 now-N天 的行，cutoff = now - N 天
+// opsCleanupPlan ""
+//   - days < 0  → =false），
+//   - days == 0 → TRUNCATE TABLE（O(1) =true
+//   - days > 0  → = now - N
 func opsCleanupPlan(now time.Time, days int) (cutoff time.Time, truncate, ok bool) {
 	if days < 0 {
 		return time.Time{}, false, false
@@ -129,7 +129,7 @@ WHERE id IN (SELECT id FROM batch)
 	return total, nil
 }
 
-// truncateOpsTable 用 TRUNCATE TABLE 清空指定表，先 SELECT COUNT(*) 取得清空前行数用于 heartbeat。
+// truncateOpsTable (*)
 func truncateOpsTable(ctx context.Context, db *sql.DB, table string) (int64, error) {
 	if db == nil {
 		return 0, nil

@@ -40,7 +40,7 @@ func TestUsageLogRepoSuite(t *testing.T) {
 	suite.Run(t, new(UsageLogRepoSuite))
 }
 
-// truncateToDayUTC 截断到 UTC 日期边界（测试辅助函数）
+// truncateToDayUTC
 func truncateToDayUTC(t time.Time) time.Time {
 	t = t.UTC()
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
@@ -910,12 +910,12 @@ func (s *UsageLogRepoSuite) TestGetAccountTodayStats() {
 
 func (s *UsageLogRepoSuite) TestDashboardAggregationConsistency() {
 	now := time.Now().UTC().Truncate(time.Second)
-	// 使用固定的时间偏移确保 hour1 和 hour2 在同一天且都在过去
-	// 选择当天 02:00 和 03:00 作为测试时间点（基于 now 的日期）
+	//
+	//
 	dayStart := truncateToDayUTC(now)
 	hour1 := dayStart.Add(2 * time.Hour) // 当天 02:00
 	hour2 := dayStart.Add(3 * time.Hour) // 当天 03:00
-	// 如果当前时间早于 hour2，则使用昨天的时间
+	//
 	if now.Before(hour2.Add(time.Hour)) {
 		dayStart = dayStart.Add(-24 * time.Hour)
 		hour1 = dayStart.Add(2 * time.Hour)

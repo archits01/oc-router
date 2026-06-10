@@ -10,47 +10,47 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ContextKey 定义上下文键类型
+// ContextKey
 type ContextKey string
 
 const (
-	// ContextKeyUser 用户上下文键
+	// ContextKeyUser
 	ContextKeyUser ContextKey = "user"
-	// ContextKeyUserRole 当前用户角色（string）
+	// ContextKeyUserRole
 	ContextKeyUserRole ContextKey = "user_role"
-	// ContextKeyAPIKey API密钥上下文键
+	// ContextKeyAPIKey API
 	ContextKeyAPIKey ContextKey = "api_key"
-	// ContextKeySubscription 订阅上下文键
+	// ContextKeySubscription
 	ContextKeySubscription ContextKey = "subscription"
-	// ContextKeyForcePlatform 强制平台（用于 /antigravity 路由）
+	// ContextKeyForcePlatform
 	ContextKeyForcePlatform ContextKey = "force_platform"
-	// ContextKeyOpsFallbackAPIKey 运维错误日志专用回退键。
-	// 鉴权早退（分组停用/删除、Key 停用/过期/额度、用户停用、IP 限制等）时，
-	// apiKey 已加载但尚未写入 ContextKeyAPIKey；该键让 Ops 错误日志仍能取到
-	// user/group/platform。仅供 Ops 错误日志读取，不代表请求已通过鉴权。
+	// ContextKeyOpsFallbackAPIKey
+	//
+	// apiKey
+	// user/group/platform。
 	ContextKeyOpsFallbackAPIKey ContextKey = "ops_fallback_api_key"
 )
 
-// ForcePlatform 返回设置强制平台的中间件
-// 同时设置 request.Context（供 Service 使用）和 gin.Context（供 Handler 快速检查）
+// ForcePlatform
+//
 func ForcePlatform(platform string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 设置到 request.Context，使用 ctxkey.ForcePlatform 供 Service 层读取
+		//
 		ctx := context.WithValue(c.Request.Context(), ctxkey.ForcePlatform, platform)
 		c.Request = c.Request.WithContext(ctx)
-		// 同时设置到 gin.Context，供 Handler 快速检查
+		//
 		c.Set(string(ContextKeyForcePlatform), platform)
 		c.Next()
 	}
 }
 
-// HasForcePlatform 检查是否有强制平台（用于 Handler 跳过分组检查）
+// HasForcePlatform
 func HasForcePlatform(c *gin.Context) bool {
 	_, exists := c.Get(string(ContextKeyForcePlatform))
 	return exists
 }
 
-// GetForcePlatformFromContext 从 gin.Context 获取强制平台
+// GetForcePlatformFromContext
 func GetForcePlatformFromContext(c *gin.Context) (string, bool) {
 	value, exists := c.Get(string(ContextKeyForcePlatform))
 	if !exists {
@@ -60,13 +60,13 @@ func GetForcePlatformFromContext(c *gin.Context) (string, bool) {
 	return platform, ok
 }
 
-// ErrorResponse 标准错误响应结构
+// ErrorResponse
 type ErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-// NewErrorResponse 创建错误响应
+// NewErrorResponse
 func NewErrorResponse(code, message string) ErrorResponse {
 	return ErrorResponse{
 		Code:    code,
@@ -74,20 +74,20 @@ func NewErrorResponse(code, message string) ErrorResponse {
 	}
 }
 
-// AbortWithError 中断请求并返回JSON错误
+// AbortWithError
 func AbortWithError(c *gin.Context, statusCode int, code, message string) {
 	c.JSON(statusCode, NewErrorResponse(code, message))
 	c.Abort()
 }
 
 // ──────────────────────────────────────────────────────────
-// RequireGroupAssignment — 未分组 Key 拦截中间件
+// RequireGroupAssignment —
 // ──────────────────────────────────────────────────────────
 
-// GatewayErrorWriter 定义网关错误响应格式（不同协议使用不同格式）
+// GatewayErrorWriter
 type GatewayErrorWriter func(c *gin.Context, status int, message string)
 
-// AnthropicErrorWriter 按 Anthropic API 规范输出错误
+// AnthropicErrorWriter
 func AnthropicErrorWriter(c *gin.Context, status int, message string) {
 	c.JSON(status, gin.H{
 		"type":  "error",
@@ -95,7 +95,7 @@ func AnthropicErrorWriter(c *gin.Context, status int, message string) {
 	})
 }
 
-// GoogleErrorWriter 按 Google API 规范输出错误
+// GoogleErrorWriter
 func GoogleErrorWriter(c *gin.Context, status int, message string) {
 	c.JSON(status, gin.H{
 		"error": gin.H{
@@ -106,8 +106,8 @@ func GoogleErrorWriter(c *gin.Context, status int, message string) {
 	})
 }
 
-// RequireGroupAssignment 检查 API Key 是否已分配到分组，
-// 如果未分组且系统设置不允许未分组 Key 调度则返回 403。
+// RequireGroupAssignment
+//
 func RequireGroupAssignment(settingService *service.SettingService, writeError GatewayErrorWriter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey, ok := GetAPIKeyFromContext(c)
@@ -115,7 +115,7 @@ func RequireGroupAssignment(settingService *service.SettingService, writeError G
 			c.Next()
 			return
 		}
-		// 未分组 Key — 检查系统设置
+		// —
 		if settingService.IsUngroupedKeySchedulingAllowed(c.Request.Context()) {
 			c.Next()
 			return

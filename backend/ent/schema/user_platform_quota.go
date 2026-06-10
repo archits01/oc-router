@@ -38,8 +38,8 @@ func (UserPlatformQuota) Fields() []ent.Field {
 			MaxLen(32).
 			NotEmpty().
 			Validate(func(s string) error {
-				// 注意：平台列表的单一权威源为 service.AllowedQuotaPlatforms；
-				// 此处为 ent 构建期约束，需与 service.AllowedQuotaPlatforms 保持同步。
+				//
+				//
 				switch s {
 				case "anthropic", "openai", "gemini", "antigravity":
 					return nil
@@ -48,10 +48,10 @@ func (UserPlatformQuota) Fields() []ent.Field {
 				}
 			}),
 
-		// 日 / 周 / 月 USD 上限：
-		//   nil / not set → 无限额（完全放行）
-		//   0            → 完全禁用（任何请求都会被拒绝，因为 usage >= 0 恒成立）
-		//   > 0          → USD 限额上限
+		//
+		//   nil / not set →
+		//   0            → >= 0
+		//   > 0          → USD
 		field.Float("daily_limit_usd").
 			Optional().
 			Nillable().
@@ -65,7 +65,7 @@ func (UserPlatformQuota) Fields() []ent.Field {
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
 
-		// 当前窗口已用量（USD，preflight 时与 limit 比较）
+		//
 		field.Float("daily_usage_usd").
 			Default(0).
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
@@ -76,7 +76,7 @@ func (UserPlatformQuota) Fields() []ent.Field {
 			Default(0).
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
 
-		// 窗口起点（NULL = 首次还未初始化，由 InitWindowStarts 用 COALESCE 兜底）
+		// =
 		field.Time("daily_window_start").
 			Optional().
 			Nillable().
@@ -104,7 +104,6 @@ func (UserPlatformQuota) Edges() []ent.Edge {
 
 func (UserPlatformQuota) Indexes() []ent.Index {
 	return []ent.Index{
-		// 软删除友好：只对未删记录唯一
 		index.Fields("user_id", "platform").
 			Unique().
 			Annotations(entsql.IndexWhere("deleted_at IS NULL")),

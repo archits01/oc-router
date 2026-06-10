@@ -2,7 +2,7 @@ package openai_ws_v2
 
 import "context"
 
-// EntryInput 是 passthrough v2 数据面的入口参数。
+// EntryInput
 type EntryInput struct {
 	Ctx                context.Context
 	ClientConn         FrameConn
@@ -11,7 +11,7 @@ type EntryInput struct {
 	Options            RelayOptions
 }
 
-// RunEntry 是 openai_ws_v2 包对外的统一入口。
+// RunEntry
 func RunEntry(input EntryInput) (RelayResult, *RelayExit) {
 	return runCaddyStyleRelay(
 		input.Ctx,

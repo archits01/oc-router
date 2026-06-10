@@ -313,17 +313,16 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 		_ = rows.Close()
 		return nil, err
 	}
-	// 必须在执行下一条 SQL 前显式关闭 rows：pq 驱动在同一连接上
-	// 不允许前一条查询的结果集未耗尽时启动新查询，否则会返回
-	// "unexpected Parse response" 错误。
+	//
+	// "unexpected Parse response"
 	if err := rows.Close(); err != nil {
 		return nil, err
 	}
-	// 任意维度额度在本次递增中从"未超"跨越到"已超"时，必须刷新调度快照，
-	// 否则 Redis 中缓存的 Account 仍显示旧的 used 值，后续请求会继续选中本账号，
-	// 最终观察到 daily_used / weekly_used 大幅超过配置的 limit。
-	// 对于日/周额度，即使本次触发了周期重置（pre=0、post=amount），
-	// 判定式 (post-amount) < limit 同样成立，逻辑与总额度保持一致。
+	// """"
+	//
+	//
+	// =0、post=amount），
+	// (post-amount) < limit
 	crossedTotal := state.TotalLimit > 0 && state.TotalUsed >= state.TotalLimit && (state.TotalUsed-amount) < state.TotalLimit
 	crossedDaily := state.DailyLimit > 0 && state.DailyUsed >= state.DailyLimit && (state.DailyUsed-amount) < state.DailyLimit
 	crossedWeekly := state.WeeklyLimit > 0 && state.WeeklyUsed >= state.WeeklyLimit && (state.WeeklyUsed-amount) < state.WeeklyLimit

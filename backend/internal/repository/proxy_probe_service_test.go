@@ -51,13 +51,12 @@ func (s *ProxyProbeServiceSuite) TestProbeProxy_UnsupportedProxyScheme() {
 
 func (s *ProxyProbeServiceSuite) TestProbeProxy_Success_IPAPI() {
 	s.setupProxyServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 检查是否是 ip-api 请求
+		//
 		if strings.Contains(r.RequestURI, "ip-api.com") {
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = io.WriteString(w, `{"status":"success","query":"1.2.3.4","city":"c","regionName":"r","country":"cc","countryCode":"CC"}`)
 			return
 		}
-		// 其他请求返回错误
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}))
 
@@ -73,12 +72,12 @@ func (s *ProxyProbeServiceSuite) TestProbeProxy_Success_IPAPI() {
 
 func (s *ProxyProbeServiceSuite) TestProbeProxy_Success_HTTPBinFallback() {
 	s.setupProxyServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// ip-api 失败
+		// ip-api
 		if strings.Contains(r.RequestURI, "ip-api.com") {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
-		// httpbin 成功
+		// httpbin
 		if strings.Contains(r.RequestURI, "httpbin.org") {
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = io.WriteString(w, `{"origin": "5.6.7.8"}`)
@@ -110,7 +109,7 @@ func (s *ProxyProbeServiceSuite) TestProbeProxy_InvalidJSON() {
 			_, _ = io.WriteString(w, "not-json")
 			return
 		}
-		// httpbin 也返回无效响应
+		// httpbin
 		if strings.Contains(r.RequestURI, "httpbin.org") {
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = io.WriteString(w, "not-json")

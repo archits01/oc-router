@@ -163,7 +163,7 @@ func TestOpenAIGatewayService_Forward_WSv2ErrorEventUsageLimitPersistsRateLimit(
 	require.Error(t, err)
 	require.Nil(t, result)
 	require.Equal(t, http.StatusTooManyRequests, rec.Code)
-	require.Nil(t, upstream.lastReq, "WS 限流 error event 不应回退到同账号 HTTP")
+	require.Nil(t, upstream.lastReq, "WS 限流 error event 不应fallback到同账号 HTTP")
 	require.Len(t, repo.rateLimitCalls, 1)
 	require.WithinDuration(t, time.Unix(resetAt, 0), repo.rateLimitCalls[0], 2*time.Second)
 }
@@ -233,7 +233,7 @@ func TestOpenAIGatewayService_Forward_WSv2Handshake429PersistsRateLimit(t *testi
 	require.Error(t, err)
 	require.Nil(t, result)
 	require.Equal(t, http.StatusTooManyRequests, rec.Code)
-	require.Nil(t, upstream.lastReq, "WS 握手 429 不应回退到同账号 HTTP")
+	require.Nil(t, upstream.lastReq, "WS 握手 429 不应fallback到同账号 HTTP")
 	require.Len(t, repo.rateLimitCalls, 1)
 	require.NotEmpty(t, repo.updateExtra, "握手 429 的 x-codex 头应立即落库")
 	require.Contains(t, repo.updateExtra[0], "codex_usage_updated_at")
@@ -344,7 +344,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ErrorEventUsageL
 		require.Len(t, repo.rateLimitCalls, 1)
 		require.WithinDuration(t, time.Unix(resetAt, 0), repo.rateLimitCalls[0], 2*time.Second)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 }
 
@@ -368,7 +368,7 @@ func TestOpenAIGatewayService_UpdateCodexUsageSnapshot_ExhaustedSnapshotDoesNotS
 	case updates := <-repo.updateExtraCh:
 		require.Equal(t, 100.0, updates["codex_7d_used_percent"])
 	case <-time.After(2 * time.Second):
-		t.Fatal("等待 codex 快照落库超时")
+		t.Fatal("等待 codex 快照落库timeout")
 	}
 
 	select {
@@ -397,7 +397,7 @@ func TestOpenAIGatewayService_UpdateCodexUsageSnapshot_NonExhaustedSnapshotDoesN
 	select {
 	case <-repo.updateExtraCh:
 	case <-time.After(2 * time.Second):
-		t.Fatal("等待 codex 快照落库超时")
+		t.Fatal("等待 codex 快照落库timeout")
 	}
 
 	select {
@@ -430,7 +430,7 @@ func TestOpenAIGatewayService_UpdateCodexUsageSnapshot_ThrottlesExtraWrites(t *t
 	select {
 	case <-repo.updateExtraCh:
 	case <-time.After(2 * time.Second):
-		t.Fatal("等待第一次 codex 快照落库超时")
+		t.Fatal("等待第一次 codex 快照落库timeout")
 	}
 
 	select {
@@ -497,7 +497,7 @@ func TestAdminService_ListAccounts_ExhaustedCodexExtraDoesNotSetRateLimit(t *tes
 	require.Nil(t, accounts[0].RateLimitResetAt)
 	select {
 	case persisted := <-repo.rateLimitCh:
-		t.Fatalf("不应在账号列表查询时将 codex extra 持久化为运行时限流状态: %v", persisted)
+		t.Fatalf("不应在账号列表query时将 codex extra 持久化为运行时限流状态: %v", persisted)
 	case <-time.After(2 * time.Second):
 	}
 }

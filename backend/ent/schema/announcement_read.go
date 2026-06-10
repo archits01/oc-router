@@ -14,7 +14,6 @@ import (
 
 // AnnouncementRead holds the schema definition for the AnnouncementRead entity.
 //
-// 记录用户对公告的已读状态（首次已读时间）。
 type AnnouncementRead struct {
 	ent.Schema
 }
@@ -32,7 +31,7 @@ func (AnnouncementRead) Fields() []ent.Field {
 		field.Time("read_at").
 			Default(time.Now).
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}).
-			Comment("用户首次已读时间"),
+			Comment("user first read time"),
 		field.Time("created_at").
 			Immutable().
 			Default(time.Now).

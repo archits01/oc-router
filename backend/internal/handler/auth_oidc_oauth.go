@@ -112,7 +112,7 @@ type oidcJWK struct {
 	Y   string `json:"y"`
 }
 
-// OIDCOAuthStart 启动通用 OIDC OAuth 登录流程。
+// OIDCOAuthStart
 // GET /api/v1/auth/oauth/oidc/start?redirect=/dashboard
 func (h *AuthHandler) OIDCOAuthStart(c *gin.Context) {
 	cfg, err := h.getOIDCOAuthConfig(c.Request.Context())
@@ -192,7 +192,7 @@ func (h *AuthHandler) OIDCOAuthStart(c *gin.Context) {
 	c.Redirect(http.StatusFound, authURL)
 }
 
-// OIDCOAuthCallback 处理 OIDC 回调：校验 id_token、创建/登录用户并重定向到前端。
+// OIDCOAuthCallback
 // GET /api/v1/auth/oauth/oidc/callback?code=...&state=...
 func (h *AuthHandler) OIDCOAuthCallback(c *gin.Context) {
 	cfg, cfgErr := h.getOIDCOAuthConfig(c.Request.Context())
@@ -454,8 +454,7 @@ func (h *AuthHandler) OIDCOAuthCallback(c *gin.Context) {
 		}
 	}
 
-	// 快捷路径：当上游返回已验证邮箱、部署不要求额外确认且本地没有同邮箱账号时，
-	// 直接信任上游身份完成注册/登录，避免展示 choice 页。
+	//
 	if compatEmailUser == nil &&
 		strings.TrimSpace(compatEmail) != "" &&
 		emailVerified != nil && *emailVerified {
@@ -1209,8 +1208,8 @@ func oidcClearCookie(c *gin.Context, name string, secure bool) {
 	})
 }
 
-// tryOIDCVerifiedEmailFastPath 在 OIDC 上游已返回已验证邮箱时尝试跳过 choice/pending 页。
-// 返回 true 表示已经写出重定向响应；返回 false 表示调用方应继续回退到常规 choice 流程。
+// tryOIDCVerifiedEmailFastPath
+//
 func (h *AuthHandler) tryOIDCVerifiedEmailFastPath(
 	c *gin.Context,
 	frontendCallback string,

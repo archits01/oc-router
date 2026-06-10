@@ -89,7 +89,7 @@ func TestDashboardAggregationService_RunScheduledAggregation_EpochUsesRetentionS
 }
 
 func TestDashboardAggregationService_CleanupRetentionFailure_DoesNotRecord(t *testing.T) {
-	repo := &dashboardAggregationRepoTestStub{cleanupAggregatesErr: errors.New("清理失败")}
+	repo := &dashboardAggregationRepoTestStub{cleanupAggregatesErr: errors.New("cleanupfailed")}
 	svc := &DashboardAggregationService{
 		repo: repo,
 		cfg: config.DashboardAggregationConfig{

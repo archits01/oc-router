@@ -29,7 +29,7 @@ var (
 	ErrAPIKeyRateLimited  = infraerrors.TooManyRequests("API_KEY_RATE_LIMITED", "too many failed attempts, please try again later")
 	ErrInvalidIPPattern   = infraerrors.BadRequest("INVALID_IP_PATTERN", "invalid IP or CIDR pattern")
 	// ErrAPIKeyExpired        = infraerrors.Forbidden("API_KEY_EXPIRED", "api key has expired")
-	ErrAPIKeyExpired = infraerrors.Forbidden("API_KEY_EXPIRED", "api key 已过期")
+	ErrAPIKeyExpired = infraerrors.Forbidden("API_KEY_EXPIRED", "api key expired")
 	// ErrAPIKeyQuotaExhausted = infraerrors.TooManyRequests("API_KEY_QUOTA_EXHAUSTED", "api key quota exhausted")
 	ErrAPIKeyQuotaExhausted = infraerrors.TooManyRequests("API_KEY_QUOTA_EXHAUSTED", "api key 额度已用完")
 
@@ -42,21 +42,20 @@ var (
 const (
 	apiKeyMaxErrorsPerHour = 20
 	apiKeyLastUsedMinTouch = 30 * time.Second
-	// DB 写失败后的短退避，避免请求路径持续同步重试造成写风暴与高延迟。
 	apiKeyLastUsedFailBackoff = 5 * time.Second
 )
 
 type APIKeyRepository interface {
 	Create(ctx context.Context, key *APIKey) error
 	GetByID(ctx context.Context, id int64) (*APIKey, error)
-	// GetKeyAndOwnerID 仅获取 API Key 的 key 与所有者 ID，用于删除等轻量场景
+	// GetKeyAndOwnerID
 	GetKeyAndOwnerID(ctx context.Context, id int64) (string, int64, error)
 	GetByKey(ctx context.Context, key string) (*APIKey, error)
-	// GetByKeyForAuth 认证专用查询，返回最小字段集
+	// GetByKeyForAuth
 	GetByKeyForAuth(ctx context.Context, key string) (*APIKey, error)
 	Update(ctx context.Context, key *APIKey) error
 	Delete(ctx context.Context, id int64) error
-	// DeleteWithAudit 在同一事务内先写 deleted_api_key_audits 审计、再软删除该 key。
+	// DeleteWithAudit
 	DeleteWithAudit(ctx context.Context, id int64) error
 
 	ListByUserID(ctx context.Context, userID int64, params pagination.PaginationParams, filters APIKeyListFilters) ([]APIKey, *pagination.PaginationResult, error)
@@ -66,7 +65,7 @@ type APIKeyRepository interface {
 	ListByGroupID(ctx context.Context, groupID int64, params pagination.PaginationParams) ([]APIKey, *pagination.PaginationResult, error)
 	SearchAPIKeys(ctx context.Context, userID int64, keyword string, limit int) ([]APIKey, error)
 	ClearGroupIDByGroupID(ctx context.Context, groupID int64) (int64, error)
-	// UpdateGroupIDByUserAndGroup 将用户下绑定 oldGroupID 的所有 Key 迁移到 newGroupID
+	// UpdateGroupIDByUserAndGroup
 	UpdateGroupIDByUserAndGroup(ctx context.Context, userID, oldGroupID, newGroupID int64) (int64, error)
 	CountByGroupID(ctx context.Context, groupID int64) (int64, error)
 	ListKeysByUserID(ctx context.Context, userID int64) ([]string, error)
@@ -143,14 +142,14 @@ type APIKeyCache interface {
 	SubscribeAuthCacheInvalidation(ctx context.Context, handler func(cacheKey string)) error
 }
 
-// APIKeyAuthCacheInvalidator 提供认证缓存失效能力
+// APIKeyAuthCacheInvalidator
 type APIKeyAuthCacheInvalidator interface {
 	InvalidateAuthCacheByKey(ctx context.Context, key string)
 	InvalidateAuthCacheByUserID(ctx context.Context, userID int64)
 	InvalidateAuthCacheByGroupID(ctx context.Context, groupID int64)
 }
 
-// CreateAPIKeyRequest 创建API Key请求
+// CreateAPIKeyRequest
 type CreateAPIKeyRequest struct {
 	Name        string   `json:"name"`
 	GroupID     *int64   `json:"group_id"`
@@ -168,7 +167,7 @@ type CreateAPIKeyRequest struct {
 	RateLimit7d float64 `json:"rate_limit_7d"`
 }
 
-// UpdateAPIKeyRequest 更新API Key请求
+// UpdateAPIKeyRequest
 type UpdateAPIKeyRequest struct {
 	Name        *string  `json:"name"`
 	GroupID     *int64   `json:"group_id"`
@@ -189,7 +188,7 @@ type UpdateAPIKeyRequest struct {
 	ResetRateLimitUsage *bool    `json:"reset_rate_limit_usage"` // Reset all usage counters to 0
 }
 
-// APIKeyService API Key服务
+// APIKeyService API Key
 // RateLimitCacheInvalidator invalidates rate limit cache entries on manual reset.
 type RateLimitCacheInvalidator interface {
 	InvalidateAPIKeyRateLimit(ctx context.Context, keyID int64) error
@@ -211,7 +210,7 @@ type APIKeyService struct {
 	lastUsedTouchSF       singleflight.Group
 }
 
-// NewAPIKeyService 创建API Key服务实例
+// NewAPIKeyService
 func NewAPIKeyService(
 	apiKeyRepo APIKeyRepository,
 	userRepo UserRepository,
@@ -248,15 +247,13 @@ func (s *APIKeyService) compileAPIKeyIPRules(apiKey *APIKey) {
 	apiKey.CompiledIPBlacklist = ip.CompileIPRules(apiKey.IPBlacklist)
 }
 
-// GenerateKey 生成随机API Key
+// GenerateKey
 func (s *APIKeyService) GenerateKey() (string, error) {
-	// 生成32字节随机数据
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", fmt.Errorf("generate random bytes: %w", err)
 	}
 
-	// 转换为十六进制字符串并添加前缀
 	prefix := s.cfg.Default.APIKeyPrefix
 	if prefix == "" {
 		prefix = "sk-"
@@ -266,14 +263,12 @@ func (s *APIKeyService) GenerateKey() (string, error) {
 	return key, nil
 }
 
-// ValidateCustomKey 验证自定义API Key格式
+// ValidateCustomKey
 func (s *APIKeyService) ValidateCustomKey(key string) error {
-	// 检查长度
 	if len(key) < 16 {
 		return ErrAPIKeyTooShort
 	}
 
-	// 检查字符：只允许字母、数字、下划线、连字符
 	for _, c := range key {
 		if (c >= 'a' && c <= 'z') ||
 			(c >= 'A' && c <= 'Z') ||
@@ -287,7 +282,7 @@ func (s *APIKeyService) ValidateCustomKey(key string) error {
 	return nil
 }
 
-// checkAPIKeyRateLimit 检查用户创建自定义Key的错误次数是否超限
+// checkAPIKeyRateLimit
 func (s *APIKeyService) checkAPIKeyRateLimit(ctx context.Context, userID int64) error {
 	if s.cache == nil {
 		return nil
@@ -295,7 +290,7 @@ func (s *APIKeyService) checkAPIKeyRateLimit(ctx context.Context, userID int64) 
 
 	count, err := s.cache.GetCreateAttemptCount(ctx, userID)
 	if err != nil {
-		// Redis 出错时不阻止用户操作
+		// Redis
 		return nil
 	}
 
@@ -306,7 +301,7 @@ func (s *APIKeyService) checkAPIKeyRateLimit(ctx context.Context, userID int64) 
 	return nil
 }
 
-// incrementAPIKeyErrorCount 增加用户创建自定义Key的错误计数
+// incrementAPIKeyErrorCount
 func (s *APIKeyService) incrementAPIKeyErrorCount(ctx context.Context, userID int64) {
 	if s.cache == nil {
 		return
@@ -315,49 +310,41 @@ func (s *APIKeyService) incrementAPIKeyErrorCount(ctx context.Context, userID in
 	_ = s.cache.IncrementCreateAttemptCount(ctx, userID)
 }
 
-// canUserBindGroup 检查用户是否可以绑定指定分组
-// 对于订阅类型分组：检查用户是否有有效订阅
-// 对于标准类型分组：使用原有的 AllowedGroups 和 IsExclusive 逻辑
+// canUserBindGroup
+//
 func (s *APIKeyService) canUserBindGroup(ctx context.Context, user *User, group *Group) bool {
-	// 订阅类型分组：需要有效订阅
 	if group.IsSubscriptionType() {
 		_, err := s.userSubRepo.GetActiveByUserIDAndGroupID(ctx, user.ID, group.ID)
-		return err == nil // 有有效订阅则允许
+		return err == nil // 有valid订阅则允许
 	}
-	// 标准类型分组：使用原有逻辑
 	return user.CanBindGroup(group.ID, group.IsExclusive)
 }
 
-// Create 创建API Key
+// Create
 func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIKeyRequest) (*APIKey, error) {
-	// 验证用户存在
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 
-	// 验证 IP 白名单格式
 	if len(req.IPWhitelist) > 0 {
 		if invalid := ip.ValidateIPPatterns(req.IPWhitelist); len(invalid) > 0 {
 			return nil, fmt.Errorf("%w: %v", ErrInvalidIPPattern, invalid)
 		}
 	}
 
-	// 验证 IP 黑名单格式
 	if len(req.IPBlacklist) > 0 {
 		if invalid := ip.ValidateIPPatterns(req.IPBlacklist); len(invalid) > 0 {
 			return nil, fmt.Errorf("%w: %v", ErrInvalidIPPattern, invalid)
 		}
 	}
 
-	// 验证分组权限（如果指定了分组）
 	if req.GroupID != nil {
 		group, err := s.groupRepo.GetByID(ctx, *req.GroupID)
 		if err != nil {
 			return nil, fmt.Errorf("get group: %w", err)
 		}
 
-		// 检查用户是否可以绑定该分组
 		if !s.canUserBindGroup(ctx, user, group) {
 			return nil, ErrGroupNotAllowed
 		}
@@ -365,32 +352,32 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 
 	var key string
 
-	// 判断是否使用自定义Key
+	//
 	if req.CustomKey != nil && *req.CustomKey != "" {
-		// 检查限流（仅对自定义key进行限流）
+		//
 		if err := s.checkAPIKeyRateLimit(ctx, userID); err != nil {
 			return nil, err
 		}
 
-		// 验证自定义Key格式
+		//
 		if err := s.ValidateCustomKey(*req.CustomKey); err != nil {
 			return nil, err
 		}
 
-		// 检查Key是否已存在
+		//
 		exists, err := s.apiKeyRepo.ExistsByKey(ctx, *req.CustomKey)
 		if err != nil {
 			return nil, fmt.Errorf("check key exists: %w", err)
 		}
 		if exists {
-			// Key已存在，增加错误计数
+			// Key
 			s.incrementAPIKeyErrorCount(ctx, userID)
 			return nil, ErrAPIKeyExists
 		}
 
 		key = *req.CustomKey
 	} else {
-		// 生成随机API Key
+		//
 		var err error
 		key, err = s.GenerateKey()
 		if err != nil {
@@ -398,7 +385,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		}
 	}
 
-	// 创建API Key记录
+	//
 	apiKey := &APIKey{
 		UserID:      userID,
 		Key:         key,
@@ -430,7 +417,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 	return apiKey, nil
 }
 
-// List 获取用户的API Key列表
+// List
 func (s *APIKeyService) List(ctx context.Context, userID int64, params pagination.PaginationParams, filters APIKeyListFilters) ([]APIKey, *pagination.PaginationResult, error) {
 	keys, pagination, err := s.apiKeyRepo.ListByUserID(ctx, userID, params, filters)
 	if err != nil {
@@ -451,7 +438,7 @@ func (s *APIKeyService) VerifyOwnership(ctx context.Context, userID int64, apiKe
 	return validIDs, nil
 }
 
-// GetByID 根据ID获取API Key
+// GetByID
 func (s *APIKeyService) GetByID(ctx context.Context, id int64) (*APIKey, error) {
 	apiKey, err := s.apiKeyRepo.GetByID(ctx, id)
 	if err != nil {
@@ -461,7 +448,7 @@ func (s *APIKeyService) GetByID(ctx context.Context, id int64) (*APIKey, error) 
 	return apiKey, nil
 }
 
-// GetByKey 根据Key字符串获取API Key（用于认证）
+// GetByKey
 func (s *APIKeyService) GetByKey(ctx context.Context, key string) (*APIKey, error) {
 	cacheKey := s.authCacheKey(key)
 
@@ -513,39 +500,34 @@ func (s *APIKeyService) GetByKey(ctx context.Context, key string) (*APIKey, erro
 	return apiKey, nil
 }
 
-// Update 更新API Key
+// Update
 func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req UpdateAPIKeyRequest) (*APIKey, error) {
 	apiKey, err := s.apiKeyRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get api key: %w", err)
 	}
 
-	// 验证所有权
 	if apiKey.UserID != userID {
 		return nil, ErrInsufficientPerms
 	}
 
-	// 验证 IP 白名单格式
 	if len(req.IPWhitelist) > 0 {
 		if invalid := ip.ValidateIPPatterns(req.IPWhitelist); len(invalid) > 0 {
 			return nil, fmt.Errorf("%w: %v", ErrInvalidIPPattern, invalid)
 		}
 	}
 
-	// 验证 IP 黑名单格式
 	if len(req.IPBlacklist) > 0 {
 		if invalid := ip.ValidateIPPatterns(req.IPBlacklist); len(invalid) > 0 {
 			return nil, fmt.Errorf("%w: %v", ErrInvalidIPPattern, invalid)
 		}
 	}
 
-	// 更新字段
 	if req.Name != nil {
 		apiKey.Name = html.EscapeString(*req.Name)
 	}
 
 	if req.GroupID != nil {
-		// 验证分组权限
 		user, err := s.userRepo.GetByID(ctx, userID)
 		if err != nil {
 			return nil, fmt.Errorf("get user: %w", err)
@@ -565,7 +547,7 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 
 	if req.Status != nil {
 		apiKey.Status = *req.Status
-		// 如果状态改变，清除Redis缓存
+		//
 		if s.cache != nil {
 			_ = s.cache.DeleteCreateAttemptCount(ctx, apiKey.UserID)
 		}
@@ -600,7 +582,6 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 		}
 	}
 
-	// 更新 IP 限制（空数组会清空设置）
 	apiKey.IPWhitelist = req.IPWhitelist
 	apiKey.IPBlacklist = req.IPBlacklist
 
@@ -639,24 +620,24 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 	return apiKey, nil
 }
 
-// Delete 删除API Key
+// Delete
 func (s *APIKeyService) Delete(ctx context.Context, id int64, userID int64) error {
 	key, ownerID, err := s.apiKeyRepo.GetKeyAndOwnerID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("get api key: %w", err)
 	}
 
-	// 验证当前用户是否为该 API Key 的所有者
+	//
 	if ownerID != userID {
 		return ErrInsufficientPerms
 	}
 
-	// 事务内:写审计 + 软删除(tombstone)。
+	// + (tombstone)。
 	if err := s.apiKeyRepo.DeleteWithAudit(ctx, id); err != nil {
 		return fmt.Errorf("delete api key: %w", err)
 	}
 
-	// 删除成功后再清理缓存,避免"缓存已清但删除失败"的竞态。
+	// ""
 	if s.cache != nil {
 		_ = s.cache.DeleteCreateAttemptCount(ctx, userID)
 	}
@@ -666,26 +647,24 @@ func (s *APIKeyService) Delete(ctx context.Context, id int64, userID int64) erro
 	return nil
 }
 
-// ValidateKey 验证API Key是否有效（用于认证中间件）
+// ValidateKey
 func (s *APIKeyService) ValidateKey(ctx context.Context, key string) (*APIKey, *User, error) {
-	// 获取API Key
+	//
 	apiKey, err := s.GetByKey(ctx, key)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// 检查API Key状态
+	//
 	if !apiKey.IsActive() {
 		return nil, nil, infraerrors.Unauthorized("API_KEY_INACTIVE", "api key is not active")
 	}
 
-	// 获取用户信息
 	user, err := s.userRepo.GetByID(ctx, apiKey.UserID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("get user: %w", err)
 	}
 
-	// 检查用户状态
 	if !user.IsActive() {
 		return nil, nil, ErrUserNotActive
 	}
@@ -693,8 +672,7 @@ func (s *APIKeyService) ValidateKey(ctx context.Context, key string) (*APIKey, *
 	return apiKey, user, nil
 }
 
-// TouchLastUsed 通过防抖更新 api_keys.last_used_at，减少高频写放大。
-// 该操作为尽力而为，不应阻塞主请求链路。
+// TouchLastUsed
 func (s *APIKeyService) TouchLastUsed(ctx context.Context, keyID int64) error {
 	if keyID <= 0 {
 		return nil
@@ -725,50 +703,41 @@ func (s *APIKeyService) TouchLastUsed(ctx context.Context, keyID int64) error {
 	return err
 }
 
-// IncrementUsage 增加API Key使用次数（可选：用于统计）
+// IncrementUsage
 func (s *APIKeyService) IncrementUsage(ctx context.Context, keyID int64) error {
-	// 使用Redis计数器
+	//
 	if s.cache != nil {
 		cacheKey := fmt.Sprintf("apikey:usage:%d:%s", keyID, timezone.Now().Format("2006-01-02"))
 		if err := s.cache.IncrementDailyUsage(ctx, cacheKey); err != nil {
 			return fmt.Errorf("increment usage: %w", err)
 		}
-		// 设置24小时过期
 		_ = s.cache.SetDailyUsageExpiry(ctx, cacheKey, 24*time.Hour)
 	}
 	return nil
 }
 
-// GetAvailableGroups 获取用户有权限绑定的分组列表
-// 返回用户可以选择的分组：
-// - 标准类型分组：公开的（非专属）或用户被明确允许的
-// - 订阅类型分组：用户有有效订阅的
+// GetAvailableGroups
 func (s *APIKeyService) GetAvailableGroups(ctx context.Context, userID int64) ([]Group, error) {
-	// 获取用户信息
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 
-	// 获取所有活跃分组
 	allGroups, err := s.groupRepo.ListActive(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list active groups: %w", err)
 	}
 
-	// 获取用户的所有有效订阅
 	activeSubscriptions, err := s.userSubRepo.ListActiveByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("list active subscriptions: %w", err)
 	}
 
-	// 构建订阅分组 ID 集合
 	subscribedGroupIDs := make(map[int64]bool)
 	for _, sub := range activeSubscriptions {
 		subscribedGroupIDs[sub.GroupID] = true
 	}
 
-	// 过滤出用户有权限的分组
 	availableGroups := make([]Group, 0)
 	for _, group := range allGroups {
 		if s.canUserBindGroupInternal(user, &group, subscribedGroupIDs) {
@@ -779,13 +748,11 @@ func (s *APIKeyService) GetAvailableGroups(ctx context.Context, userID int64) ([
 	return availableGroups, nil
 }
 
-// canUserBindGroupInternal 内部方法，检查用户是否可以绑定分组（使用预加载的订阅数据）
+// canUserBindGroupInternal
 func (s *APIKeyService) canUserBindGroupInternal(user *User, group *Group, subscribedGroupIDs map[int64]bool) bool {
-	// 订阅类型分组：需要有效订阅
 	if group.IsSubscriptionType() {
 		return subscribedGroupIDs[group.ID]
 	}
-	// 标准类型分组：使用原有逻辑
 	return user.CanBindGroup(group.ID, group.IsExclusive)
 }
 
@@ -797,8 +764,8 @@ func (s *APIKeyService) SearchAPIKeys(ctx context.Context, userID int64, keyword
 	return keys, nil
 }
 
-// GetUserGroupRates 获取用户的专属分组倍率配置
-// 返回 map[groupID]rateMultiplier
+// GetUserGroupRates
+// [groupID]rateMultiplier
 func (s *APIKeyService) GetUserGroupRates(ctx context.Context, userID int64) (map[int64]float64, error) {
 	if s.userGroupRateRepo == nil {
 		return nil, nil

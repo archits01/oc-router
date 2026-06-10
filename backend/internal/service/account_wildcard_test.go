@@ -13,11 +13,9 @@ func TestMatchWildcard(t *testing.T) {
 		str      string
 		expected bool
 	}{
-		// 精确匹配
 		{"exact match", "claude-sonnet-4-5", "claude-sonnet-4-5", true},
 		{"exact mismatch", "claude-sonnet-4-5", "claude-opus-4-5", false},
 
-		// 通配符匹配
 		{"wildcard prefix match", "claude-*", "claude-sonnet-4-5", true},
 		{"wildcard prefix match 2", "claude-*", "claude-opus-4-5-thinking", true},
 		{"wildcard prefix mismatch", "claude-*", "gemini-3-flash", false},
@@ -25,7 +23,6 @@ func TestMatchWildcard(t *testing.T) {
 		{"wildcard partial match 2", "gemini-3*", "gemini-3-pro-image", true},
 		{"wildcard partial mismatch", "gemini-3*", "gemini-2.5-flash", false},
 
-		// 边界情况
 		{"empty pattern exact", "", "", true},
 		{"empty pattern mismatch", "", "claude", false},
 		{"single star", "*", "anything", true},
@@ -51,7 +48,6 @@ func TestMatchWildcardMappingResult(t *testing.T) {
 		expected       string
 		matched        bool
 	}{
-		// 精确匹配优先于通配符
 		{
 			name: "exact match takes precedence",
 			mapping: map[string]string{
@@ -63,7 +59,6 @@ func TestMatchWildcardMappingResult(t *testing.T) {
 			matched:        true,
 		},
 
-		// 最长通配符优先
 		{
 			name: "longer wildcard takes precedence",
 			mapping: map[string]string{
@@ -76,7 +71,6 @@ func TestMatchWildcardMappingResult(t *testing.T) {
 			matched:        true,
 		},
 
-		// 单个通配符
 		{
 			name: "single wildcard",
 			mapping: map[string]string{
@@ -87,7 +81,6 @@ func TestMatchWildcardMappingResult(t *testing.T) {
 			matched:        true,
 		},
 
-		// 无匹配返回原始模型
 		{
 			name: "no match returns original",
 			mapping: map[string]string{
@@ -98,7 +91,6 @@ func TestMatchWildcardMappingResult(t *testing.T) {
 			matched:        false,
 		},
 
-		// 空映射返回原始模型
 		{
 			name:           "empty mapping returns original",
 			mapping:        map[string]string{},
@@ -107,7 +99,7 @@ func TestMatchWildcardMappingResult(t *testing.T) {
 			matched:        false,
 		},
 
-		// Gemini 模型映射
+		// Gemini
 		{
 			name: "gemini wildcard mapping",
 			mapping: map[string]string{
@@ -138,7 +130,6 @@ func TestAccountIsModelSupported(t *testing.T) {
 		requestedModel string
 		expected       bool
 	}{
-		// 无映射 = 允许所有
 		{
 			name:           "no mapping allows all",
 			credentials:    nil,
@@ -152,7 +143,6 @@ func TestAccountIsModelSupported(t *testing.T) {
 			expected:       true,
 		},
 
-		// 精确匹配
 		{
 			name: "exact match supported",
 			credentials: map[string]any{
@@ -174,7 +164,6 @@ func TestAccountIsModelSupported(t *testing.T) {
 			expected:       false,
 		},
 
-		// 通配符匹配
 		{
 			name: "wildcard match supported",
 			credentials: map[string]any{
@@ -230,7 +219,6 @@ func TestAccountGetMappedModel(t *testing.T) {
 		requestedModel string
 		expected       string
 	}{
-		// 无映射 = 返回原始模型
 		{
 			name:           "no mapping returns original",
 			credentials:    nil,
@@ -245,7 +233,6 @@ func TestAccountGetMappedModel(t *testing.T) {
 			expected:       "gemini-3.1-pro-preview-customtools",
 		},
 
-		// 精确匹配
 		{
 			name: "exact match",
 			credentials: map[string]any{
@@ -257,7 +244,6 @@ func TestAccountGetMappedModel(t *testing.T) {
 			expected:       "target-model",
 		},
 
-		// 通配符匹配（最长优先）
 		{
 			name: "wildcard longest match",
 			credentials: map[string]any{
@@ -270,7 +256,6 @@ func TestAccountGetMappedModel(t *testing.T) {
 			expected:       "claude-sonnet-mapped",
 		},
 
-		// 无匹配返回原始模型
 		{
 			name:     "gemini customtools alias resolves through normalized mapping",
 			platform: PlatformGemini,

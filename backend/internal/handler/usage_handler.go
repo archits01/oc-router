@@ -291,7 +291,6 @@ func (h *UsageHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	// 验证所有权
 	if record.UserID != subject.UserID {
 		response.Forbidden(c, "Not authorized to access this record")
 		return
@@ -331,17 +330,15 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 		apiKeyID = id
 	}
 
-	// 获取时间范围参数
 	userTZ := c.Query("timezone") // Get user's timezone from request
 	now := timezone.NowInUserLocation(userTZ)
 	var startTime, endTime time.Time
 
-	// 优先使用 start_date 和 end_date 参数
+	//
 	startDateStr := c.Query("start_date")
 	endDateStr := c.Query("end_date")
 
 	if startDateStr != "" && endDateStr != "" {
-		// 使用自定义日期范围
 		var err error
 		startTime, err = timezone.ParseInUserLocation("2006-01-02", startDateStr, userTZ)
 		if err != nil {
@@ -353,10 +350,10 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
 			return
 		}
-		// 与 SQL 条件 created_at < end 对齐，使用次日 00:00 作为上边界（DST-safe）。
+		// < end
 		endTime = endTime.AddDate(0, 0, 1)
 	} else {
-		// 使用 period 参数
+		//
 		period := c.DefaultQuery("period", "today")
 		switch period {
 		case "today":

@@ -16,7 +16,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// 辅助函数：构造带 SingleAccountRetry 标记的 context
+//
 // ---------------------------------------------------------------------------
 
 func ctxWithSingleAccountRetry() context.Context {
@@ -24,7 +24,7 @@ func ctxWithSingleAccountRetry() context.Context {
 }
 
 // ---------------------------------------------------------------------------
-// 1. isSingleAccountRetry 测试
+// 1. isSingleAccountRetry
 // ---------------------------------------------------------------------------
 
 func TestIsSingleAccountRetry_True(t *testing.T) {
@@ -47,12 +47,11 @@ func TestIsSingleAccountRetry_False_WrongType(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. 常量验证
 // ---------------------------------------------------------------------------
 
 func TestSingleAccountRetryConstants(t *testing.T) {
 	require.Equal(t, 3, antigravitySingleAccountSmartRetryMaxAttempts,
-		"单账号原地重试最多 3 次")
+		"单账号原地retry最多 3 次")
 	require.Equal(t, 15*time.Second, antigravitySingleAccountSmartRetryMaxWait,
 		"单次最大等待 15s")
 	require.Equal(t, 30*time.Second, antigravitySingleAccountSmartRetryTotalMaxWait,
@@ -60,15 +59,12 @@ func TestSingleAccountRetryConstants(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. handleSmartRetry + 503 + SingleAccountRetry → 走 handleSingleAccountRetryInPlace
-//    （而非设模型限流 + 切换账号）
+// 3. handleSmartRetry + 503 + SingleAccountRetry →
 // ---------------------------------------------------------------------------
 
 // TestHandleSmartRetry_503_LongDelay_SingleAccountRetry_RetryInPlace
-// 核心场景：503 + retryDelay >= 7s + SingleAccountRetry 标记
-// → 不设模型限流、不切换账号，改为原地重试
+// + retryDelay >= 7s + SingleAccountRetry
 func TestHandleSmartRetry_503_LongDelay_SingleAccountRetry_RetryInPlace(t *testing.T) {
-	// 原地重试成功
 	successResp := &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{},
@@ -88,7 +84,7 @@ func TestHandleSmartRetry_503_LongDelay_SingleAccountRetry_RetryInPlace(t *testi
 		Concurrency: 1,
 	}
 
-	// 503 + 39s >= 7s 阈值 + MODEL_CAPACITY_EXHAUSTED
+	// 503 + 39s >= 7s + MODEL_CAPACITY_EXHAUSTED
 	respBody := []byte(`{
 		"error": {
 			"code": 503,
@@ -127,23 +123,22 @@ func TestHandleSmartRetry_503_LongDelay_SingleAccountRetry_RetryInPlace(t *testi
 
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
-	// 关键断言：返回 resp（原地重试成功），而非 switchError（切换账号）
+	//
 	require.NotNil(t, result.resp, "should return successful response from in-place retry")
 	require.Equal(t, http.StatusOK, result.resp.StatusCode)
 	require.Nil(t, result.switchError, "should NOT return switchError in single account mode")
 	require.Nil(t, result.err)
 
-	// 验证未设模型限流（单账号模式不应设限流）
 	require.Len(t, repo.modelRateLimitCalls, 0,
 		"should NOT set model rate limit in single account retry mode")
 
-	// 验证确实调用了 upstream（原地重试）
+	//
 	require.GreaterOrEqual(t, len(upstream.calls), 1, "should have made at least one retry call")
 }
 
 // TestHandleSmartRetry_503_LongDelay_NoSingleAccountRetry_StillSwitches
-// 对照组：503 + retryDelay >= 7s + 无 SingleAccountRetry 标记
-// → 照常设模型限流 + 切换账号
+// + retryDelay >= 7s +
+// → +
 func TestHandleSmartRetry_503_LongDelay_NoSingleAccountRetry_StillSwitches(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	account := &Account{
@@ -153,8 +148,8 @@ func TestHandleSmartRetry_503_LongDelay_NoSingleAccountRetry_StillSwitches(t *te
 		Platform: PlatformAntigravity,
 	}
 
-	// 503 + 39s >= 7s 阈值（使用 RATE_LIMIT_EXCEEDED 而非 MODEL_CAPACITY_EXHAUSTED，
-	// 因为 MODEL_CAPACITY_EXHAUSTED 走独立的重试路径，不触发 shouldRateLimitModel）
+	// 503 + 39s >= 7s
+	//
 	respBody := []byte(`{
 		"error": {
 			"code": 503,
@@ -191,11 +186,10 @@ func TestHandleSmartRetry_503_LongDelay_NoSingleAccountRetry_StillSwitches(t *te
 
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
-	// 对照：多账号模式返回 switchError
+	//
 	require.NotNil(t, result.switchError, "multi-account mode should return switchError for 503")
 	require.Nil(t, result.resp, "should not return resp when switchError is set")
 
-	// 对照：多账号模式应设模型限流
 	require.Len(t, repo.modelRateLimitCalls, 2,
 		"multi-account mode SHOULD set model rate limit")
 	require.Equal(t, "gemini-3-pro-high", repo.modelRateLimitCalls[0].modelKey)
@@ -203,8 +197,8 @@ func TestHandleSmartRetry_503_LongDelay_NoSingleAccountRetry_StillSwitches(t *te
 }
 
 // TestHandleSmartRetry_429_LongDelay_SingleAccountRetry_StillSwitches
-// 边界情况：429（非 503）+ SingleAccountRetry 标记
-// → 单账号原地重试仅针对 503，429 依然走切换账号逻辑
+// + SingleAccountRetry
+// →
 func TestHandleSmartRetry_429_LongDelay_SingleAccountRetry_StillSwitches(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	account := &Account{
@@ -214,7 +208,7 @@ func TestHandleSmartRetry_429_LongDelay_SingleAccountRetry_StillSwitches(t *test
 		Platform: PlatformAntigravity,
 	}
 
-	// 429 + 15s >= 7s 阈值
+	// 429 + 15s >= 7s
 	respBody := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -250,21 +244,21 @@ func TestHandleSmartRetry_429_LongDelay_SingleAccountRetry_StillSwitches(t *test
 
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
-	// 429 即使有单账号标记，也应走切换账号
+	// 429
 	require.NotNil(t, result.switchError, "429 should still return switchError even with SingleAccountRetry")
 	require.Len(t, repo.modelRateLimitCalls, 1,
 		"429 should still set model rate limit even with SingleAccountRetry")
 }
 
 // ---------------------------------------------------------------------------
-// 4. handleSmartRetry + 503 + 短延迟 + SingleAccountRetry → 智能重试耗尽后不设限流
+// 4. handleSmartRetry + 503 + + SingleAccountRetry →
 // ---------------------------------------------------------------------------
 
 // TestHandleSmartRetry_503_ShortDelay_SingleAccountRetry_NoRateLimit
-// 503 + retryDelay < 7s + SingleAccountRetry → 智能重试耗尽后直接返回 503，不设限流
-// 使用 RATE_LIMIT_EXCEEDED（走 1 次智能重试），避免 MODEL_CAPACITY_EXHAUSTED 的 60 次重试导致测试超时
+// 503 + retryDelay < 7s + SingleAccountRetry →
+//
 func TestHandleSmartRetry_503_ShortDelay_SingleAccountRetry_NoRateLimit(t *testing.T) {
-	// 智能重试也返回 503
+	//
 	failRespBody := `{
 		"error": {
 			"code": 503,
@@ -294,7 +288,7 @@ func TestHandleSmartRetry_503_ShortDelay_SingleAccountRetry_NoRateLimit(t *testi
 		Platform: PlatformAntigravity,
 	}
 
-	// 0.1s < 7s 阈值
+	// 0.1s < 7s
 	respBody := []byte(`{
 		"error": {
 			"code": 503,
@@ -332,19 +326,18 @@ func TestHandleSmartRetry_503_ShortDelay_SingleAccountRetry_NoRateLimit(t *testi
 
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
-	// 关键断言：单账号 503 模式下，智能重试耗尽后直接返回 503 响应，不切换
+	//
 	require.NotNil(t, result.resp, "should return 503 response directly for single account mode")
 	require.Equal(t, http.StatusServiceUnavailable, result.resp.StatusCode)
 	require.Nil(t, result.switchError, "should NOT switch account in single account mode")
 
-	// 关键断言：不设模型限流
 	require.Len(t, repo.modelRateLimitCalls, 0,
 		"should NOT set model rate limit for 503 in single account mode")
 }
 
 // TestHandleSmartRetry_503_ShortDelay_NoSingleAccountRetry_SetsRateLimit
-// 对照组：503 + retryDelay < 7s + 无 SingleAccountRetry → 智能重试耗尽后照常设限流
-// 使用 RATE_LIMIT_EXCEEDED 而非 MODEL_CAPACITY_EXHAUSTED，因为后者走独立的 60 次重试路径
+// + retryDelay < 7s + →
+//
 func TestHandleSmartRetry_503_ShortDelay_NoSingleAccountRetry_SetsRateLimit(t *testing.T) {
 	failRespBody := `{
 		"error": {
@@ -411,9 +404,8 @@ func TestHandleSmartRetry_503_ShortDelay_NoSingleAccountRetry_SetsRateLimit(t *t
 
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
-	// 对照：多账号模式应返回 switchError
+	//
 	require.NotNil(t, result.switchError, "multi-account mode should return switchError for 503")
-	// 对照：多账号模式应设模型限流
 	require.Len(t, repo.modelRateLimitCalls, 2,
 		"multi-account mode should set model rate limit")
 	require.Equal(t, "gemini-3-flash", repo.modelRateLimitCalls[0].modelKey)
@@ -421,10 +413,10 @@ func TestHandleSmartRetry_503_ShortDelay_NoSingleAccountRetry_SetsRateLimit(t *t
 }
 
 // ---------------------------------------------------------------------------
-// 5. handleSingleAccountRetryInPlace 直接测试
+// 5. handleSingleAccountRetryInPlace
 // ---------------------------------------------------------------------------
 
-// TestHandleSingleAccountRetryInPlace_Success 原地重试成功
+// TestHandleSingleAccountRetryInPlace_Success
 func TestHandleSingleAccountRetryInPlace_Success(t *testing.T) {
 	successResp := &http.Response{
 		StatusCode: http.StatusOK,
@@ -470,9 +462,9 @@ func TestHandleSingleAccountRetryInPlace_Success(t *testing.T) {
 	require.Nil(t, result.err)
 }
 
-// TestHandleSingleAccountRetryInPlace_AllRetriesFail 所有重试都失败，返回 503（不设限流）
+// TestHandleSingleAccountRetryInPlace_AllRetriesFail
 func TestHandleSingleAccountRetryInPlace_AllRetriesFail(t *testing.T) {
-	// 构造 3 个 503 响应（对应 3 次原地重试）
+	//
 	var responses []*http.Response
 	var errors []error
 	for i := 0; i < antigravitySingleAccountSmartRetryMaxAttempts; i++ {
@@ -526,20 +518,19 @@ func TestHandleSingleAccountRetryInPlace_AllRetriesFail(t *testing.T) {
 
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
-	// 关键：返回 503 resp，不返回 switchError
+	//
 	require.NotNil(t, result.resp, "should return 503 response directly")
 	require.Equal(t, http.StatusServiceUnavailable, result.resp.StatusCode)
 	require.Nil(t, result.switchError, "should NOT return switchError - let Handler handle it")
 	require.Nil(t, result.err)
 
-	// 验证确实重试了指定次数
 	require.Len(t, upstream.calls, antigravitySingleAccountSmartRetryMaxAttempts,
 		"should have made exactly maxAttempts retry calls")
 }
 
-// TestHandleSingleAccountRetryInPlace_WaitDurationClamped 等待时间被限制在 [min, max] 范围
+// TestHandleSingleAccountRetryInPlace_WaitDurationClamped [min, max]
 func TestHandleSingleAccountRetryInPlace_WaitDurationClamped(t *testing.T) {
-	// 用短延迟的成功响应，只验证不 panic
+	//
 	successResp := &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{},
@@ -575,8 +566,8 @@ func TestHandleSingleAccountRetryInPlace_WaitDurationClamped(t *testing.T) {
 
 	svc := &AntigravityGatewayService{}
 
-	// waitDuration=0 会被 clamp 到 antigravitySmartRetryMinWait=1s。
-	// 首次重试即成功（200），总耗时 ~1s。
+	// waitDuration=0 =1s。
+	// ~1s。
 	result := svc.handleSingleAccountRetryInPlace(params, resp, nil, "https://ag-1.test", 0, "gemini-3-pro")
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
@@ -584,7 +575,7 @@ func TestHandleSingleAccountRetryInPlace_WaitDurationClamped(t *testing.T) {
 	require.Equal(t, http.StatusOK, result.resp.StatusCode)
 }
 
-// TestHandleSingleAccountRetryInPlace_ContextCanceled context 取消时立即返回
+// TestHandleSingleAccountRetryInPlace_ContextCanceled context
 func TestHandleSingleAccountRetryInPlace_ContextCanceled(t *testing.T) {
 	upstream := &mockSmartRetryUpstream{
 		responses: []*http.Response{nil},
@@ -606,7 +597,7 @@ func TestHandleSingleAccountRetryInPlace_ContextCanceled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = context.WithValue(ctx, ctxkey.SingleAccountRetry, true)
-	cancel() // 立即取消
+	cancel() // immediately cancelled
 
 	params := antigravityRetryLoopParams{
 		ctx:          ctx,
@@ -624,11 +615,11 @@ func TestHandleSingleAccountRetryInPlace_ContextCanceled(t *testing.T) {
 	require.NotNil(t, result)
 	require.Equal(t, smartRetryActionBreakWithResp, result.action)
 	require.Error(t, result.err, "should return context error")
-	// 不应调用 upstream（因为在等待阶段就被取消了）
+	//
 	require.Len(t, upstream.calls, 0, "should not call upstream when context is canceled")
 }
 
-// TestHandleSingleAccountRetryInPlace_NetworkError_ContinuesRetry 网络错误时继续重试
+// TestHandleSingleAccountRetryInPlace_NetworkError_ContinuesRetry
 func TestHandleSingleAccountRetryInPlace_NetworkError_ContinuesRetry(t *testing.T) {
 	successResp := &http.Response{
 		StatusCode: http.StatusOK,
@@ -636,7 +627,7 @@ func TestHandleSingleAccountRetryInPlace_NetworkError_ContinuesRetry(t *testing.
 		Body:       io.NopCloser(strings.NewReader(`{"result":"ok"}`)),
 	}
 	upstream := &mockSmartRetryUpstream{
-		// 第1次网络错误（nil resp），第2次成功
+		//
 		responses: []*http.Response{nil, successResp},
 		errors:    []error{nil, nil},
 	}
@@ -675,13 +666,12 @@ func TestHandleSingleAccountRetryInPlace_NetworkError_ContinuesRetry(t *testing.
 }
 
 // ---------------------------------------------------------------------------
-// 6. antigravityRetryLoop 预检查：单账号模式跳过限流
+// 6. antigravityRetryLoop
 // ---------------------------------------------------------------------------
 
 // TestAntigravityRetryLoop_PreCheck_SingleAccountRetry_SkipsRateLimit
-// 预检查中，如果有 SingleAccountRetry 标记，即使账号已限流也跳过直接发请求
+//
 func TestAntigravityRetryLoop_PreCheck_SingleAccountRetry_SkipsRateLimit(t *testing.T) {
-	// 创建一个已设模型限流的账号
 	upstream := &recordingOKUpstream{}
 	account := &Account{
 		ID:          20,
@@ -719,12 +709,12 @@ func TestAntigravityRetryLoop_PreCheck_SingleAccountRetry_SkipsRateLimit(t *test
 	require.NotNil(t, result, "should return result")
 	require.NotNil(t, result.resp, "should have response")
 	require.Equal(t, http.StatusOK, result.resp.StatusCode)
-	// 关键：尽管限流了，有 SingleAccountRetry 标记时仍然到达了 upstream
+	//
 	require.Equal(t, 1, upstream.calls, "should have reached upstream despite rate limit")
 }
 
 // TestAntigravityRetryLoop_PreCheck_NoSingleAccountRetry_SwitchesOnRateLimit
-// 对照组：无 SingleAccountRetry + 已限流 → 预检查返回 switchError
+// + →
 func TestAntigravityRetryLoop_PreCheck_NoSingleAccountRetry_SwitchesOnRateLimit(t *testing.T) {
 	upstream := &recordingOKUpstream{}
 	account := &Account{
@@ -767,18 +757,17 @@ func TestAntigravityRetryLoop_PreCheck_NoSingleAccountRetry_SwitchesOnRateLimit(
 	require.Equal(t, account.ID, switchErr.OriginalAccountID)
 	require.Equal(t, "claude-sonnet-4-5", switchErr.RateLimitedModel)
 
-	// upstream 不应被调用（预检查就短路了）
+	// upstream
 	require.Equal(t, 0, upstream.calls, "upstream should NOT be called when pre-check blocks")
 }
 
 // ---------------------------------------------------------------------------
-// 7. 端到端集成场景测试
 // ---------------------------------------------------------------------------
 
 // TestHandleSmartRetry_503_SingleAccount_RetryInPlace_ThenSuccess_E2E
-// 端到端场景：503 + 单账号 + 原地重试第2次成功
+// + +
 func TestHandleSmartRetry_503_SingleAccount_RetryInPlace_ThenSuccess_E2E(t *testing.T) {
-	// 第1次原地重试仍返回 503，第2次成功
+	//
 	fail503Body := `{
 		"error": {
 			"code": 503,
@@ -840,9 +829,9 @@ func TestHandleSmartRetry_503_SingleAccount_RetryInPlace_ThenSuccess_E2E(t *test
 }
 
 // TestAntigravityRetryLoop_503_SingleAccount_InPlaceRetryUsed_E2E
-// 通过 antigravityRetryLoop → handleSmartRetry → handleSingleAccountRetryInPlace 完整链路
+// → handleSmartRetry → handleSingleAccountRetryInPlace
 func TestAntigravityRetryLoop_503_SingleAccount_InPlaceRetryUsed_E2E(t *testing.T) {
-	// 初始请求返回 503 + 长延迟
+	// +
 	initial503Body := []byte(`{
 		"error": {
 			"code": 503,
@@ -860,7 +849,6 @@ func TestAntigravityRetryLoop_503_SingleAccount_InPlaceRetryUsed_E2E(t *testing.
 		Body:       io.NopCloser(bytes.NewReader(initial503Body)),
 	}
 
-	// 原地重试成功
 	successResp := &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{},
@@ -868,8 +856,8 @@ func TestAntigravityRetryLoop_503_SingleAccount_InPlaceRetryUsed_E2E(t *testing.
 	}
 
 	upstream := &mockSmartRetryUpstream{
-		// 第1次调用（retryLoop 主循环）返回 503
-		// 第2次调用（handleSingleAccountRetryInPlace 原地重试）返回 200
+		//
+		//
 		responses: []*http.Response{initial503Resp, successResp},
 		errors:    []error{nil, nil},
 	}
@@ -905,7 +893,6 @@ func TestAntigravityRetryLoop_503_SingleAccount_InPlaceRetryUsed_E2E(t *testing.
 	require.NotNil(t, result.resp, "should return response")
 	require.Equal(t, http.StatusOK, result.resp.StatusCode)
 
-	// 验证未设模型限流
 	require.Len(t, repo.modelRateLimitCalls, 0,
 		"should NOT set model rate limit in single account retry mode")
 }

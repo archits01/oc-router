@@ -24,14 +24,14 @@ type githubReleaseClientError struct {
 	err error
 }
 
-// NewGitHubReleaseClient 创建 GitHub Release 客户端
-// proxyURL 为空时直连 GitHub，支持 http/https/socks5/socks5h 协议
-// 代理配置失败时行为由 allowDirectOnProxyError 控制：
-//   - false（默认）：返回错误占位客户端，禁止回退到直连
-//   - true：回退到直连（仅限管理员显式开启）
+// NewGitHubReleaseClient
+// proxyURL
+//
+//   - false（
+//   - true：
 func NewGitHubReleaseClient(proxyURL string, allowDirectOnProxyError bool) service.GitHubReleaseClient {
-	// 安全说明：httpclient.GetClient 的错误链（url.Parse / proxyutil）不含明文代理凭据，
-	// 但仍通过 slog 仅在服务端日志记录，不会暴露给 HTTP 响应。
+	//
+	//
 	sharedClient, err := httpclient.GetClient(httpclient.Options{
 		Timeout:  30 * time.Second,
 		ProxyURL: proxyURL,
@@ -44,7 +44,6 @@ func NewGitHubReleaseClient(proxyURL string, allowDirectOnProxyError bool) servi
 		sharedClient = &http.Client{Timeout: 30 * time.Second}
 	}
 
-	// 下载客户端需要更长的超时时间
 	downloadClient, err := httpclient.GetClient(httpclient.Options{
 		Timeout:  10 * time.Minute,
 		ProxyURL: proxyURL,
@@ -109,7 +108,6 @@ func (c *githubReleaseClient) DownloadFile(ctx context.Context, url, dest string
 		return err
 	}
 
-	// 使用预配置的下载客户端（已包含代理配置）
 	resp, err := c.downloadHTTPClient.Do(req)
 	if err != nil {
 		return err

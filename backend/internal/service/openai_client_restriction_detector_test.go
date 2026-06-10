@@ -131,7 +131,7 @@ func TestOpenAICodexClientRestrictionDetector_Detect_AllowedClients(t *testing.T
 		claudeCodeOriginator = "Claude Code"
 	)
 
-	t.Run("配置 claude_code 白名单且命中真实签名时放行", func(t *testing.T) {
+	t.Run("configuration claude_code 白名单且命中真实签名时放行", func(t *testing.T) {
 		detector := NewOpenAICodexClientRestrictionDetector(nil)
 		account := &Account{
 			Platform: PlatformOpenAI,
@@ -148,7 +148,7 @@ func TestOpenAICodexClientRestrictionDetector_Detect_AllowedClients(t *testing.T
 		require.Equal(t, CodexClientRestrictionReasonMatchedAllowedClient, result.Reason)
 	})
 
-	t.Run("配置白名单但伪造 originator 仍拒绝", func(t *testing.T) {
+	t.Run("configuration白名单但伪造 originator 仍拒绝", func(t *testing.T) {
 		detector := NewOpenAICodexClientRestrictionDetector(nil)
 		account := &Account{
 			Platform: PlatformOpenAI,
@@ -165,7 +165,7 @@ func TestOpenAICodexClientRestrictionDetector_Detect_AllowedClients(t *testing.T
 		require.Equal(t, CodexClientRestrictionReasonNotMatchedUA, result.Reason)
 	})
 
-	t.Run("未配置白名单时 Claude Code 签名仍拒绝", func(t *testing.T) {
+	t.Run("未configuration白名单时 Claude Code 签名仍拒绝", func(t *testing.T) {
 		detector := NewOpenAICodexClientRestrictionDetector(nil)
 		account := &Account{
 			Platform: PlatformOpenAI,

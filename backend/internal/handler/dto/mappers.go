@@ -236,7 +236,7 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 		GroupIDs:                a.GroupIDs,
 	}
 
-	// 提取 5h 窗口费用控制和会话数量控制配置（仅 Anthropic OAuth/SetupToken 账号有效）
+	//
 	if a.IsAnthropicOAuthOrSetupToken() {
 		if limit := a.GetWindowCostLimit(); limit > 0 {
 			out.WindowCostLimit = &limit
@@ -257,32 +257,30 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 			buffer := a.GetRPMStickyBuffer()
 			out.RPMStickyBuffer = &buffer
 		}
-		// 用户消息队列模式
 		if mode := a.GetUserMsgQueueMode(); mode != "" {
 			out.UserMsgQueueMode = &mode
 		}
-		// TLS指纹伪装开关
+		// TLS
 		if a.IsTLSFingerprintEnabled() {
 			enabled := true
 			out.EnableTLSFingerprint = &enabled
 		}
-		// TLS指纹模板ID
+		// TLS
 		if profileID := a.GetTLSFingerprintProfileID(); profileID > 0 {
 			out.TLSFingerprintProfileID = &profileID
 		}
-		// 会话ID伪装开关
 		if a.IsSessionIDMaskingEnabled() {
 			enabled := true
 			out.EnableSessionIDMasking = &enabled
 		}
-		// 缓存 TTL 强制替换
+		//
 		if a.IsCacheTTLOverrideEnabled() {
 			enabled := true
 			out.CacheTTLOverrideEnabled = &enabled
 			target := a.GetCacheTTLOverrideTarget()
 			out.CacheTTLOverrideTarget = &target
 		}
-		// 自定义 Base URL 中继转发
+		//
 		if a.IsCustomBaseURLEnabled() {
 			enabled := true
 			out.CustomBaseURLEnabled = &enabled
@@ -292,7 +290,7 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 		}
 	}
 
-	// 提取账号配额限制（apikey / bedrock 类型有效）
+	//
 	if a.IsAPIKeyOrBedrock() {
 		if limit := a.GetQuotaLimit(); limit > 0 {
 			out.QuotaLimit = &limit
@@ -315,7 +313,6 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 			}
 			out.QuotaWeeklyUsed = &used
 		}
-		// 固定时间重置配置
 		if mode := a.GetQuotaDailyResetMode(); mode == "fixed" {
 			out.QuotaDailyResetMode = &mode
 			hour := a.GetQuotaDailyResetHour()
@@ -341,7 +338,6 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 			}
 		}
 
-		// 配额通知配置
 		if enabled := a.GetQuotaNotifyDailyEnabled(); enabled {
 			out.QuotaNotifyDailyEnabled = &enabled
 		}
@@ -573,7 +569,7 @@ func AccountSummaryFromService(a *service.Account) *AccountSummary {
 }
 
 func usageLogFromServiceUser(l *service.UsageLog) UsageLog {
-	// 普通用户 DTO：严禁包含管理员字段（例如 account_rate_multiplier、ip_address、account）。
+	//
 	requestType := l.EffectiveRequestType()
 	stream, openAIWSMode := service.ApplyLegacyRequestFields(requestType, l.Stream, l.OpenAIWSMode)
 	requestedModel := l.RequestedModel

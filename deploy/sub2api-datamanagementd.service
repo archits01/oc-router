@@ -1,16 +1,16 @@
 [Unit]
-Description=Sub2API Data Management Daemon
+Description=OC Router Data Management Daemon
 After=network.target
 Wants=network.target
 
 [Service]
 Type=simple
-User=sub2api
-Group=sub2api
-WorkingDirectory=/opt/sub2api
-ExecStart=/opt/sub2api/datamanagementd \
-  -socket-path /tmp/sub2api-datamanagement.sock \
-  -sqlite-path /var/lib/sub2api/datamanagement/datamanagementd.db \
+User=oc-router
+Group=oc-router
+WorkingDirectory=/opt/oc-router
+ExecStart=/opt/oc-router/datamanagementd \
+  -socket-path /tmp/oc-router-datamanagement.sock \
+  -sqlite-path /var/lib/oc-router/datamanagement/datamanagementd.db \
   -version 1.0.0
 Restart=always
 RestartSec=5s

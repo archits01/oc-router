@@ -39,12 +39,12 @@ type openAIWSSessionConnBinding struct {
 	expiresAt time.Time
 }
 
-// OpenAIWSStateStore 管理 WSv2 的粘连状态。
-// - response_id -> account_id 用于续链路由
-// - response_id -> conn_id 用于连接内上下文复用
+// OpenAIWSStateStore
+// - response_id -> account_id
+// - response_id -> conn_id
 //
-// response_id -> account_id 优先走 GatewayCache（Redis），同时维护本地热缓存。
-// response_id -> conn_id 仅在本进程内有效。
+// response_id -> account_id
+// response_id -> conn_id
 type OpenAIWSStateStore interface {
 	BindResponseAccount(ctx context.Context, groupID int64, responseID string, accountID int64, ttl time.Duration) error
 	GetResponseAccount(ctx context.Context, groupID int64, responseID string) (int64, error)
@@ -78,7 +78,7 @@ type defaultOpenAIWSStateStore struct {
 	lastCleanupUnixNano atomic.Int64
 }
 
-// NewOpenAIWSStateStore 创建默认 WS 状态存储。
+// NewOpenAIWSStateStore
 func NewOpenAIWSStateStore(cache GatewayCache) OpenAIWSStateStore {
 	store := &defaultOpenAIWSStateStore{
 		cache:              cache,
@@ -143,7 +143,6 @@ func (s *defaultOpenAIWSStateStore) GetResponseAccount(ctx context.Context, grou
 	defer cancel()
 	accountID, err := s.cache.GetSessionAccountID(cacheCtx, groupID, cacheKey)
 	if err != nil || accountID <= 0 {
-		// 缓存读取失败不阻断主流程，按未命中降级。
 		return 0, nil
 	}
 	return accountID, nil
@@ -314,7 +313,6 @@ func (s *defaultOpenAIWSStateStore) maybeCleanup() {
 		return
 	}
 
-	// 增量限额清理，避免高规模下一次性全量扫描导致长时间阻塞。
 	s.responseToAccountMu.Lock()
 	cleanupExpiredAccountBindings(s.responseToAccount, now, openAIWSStateStoreCleanupMaxPerMap)
 	s.responseToAccountMu.Unlock()
@@ -403,7 +401,6 @@ func ensureBindingCapacity[T any](bindings map[string]T, incomingKey string, max
 	if _, exists := bindings[incomingKey]; exists {
 		return
 	}
-	// 固定上限保护：淘汰任意一项，优先保证内存有界。
 	for key := range bindings {
 		delete(bindings, key)
 		return
@@ -419,7 +416,7 @@ func openAIWSResponseAccountCacheKey(responseID string) string {
 	return openAIWSResponseAccountCachePrefix + hex.EncodeToString(sum[:])
 }
 
-// openAIWSResponseAccountMapKey 本地热缓存按分组隔离的 key，与 Redis 层保持一致，避免跨组命中。
+// openAIWSResponseAccountMapKey
 func openAIWSResponseAccountMapKey(groupID int64, responseID string) string {
 	return fmt.Sprintf("%d:%s", groupID, responseID)
 }

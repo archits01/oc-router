@@ -8,7 +8,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-// NewTestUser 创建一个可用的测试用户，可通过 opts 覆盖默认值。
+// NewTestUser
 func NewTestUser(opts ...func(*service.User)) *service.User {
 	u := &service.User{
 		ID:          1,
@@ -27,7 +27,7 @@ func NewTestUser(opts ...func(*service.User)) *service.User {
 	return u
 }
 
-// NewTestAccount 创建一个可用的测试账户，可通过 opts 覆盖默认值。
+// NewTestAccount
 func NewTestAccount(opts ...func(*service.Account)) *service.Account {
 	a := &service.Account{
 		ID:          1,
@@ -44,7 +44,7 @@ func NewTestAccount(opts ...func(*service.Account)) *service.Account {
 	return a
 }
 
-// NewTestAPIKey 创建一个可用的测试 API Key，可通过 opts 覆盖默认值。
+// NewTestAPIKey
 func NewTestAPIKey(opts ...func(*service.APIKey)) *service.APIKey {
 	groupID := int64(1)
 	k := &service.APIKey{
@@ -63,7 +63,7 @@ func NewTestAPIKey(opts ...func(*service.APIKey)) *service.APIKey {
 	return k
 }
 
-// NewTestGroup 创建一个可用的测试分组，可通过 opts 覆盖默认值。
+// NewTestGroup
 func NewTestGroup(opts ...func(*service.Group)) *service.Group {
 	g := &service.Group{
 		ID:       1,

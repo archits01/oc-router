@@ -23,11 +23,11 @@ type AnthropicRequest struct {
 	StopSeqs    []string           `json:"stop_sequences,omitempty"`
 	Thinking    *AnthropicThinking `json:"thinking,omitempty"`
 	ToolChoice  json.RawMessage    `json:"tool_choice,omitempty"`
-	// Metadata 会被原样透传给上游。OAuth/Claude-Code 路径依赖 metadata.user_id
-	// 参与上游的"是否为官方 Claude Code 请求"判定；如果经由本结构体重新序列化
-	// 时丢弃该字段，网关侧后续的 metadata 重写(ensureClaudeOAuthMetadataUserID/
-	// RewriteUserIDWithMasking) 在 body 里拿不到起点，就无法重建一个合法的
-	// user_id，进而导致请求被归类为第三方 app。
+	// Metadata
+	// ""
+	// (ensureClaudeOAuthMetadataUserID/
+	// RewriteUserIDWithMasking)
+	// user_id，
 	Metadata     json.RawMessage        `json:"metadata,omitempty"`
 	OutputConfig *AnthropicOutputConfig `json:"output_config,omitempty"`
 }
@@ -113,8 +113,8 @@ type AnthropicTool struct {
 	CacheControl *AnthropicCacheControl `json:"cache_control,omitempty"`
 }
 
-// AnthropicCacheControl 对应 Anthropic API 的 cache_control 字段。
-// ttl 默认由调用方决定；本项目策略见 claude.DefaultCacheControlTTL。
+// AnthropicCacheControl
+// ttl
 type AnthropicCacheControl struct {
 	Type string `json:"type"`          // "ephemeral"
 	TTL  string `json:"ttl,omitempty"` // "5m" / "1h" / 省略=默认 5m（由 Anthropic 判定）
@@ -384,7 +384,7 @@ type ResponsesStreamEvent struct {
 
 	// response.created / response.completed / response.done / response.failed / response.incomplete
 	Response *ResponsesResponse `json:"response,omitempty"`
-	// 部分 OpenAI 兼容上游会把 usage 放在终止事件顶层，而不是 response.usage。
+	//
 	Usage *ResponsesUsage `json:"usage,omitempty"`
 
 	// response.output_item.added / response.output_item.done

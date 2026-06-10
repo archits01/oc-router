@@ -9,7 +9,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 )
 
-// IdempotencyCleanupService 定期清理已过期的幂等记录，避免表无限增长。
+// IdempotencyCleanupService
 type IdempotencyCleanupService struct {
 	repo     IdempotencyRepository
 	interval time.Duration
@@ -63,7 +63,6 @@ func (s *IdempotencyCleanupService) runLoop() {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
 
-	// 启动后先清理一轮，防止重启后积压。
 	s.cleanupOnce()
 
 	for {

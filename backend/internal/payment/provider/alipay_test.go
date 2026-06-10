@@ -28,12 +28,12 @@ func TestIsTradeNotExist(t *testing.T) {
 		},
 		{
 			name: "error containing ACQ.TRADE_NOT_EXIST returns true",
-			err:  errors.New("alipay: sub_code=ACQ.TRADE_NOT_EXIST, sub_msg=交易不存在"),
+			err:  errors.New("alipay: sub_code=ACQ.TRADE_NOT_EXIST, sub_msg=交易does not exist"),
 			want: true,
 		},
 		{
 			name: "error not containing the code returns false",
-			err:  errors.New("alipay: sub_code=ACQ.SYSTEM_ERROR, sub_msg=系统错误"),
+			err:  errors.New("alipay: sub_code=ACQ.SYSTEM_ERROR, sub_msg=系统error"),
 			want: false,
 		},
 		{

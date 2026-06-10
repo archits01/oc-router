@@ -40,7 +40,7 @@ type CreateAnnouncementInput struct {
 	Targeting  AnnouncementTargeting
 	StartsAt   *time.Time
 	EndsAt     *time.Time
-	ActorID    *int64 // 管理员用户ID
+	ActorID    *int64 // adminuserID
 }
 
 type UpdateAnnouncementInput struct {
@@ -51,7 +51,7 @@ type UpdateAnnouncementInput struct {
 	Targeting  *AnnouncementTargeting
 	StartsAt   **time.Time
 	EndsAt     **time.Time
-	ActorID    *int64 // 管理员用户ID
+	ActorID    *int64 // adminuserID
 }
 
 type UserAnnouncement struct {
@@ -277,7 +277,6 @@ func (s *AnnouncementService) ListForUser(ctx context.Context, userID int64, unr
 		})
 	}
 
-	// 未读优先、同状态按创建时间倒序
 	sort.Slice(out, func(i, j int) bool {
 		ai, aj := out[i], out[j]
 		if (ai.ReadAt == nil) != (aj.ReadAt == nil) {
@@ -290,7 +289,6 @@ func (s *AnnouncementService) ListForUser(ctx context.Context, userID int64, unr
 }
 
 func (s *AnnouncementService) MarkRead(ctx context.Context, userID, announcementID int64) error {
-	// 安全：仅允许标记当前用户“可见”的公告
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("get user: %w", err)

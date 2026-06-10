@@ -110,8 +110,8 @@ func TestCheckErrorPolicy(t *testing.T) {
 			expected:   ErrorPolicyTempUnscheduled,
 		},
 		{
-			// Antigravity 401 不走升级逻辑（由 applyErrorPolicy 的 temp_unschedulable_rules 自行控制），
-			// second hit 仍然返回 TempUnscheduled。
+			// Antigravity 401
+			// second hit
 			name: "temp_unschedulable_401_second_hit_antigravity_stays_temp",
 			account: &Account{
 				ID:                      15,

@@ -127,7 +127,7 @@ const props = defineProps<{
   order: PaymentOrder | null
 }>()
 
-/** 充值金额 (base amount before fee) = pay_amount - fee = pay_amount / (1 + fee_rate/100) */
+/** Top UpAmount (base amount before fee) = pay_amount - fee = pay_amount / (1 + fee_rate/100) */
 const baseAmount = computed(() => {
   if (!props.order) return 0
   const feeRate = Number(props.order.fee_rate) || 0

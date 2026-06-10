@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// rpmUserRepoStub 复用 admin_service_update_balance_test.go 的基础 stub 结构，
-// 只在 Update 时把入参克隆一份，便于断言修改后的 RPMLimit。
+// rpmUserRepoStub
+//
 type rpmUserRepoStub struct {
 	*userRepoStub
 	lastUpdated *User

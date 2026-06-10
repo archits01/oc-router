@@ -49,7 +49,7 @@ func (m *mockClaudeOAuthClient) RefreshToken(ctx context.Context, refreshToken, 
 	panic("RefreshToken not implemented")
 }
 
-// --- mock: ProxyRepository (最小实现，仅覆盖 OAuthService 依赖的方法) ---
+// --- mock: ProxyRepository () ---
 
 type mockProxyRepoForOAuth struct {
 	getByIDFunc func(ctx context.Context, id int64) (*Proxy, error)
@@ -111,7 +111,6 @@ func (m *mockProxyRepoForOAuth) CountExpiringSoon(ctx context.Context, now time.
 }
 
 // =====================
-// 测试用例
 // =====================
 
 func TestNewOAuthService(t *testing.T) {
@@ -122,7 +121,7 @@ func TestNewOAuthService(t *testing.T) {
 	svc := NewOAuthService(proxyRepo, client)
 
 	if svc == nil {
-		t.Fatal("NewOAuthService 返回 nil")
+		t.Fatal("NewOAuthService returned nil")
 	}
 	if svc.proxyRepo != proxyRepo {
 		t.Fatal("proxyRepo 未正确设置")
@@ -131,10 +130,9 @@ func TestNewOAuthService(t *testing.T) {
 		t.Fatal("oauthClient 未正确设置")
 	}
 	if svc.sessionStore == nil {
-		t.Fatal("sessionStore 应被自动初始化")
+		t.Fatal("sessionStore 应被自动initialization")
 	}
 
-	// 清理
 	svc.Stop()
 }
 
@@ -146,10 +144,10 @@ func TestOAuthService_GenerateAuthURL(t *testing.T) {
 
 	result, err := svc.GenerateAuthURL(context.Background(), nil)
 	if err != nil {
-		t.Fatalf("GenerateAuthURL 返回错误: %v", err)
+		t.Fatalf("GenerateAuthURL returnederror: %v", err)
 	}
 	if result == nil {
-		t.Fatal("GenerateAuthURL 返回 nil")
+		t.Fatal("GenerateAuthURL returned nil")
 	}
 	if result.AuthURL == "" {
 		t.Fatal("AuthURL 为空")
@@ -158,13 +156,13 @@ func TestOAuthService_GenerateAuthURL(t *testing.T) {
 		t.Fatal("SessionID 为空")
 	}
 
-	// 验证 session 已存储
+	//
 	session, ok := svc.sessionStore.Get(result.SessionID)
 	if !ok {
 		t.Fatal("session 未在 sessionStore 中找到")
 	}
 	if session.Scope != oauth.ScopeOAuth {
-		t.Fatalf("scope 不匹配: got=%q want=%q", session.Scope, oauth.ScopeOAuth)
+		t.Fatalf("scope mismatch: got=%q want=%q", session.Scope, oauth.ScopeOAuth)
 	}
 }
 
@@ -187,7 +185,7 @@ func TestOAuthService_GenerateAuthURL_WithProxy(t *testing.T) {
 	proxyID := int64(1)
 	result, err := svc.GenerateAuthURL(context.Background(), &proxyID)
 	if err != nil {
-		t.Fatalf("GenerateAuthURL 返回错误: %v", err)
+		t.Fatalf("GenerateAuthURL returnederror: %v", err)
 	}
 
 	session, ok := svc.sessionStore.Get(result.SessionID)
@@ -195,7 +193,7 @@ func TestOAuthService_GenerateAuthURL_WithProxy(t *testing.T) {
 		t.Fatal("session 未在 sessionStore 中找到")
 	}
 	if session.ProxyURL != "http://proxy.example.com:8080" {
-		t.Fatalf("ProxyURL 不匹配: got=%q", session.ProxyURL)
+		t.Fatalf("ProxyURL mismatch: got=%q", session.ProxyURL)
 	}
 }
 
@@ -207,19 +205,19 @@ func TestOAuthService_GenerateSetupTokenURL(t *testing.T) {
 
 	result, err := svc.GenerateSetupTokenURL(context.Background(), nil)
 	if err != nil {
-		t.Fatalf("GenerateSetupTokenURL 返回错误: %v", err)
+		t.Fatalf("GenerateSetupTokenURL returnederror: %v", err)
 	}
 	if result == nil {
-		t.Fatal("GenerateSetupTokenURL 返回 nil")
+		t.Fatal("GenerateSetupTokenURL returned nil")
 	}
 
-	// 验证 scope 是 inference
+	//
 	session, ok := svc.sessionStore.Get(result.SessionID)
 	if !ok {
 		t.Fatal("session 未在 sessionStore 中找到")
 	}
 	if session.Scope != oauth.ScopeInference {
-		t.Fatalf("scope 不匹配: got=%q want=%q", session.Scope, oauth.ScopeInference)
+		t.Fatalf("scope mismatch: got=%q want=%q", session.Scope, oauth.ScopeInference)
 	}
 }
 
@@ -234,10 +232,10 @@ func TestOAuthService_ExchangeCode_SessionNotFound(t *testing.T) {
 		Code:      "test-code",
 	})
 	if err == nil {
-		t.Fatal("ExchangeCode 应返回错误（session 不存在）")
+		t.Fatal("ExchangeCode 应returnederror（session does not exist）")
 	}
 	if err.Error() != "session not found or expired" {
-		t.Fatalf("错误信息不匹配: got=%q", err.Error())
+		t.Fatalf("errorinfomismatch: got=%q", err.Error())
 	}
 }
 
@@ -249,7 +247,7 @@ func TestOAuthService_ExchangeCode_Success(t *testing.T) {
 		exchangeCodeFunc: func(ctx context.Context, code, codeVerifier, state, proxyURL string, isSetupToken bool) (*oauth.TokenResponse, error) {
 			exchangeCalled = true
 			if code != "auth-code-123" {
-				t.Errorf("code 不匹配: got=%q", code)
+				t.Errorf("code mismatch: got=%q", code)
 			}
 			if isSetupToken {
 				t.Error("isSetupToken 应为 false（ScopeOAuth）")
@@ -269,53 +267,53 @@ func TestOAuthService_ExchangeCode_Success(t *testing.T) {
 	svc := NewOAuthService(&mockProxyRepoForOAuth{}, client)
 	defer svc.Stop()
 
-	// 先生成 URL 以创建 session
+	//
 	result, err := svc.GenerateAuthURL(context.Background(), nil)
 	if err != nil {
-		t.Fatalf("GenerateAuthURL 返回错误: %v", err)
+		t.Fatalf("GenerateAuthURL returnederror: %v", err)
 	}
 
-	// 交换 code
+	//
 	tokenInfo, err := svc.ExchangeCode(context.Background(), &ExchangeCodeInput{
 		SessionID: result.SessionID,
 		Code:      "auth-code-123",
 	})
 	if err != nil {
-		t.Fatalf("ExchangeCode 返回错误: %v", err)
+		t.Fatalf("ExchangeCode returnederror: %v", err)
 	}
 
 	if !exchangeCalled {
 		t.Fatal("ExchangeCodeForToken 未被调用")
 	}
 	if tokenInfo.AccessToken != "access-token-abc" {
-		t.Fatalf("AccessToken 不匹配: got=%q", tokenInfo.AccessToken)
+		t.Fatalf("AccessToken mismatch: got=%q", tokenInfo.AccessToken)
 	}
 	if tokenInfo.TokenType != "Bearer" {
-		t.Fatalf("TokenType 不匹配: got=%q", tokenInfo.TokenType)
+		t.Fatalf("TokenType mismatch: got=%q", tokenInfo.TokenType)
 	}
 	if tokenInfo.RefreshToken != "refresh-token-xyz" {
-		t.Fatalf("RefreshToken 不匹配: got=%q", tokenInfo.RefreshToken)
+		t.Fatalf("RefreshToken mismatch: got=%q", tokenInfo.RefreshToken)
 	}
 	if tokenInfo.OrgUUID != "org-uuid-111" {
-		t.Fatalf("OrgUUID 不匹配: got=%q", tokenInfo.OrgUUID)
+		t.Fatalf("OrgUUID mismatch: got=%q", tokenInfo.OrgUUID)
 	}
 	if tokenInfo.AccountUUID != "acc-uuid-222" {
-		t.Fatalf("AccountUUID 不匹配: got=%q", tokenInfo.AccountUUID)
+		t.Fatalf("AccountUUID mismatch: got=%q", tokenInfo.AccountUUID)
 	}
 	if tokenInfo.EmailAddress != "test@example.com" {
-		t.Fatalf("EmailAddress 不匹配: got=%q", tokenInfo.EmailAddress)
+		t.Fatalf("EmailAddress mismatch: got=%q", tokenInfo.EmailAddress)
 	}
 	if tokenInfo.ExpiresIn != 3600 {
-		t.Fatalf("ExpiresIn 不匹配: got=%d", tokenInfo.ExpiresIn)
+		t.Fatalf("ExpiresIn mismatch: got=%d", tokenInfo.ExpiresIn)
 	}
 	if tokenInfo.ExpiresAt == 0 {
 		t.Fatal("ExpiresAt 不应为 0")
 	}
 
-	// 验证 session 已被删除
+	//
 	_, ok := svc.sessionStore.Get(result.SessionID)
 	if ok {
-		t.Fatal("session 应在交换成功后被删除")
+		t.Fatal("session 应在交换success后被delete")
 	}
 }
 
@@ -339,10 +337,10 @@ func TestOAuthService_ExchangeCode_SetupToken(t *testing.T) {
 	svc := NewOAuthService(&mockProxyRepoForOAuth{}, client)
 	defer svc.Stop()
 
-	// 使用 SetupToken URL（inference scope）
+	//
 	result, err := svc.GenerateSetupTokenURL(context.Background(), nil)
 	if err != nil {
-		t.Fatalf("GenerateSetupTokenURL 返回错误: %v", err)
+		t.Fatalf("GenerateSetupTokenURL returnederror: %v", err)
 	}
 
 	tokenInfo, err := svc.ExchangeCode(context.Background(), &ExchangeCodeInput{
@@ -350,10 +348,10 @@ func TestOAuthService_ExchangeCode_SetupToken(t *testing.T) {
 		Code:      "setup-code",
 	})
 	if err != nil {
-		t.Fatalf("ExchangeCode 返回错误: %v", err)
+		t.Fatalf("ExchangeCode returnederror: %v", err)
 	}
 	if tokenInfo.AccessToken != "setup-token" {
-		t.Fatalf("AccessToken 不匹配: got=%q", tokenInfo.AccessToken)
+		t.Fatalf("AccessToken mismatch: got=%q", tokenInfo.AccessToken)
 	}
 }
 
@@ -375,10 +373,10 @@ func TestOAuthService_ExchangeCode_ClientError(t *testing.T) {
 		Code:      "bad-code",
 	})
 	if err == nil {
-		t.Fatal("ExchangeCode 应返回错误")
+		t.Fatal("ExchangeCode 应returnederror")
 	}
 	if err.Error() != "upstream error: invalid code" {
-		t.Fatalf("错误信息不匹配: got=%q", err.Error())
+		t.Fatalf("errorinfomismatch: got=%q", err.Error())
 	}
 }
 
@@ -388,10 +386,10 @@ func TestOAuthService_RefreshToken(t *testing.T) {
 	client := &mockClaudeOAuthClient{
 		refreshTokenFunc: func(ctx context.Context, refreshToken, proxyURL string) (*oauth.TokenResponse, error) {
 			if refreshToken != "my-refresh-token" {
-				t.Errorf("refreshToken 不匹配: got=%q", refreshToken)
+				t.Errorf("refreshToken mismatch: got=%q", refreshToken)
 			}
 			if proxyURL != "" {
-				t.Errorf("proxyURL 应为空: got=%q", proxyURL)
+				t.Errorf("proxyURL should be empty: got=%q", proxyURL)
 			}
 			return &oauth.TokenResponse{
 				AccessToken:  "new-access-token",
@@ -408,16 +406,16 @@ func TestOAuthService_RefreshToken(t *testing.T) {
 
 	tokenInfo, err := svc.RefreshToken(context.Background(), "my-refresh-token", "")
 	if err != nil {
-		t.Fatalf("RefreshToken 返回错误: %v", err)
+		t.Fatalf("RefreshToken returnederror: %v", err)
 	}
 	if tokenInfo.AccessToken != "new-access-token" {
-		t.Fatalf("AccessToken 不匹配: got=%q", tokenInfo.AccessToken)
+		t.Fatalf("AccessToken mismatch: got=%q", tokenInfo.AccessToken)
 	}
 	if tokenInfo.RefreshToken != "new-refresh-token" {
-		t.Fatalf("RefreshToken 不匹配: got=%q", tokenInfo.RefreshToken)
+		t.Fatalf("RefreshToken mismatch: got=%q", tokenInfo.RefreshToken)
 	}
 	if tokenInfo.ExpiresIn != 7200 {
-		t.Fatalf("ExpiresIn 不匹配: got=%d", tokenInfo.ExpiresIn)
+		t.Fatalf("ExpiresIn mismatch: got=%d", tokenInfo.ExpiresIn)
 	}
 	if tokenInfo.ExpiresAt == 0 {
 		t.Fatal("ExpiresAt 不应为 0")
@@ -438,7 +436,7 @@ func TestOAuthService_RefreshToken_Error(t *testing.T) {
 
 	_, err := svc.RefreshToken(context.Background(), "expired-token", "")
 	if err == nil {
-		t.Fatal("RefreshToken 应返回错误")
+		t.Fatal("RefreshToken 应returnederror")
 	}
 }
 
@@ -448,7 +446,7 @@ func TestOAuthService_RefreshAccountToken_NoRefreshToken(t *testing.T) {
 	svc := NewOAuthService(&mockProxyRepoForOAuth{}, &mockClaudeOAuthClient{})
 	defer svc.Stop()
 
-	// 无 refresh_token 的账号
+	//
 	account := &Account{
 		ID:       1,
 		Platform: PlatformAnthropic,
@@ -459,10 +457,10 @@ func TestOAuthService_RefreshAccountToken_NoRefreshToken(t *testing.T) {
 	}
 	_, err := svc.RefreshAccountToken(context.Background(), account)
 	if err == nil {
-		t.Fatal("RefreshAccountToken 应返回错误（无 refresh_token）")
+		t.Fatal("RefreshAccountToken 应returnederror（无 refresh_token）")
 	}
 	if err.Error() != "no refresh token available" {
-		t.Fatalf("错误信息不匹配: got=%q", err.Error())
+		t.Fatalf("errorinfomismatch: got=%q", err.Error())
 	}
 }
 
@@ -483,7 +481,7 @@ func TestOAuthService_RefreshAccountToken_EmptyRefreshToken(t *testing.T) {
 	}
 	_, err := svc.RefreshAccountToken(context.Background(), account)
 	if err == nil {
-		t.Fatal("RefreshAccountToken 应返回错误（refresh_token 为空）")
+		t.Fatal("RefreshAccountToken 应returnederror（refresh_token 为空）")
 	}
 }
 
@@ -493,7 +491,7 @@ func TestOAuthService_RefreshAccountToken_Success(t *testing.T) {
 	client := &mockClaudeOAuthClient{
 		refreshTokenFunc: func(ctx context.Context, refreshToken, proxyURL string) (*oauth.TokenResponse, error) {
 			if refreshToken != "account-refresh-token" {
-				t.Errorf("refreshToken 不匹配: got=%q", refreshToken)
+				t.Errorf("refreshToken mismatch: got=%q", refreshToken)
 			}
 			return &oauth.TokenResponse{
 				AccessToken:  "refreshed-access",
@@ -519,10 +517,10 @@ func TestOAuthService_RefreshAccountToken_Success(t *testing.T) {
 
 	tokenInfo, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
 	if tokenInfo.AccessToken != "refreshed-access" {
-		t.Fatalf("AccessToken 不匹配: got=%q", tokenInfo.AccessToken)
+		t.Fatalf("AccessToken mismatch: got=%q", tokenInfo.AccessToken)
 	}
 }
 
@@ -544,7 +542,7 @@ func TestOAuthService_RefreshAccountToken_WithProxy(t *testing.T) {
 	client := &mockClaudeOAuthClient{
 		refreshTokenFunc: func(ctx context.Context, refreshToken, proxyURL string) (*oauth.TokenResponse, error) {
 			if proxyURL != "socks5://user:pass@socks.example.com:1080" {
-				t.Errorf("proxyURL 不匹配: got=%q", proxyURL)
+				t.Errorf("proxyURL mismatch: got=%q", proxyURL)
 			}
 			return &oauth.TokenResponse{
 				AccessToken: "refreshed",
@@ -569,7 +567,7 @@ func TestOAuthService_RefreshAccountToken_WithProxy(t *testing.T) {
 
 	_, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
 }
 
@@ -597,13 +595,13 @@ func TestOAuthService_ExchangeCode_NilOrg(t *testing.T) {
 		Code:      "code",
 	})
 	if err != nil {
-		t.Fatalf("ExchangeCode 返回错误: %v", err)
+		t.Fatalf("ExchangeCode returnederror: %v", err)
 	}
 	if tokenInfo.OrgUUID != "" {
-		t.Fatalf("OrgUUID 应为空: got=%q", tokenInfo.OrgUUID)
+		t.Fatalf("OrgUUID should be empty: got=%q", tokenInfo.OrgUUID)
 	}
 	if tokenInfo.AccountUUID != "" {
-		t.Fatalf("AccountUUID 应为空: got=%q", tokenInfo.AccountUUID)
+		t.Fatalf("AccountUUID should be empty: got=%q", tokenInfo.AccountUUID)
 	}
 }
 
@@ -612,9 +610,9 @@ func TestOAuthService_Stop_NoPanic(t *testing.T) {
 
 	svc := NewOAuthService(&mockProxyRepoForOAuth{}, &mockClaudeOAuthClient{})
 
-	// 调用 Stop 不应 panic
+	//
 	svc.Stop()
 
-	// 多次调用也不应 panic
+	//
 	svc.Stop()
 }

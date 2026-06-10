@@ -9,17 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ErrorPassthroughHandler 处理错误透传规则的 HTTP 请求
+// ErrorPassthroughHandler
 type ErrorPassthroughHandler struct {
 	service *service.ErrorPassthroughService
 }
 
-// NewErrorPassthroughHandler 创建错误透传规则处理器
+// NewErrorPassthroughHandler
 func NewErrorPassthroughHandler(service *service.ErrorPassthroughService) *ErrorPassthroughHandler {
 	return &ErrorPassthroughHandler{service: service}
 }
 
-// CreateErrorPassthroughRuleRequest 创建规则请求
+// CreateErrorPassthroughRuleRequest
 type CreateErrorPassthroughRuleRequest struct {
 	Name            string   `json:"name" binding:"required"`
 	Enabled         *bool    `json:"enabled"`
@@ -36,7 +36,7 @@ type CreateErrorPassthroughRuleRequest struct {
 	Description     *string  `json:"description"`
 }
 
-// UpdateErrorPassthroughRuleRequest 更新规则请求（部分更新，所有字段可选）
+// UpdateErrorPassthroughRuleRequest
 type UpdateErrorPassthroughRuleRequest struct {
 	Name            *string  `json:"name"`
 	Enabled         *bool    `json:"enabled"`
@@ -53,7 +53,7 @@ type UpdateErrorPassthroughRuleRequest struct {
 	Description     *string  `json:"description"`
 }
 
-// List 获取所有规则
+// List
 // GET /api/v1/admin/error-passthrough-rules
 func (h *ErrorPassthroughHandler) List(c *gin.Context) {
 	rules, err := h.service.List(c.Request.Context())
@@ -64,7 +64,7 @@ func (h *ErrorPassthroughHandler) List(c *gin.Context) {
 	response.Success(c, rules)
 }
 
-// GetByID 根据 ID 获取规则
+// GetByID
 // GET /api/v1/admin/error-passthrough-rules/:id
 func (h *ErrorPassthroughHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -86,7 +86,7 @@ func (h *ErrorPassthroughHandler) GetByID(c *gin.Context) {
 	response.Success(c, rule)
 }
 
-// Create 创建规则
+// Create
 // POST /api/v1/admin/error-passthrough-rules
 func (h *ErrorPassthroughHandler) Create(c *gin.Context) {
 	var req CreateErrorPassthroughRuleRequest
@@ -103,7 +103,6 @@ func (h *ErrorPassthroughHandler) Create(c *gin.Context) {
 		Platforms:  req.Platforms,
 	}
 
-	// 设置默认值
 	if req.Enabled != nil {
 		rule.Enabled = *req.Enabled
 	} else {
@@ -131,7 +130,7 @@ func (h *ErrorPassthroughHandler) Create(c *gin.Context) {
 	rule.CustomMessage = req.CustomMessage
 	rule.Description = req.Description
 
-	// 确保切片不为 nil
+	//
 	if rule.ErrorCodes == nil {
 		rule.ErrorCodes = []int{}
 	}
@@ -155,7 +154,7 @@ func (h *ErrorPassthroughHandler) Create(c *gin.Context) {
 	response.Success(c, created)
 }
 
-// Update 更新规则（支持部分更新）
+// Update
 // PUT /api/v1/admin/error-passthrough-rules/:id
 func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -170,7 +169,6 @@ func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// 先获取现有规则
 	existing, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -181,7 +179,6 @@ func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// 部分更新：只更新请求中提供的字段
 	rule := &model.ErrorPassthroughRule{
 		ID:              id,
 		Name:            existing.Name,
@@ -199,7 +196,6 @@ func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 		Description:     existing.Description,
 	}
 
-	// 应用请求中提供的更新
 	if req.Name != nil {
 		rule.Name = *req.Name
 	}
@@ -240,7 +236,7 @@ func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 		rule.SkipMonitoring = *req.SkipMonitoring
 	}
 
-	// 确保切片不为 nil
+	//
 	if rule.ErrorCodes == nil {
 		rule.ErrorCodes = []int{}
 	}
@@ -264,7 +260,7 @@ func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 	response.Success(c, updated)
 }
 
-// Delete 删除规则
+// Delete
 // DELETE /api/v1/admin/error-passthrough-rules/:id
 func (h *ErrorPassthroughHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)

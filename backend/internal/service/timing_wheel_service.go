@@ -27,7 +27,7 @@ func NewTimingWheelService() (*TimingWheelService, error) {
 		}
 	})
 	if err != nil {
-		return nil, fmt.Errorf("创建 timing wheel 失败: %w", err)
+		return nil, fmt.Errorf("create timing wheel failed: %w", err)
 	}
 	return &TimingWheelService{tw: tw}, nil
 }

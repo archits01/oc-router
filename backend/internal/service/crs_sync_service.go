@@ -1120,7 +1120,7 @@ func mapCRSStatus(isActive bool, status string) string {
 }
 
 func normalizeBaseURL(raw string, allowlist []string, allowPrivate bool) (string, error) {
-	// 当 allowlist 为空时，不强制要求白名单（只进行基本的 URL 和 SSRF 验证）
+	//
 	requireAllowlist := len(allowlist) > 0
 	normalized, err := urlvalidator.ValidateHTTPSURL(raw, urlvalidator.ValidationOptions{
 		AllowedHosts:     allowlist,

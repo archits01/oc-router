@@ -489,7 +489,7 @@ func TestAccountSupportsOpenAIEndpointCapability(t *testing.T) {
 		require.False(t, account.SupportsOpenAIEndpointCapability(OpenAIEndpointCapabilityEmbeddings))
 	})
 
-	t.Run("显式 map 支持单独关闭 chat 并开启 embeddings", func(t *testing.T) {
+	t.Run("显式 map 支持单独shutting down chat 并开启 embeddings", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeAPIKey,

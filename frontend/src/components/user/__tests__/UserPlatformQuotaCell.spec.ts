@@ -33,14 +33,14 @@ describe('UserPlatformQuotaCell', () => {
     expect(w.html()).toContain('admin.users.platformQuota.cellNotConfigured')
   })
 
-  it('平台有记录但全部 limit 为 null 时视为未配置', () => {
+  it('平台有记录但All limit 为 null 时视为未配置', () => {
     const w = mount(UserPlatformQuotaCell, {
       props: { quotas: [item({ platform: 'openai', daily_usage_usd: 5 })] },
     })
     expect(w.html()).toContain('admin.users.platformQuota.cellNotConfigured')
   })
 
-  it('已配置平台渲染 已用/限额，null 档显示 —，金额去尾零', () => {
+  it('已配置平台渲染 已用/限额，null 档显示 —，Amount去尾零', () => {
     const w = mount(UserPlatformQuotaCell, {
       props: {
         quotas: [

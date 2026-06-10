@@ -14,6 +14,6 @@ func TestSSEScannerBuf64KPool_GetPutDoesNotPanic(t *testing.T) {
 	buf[0] = 1
 	putSSEScannerBuf64K(buf)
 
-	// 允许传入 nil，确保不会 panic
+	//
 	putSSEScannerBuf64K(nil)
 }

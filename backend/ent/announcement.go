@@ -19,23 +19,18 @@ type Announcement struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
-	// 公告标题
 	Title string `json:"title,omitempty"`
-	// 公告内容（支持 Markdown）
+	//
 	Content string `json:"content,omitempty"`
-	// 状态: draft, active, archived
+	//
 	Status string `json:"status,omitempty"`
-	// 通知模式: silent(仅铃铛), popup(弹窗提醒)
+	// (), popup()
 	NotifyMode string `json:"notify_mode,omitempty"`
-	// 展示条件（JSON 规则）
+	//
 	Targeting domain.AnnouncementTargeting `json:"targeting,omitempty"`
-	// 开始展示时间（为空表示立即生效）
 	StartsAt *time.Time `json:"starts_at,omitempty"`
-	// 结束展示时间（为空表示永久生效）
 	EndsAt *time.Time `json:"ends_at,omitempty"`
-	// 创建人用户ID（管理员）
 	CreatedBy *int64 `json:"created_by,omitempty"`
-	// 更新人用户ID（管理员）
 	UpdatedBy *int64 `json:"updated_by,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`

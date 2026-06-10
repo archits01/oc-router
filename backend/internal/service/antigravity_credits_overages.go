@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	// creditsExhaustedKey 是 model_rate_limits 中标记积分耗尽的特殊 key。
-	// 与普通模型限流完全同构：通过 SetModelRateLimit / isRateLimitActiveForKey 读写。
+	// creditsExhaustedKey
+	//
 	creditsExhaustedKey      = "AICredits"
 	creditsExhaustedDuration = 5 * time.Hour
 )
@@ -49,7 +49,7 @@ var (
 	}
 )
 
-// isCreditsExhausted 检查账号的 AICredits 限流 key 是否生效（积分是否耗尽）。
+// isCreditsExhausted
 func (a *Account) isCreditsExhausted() bool {
 	if a == nil {
 		return false
@@ -57,7 +57,7 @@ func (a *Account) isCreditsExhausted() bool {
 	return a.isRateLimitActiveForKey(creditsExhaustedKey)
 }
 
-// setCreditsExhausted 标记账号积分耗尽：写入 model_rate_limits["AICredits"] + 更新缓存。
+// setCreditsExhausted ["AICredits"] +
 func (s *AntigravityGatewayService) setCreditsExhausted(ctx context.Context, account *Account) {
 	if account == nil || account.ID == 0 {
 		return
@@ -72,7 +72,7 @@ func (s *AntigravityGatewayService) setCreditsExhausted(ctx context.Context, acc
 		account.ID, resetAt.UTC().Format(time.RFC3339))
 }
 
-// clearCreditsExhausted 清除账号的 AICredits 限流 key。
+// clearCreditsExhausted
 func (s *AntigravityGatewayService) clearCreditsExhausted(ctx context.Context, account *Account) {
 	if account == nil || account.ID == 0 || account.Extra == nil {
 		return
@@ -93,7 +93,7 @@ func (s *AntigravityGatewayService) clearCreditsExhausted(ctx context.Context, a
 	}
 }
 
-// classifyAntigravity429 将 Antigravity 的 429 响应归类为配额耗尽、限流或未知。
+// classifyAntigravity429
 func classifyAntigravity429(body []byte) antigravity429Category {
 	if len(body) == 0 {
 		return antigravity429Unknown
@@ -110,7 +110,7 @@ func classifyAntigravity429(body []byte) antigravity429Category {
 	return antigravity429Unknown
 }
 
-// injectEnabledCreditTypes 在已序列化的 v1internal JSON body 中注入 AI Credits 类型。
+// injectEnabledCreditTypes
 func injectEnabledCreditTypes(body []byte) []byte {
 	var payload map[string]any
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -124,7 +124,7 @@ func injectEnabledCreditTypes(body []byte) []byte {
 	return result
 }
 
-// resolveCreditsOveragesModelKey 解析当前请求对应的 overages 状态模型 key。
+// resolveCreditsOveragesModelKey
 func resolveCreditsOveragesModelKey(ctx context.Context, account *Account, upstreamModelName, requestedModel string) string {
 	modelKey := strings.TrimSpace(upstreamModelName)
 	if modelKey != "" {
@@ -140,7 +140,7 @@ func resolveCreditsOveragesModelKey(ctx context.Context, account *Account, upstr
 	return resolveAntigravityModelKey(requestedModel)
 }
 
-// shouldMarkCreditsExhausted 判断一次 credits 请求失败是否应标记为 credits 耗尽。
+// shouldMarkCreditsExhausted
 func shouldMarkCreditsExhausted(resp *http.Response, respBody []byte, reqErr error) bool {
 	if reqErr != nil || resp == nil {
 		return false
@@ -148,9 +148,9 @@ func shouldMarkCreditsExhausted(resp *http.Response, respBody []byte, reqErr err
 	if resp.StatusCode >= 500 || resp.StatusCode == http.StatusRequestTimeout {
 		return false
 	}
-	// 注意：不再检查 isURLLevelRateLimit。此函数仅在积分重试失败后调用，
-	// 如果注入 enabledCreditTypes 后仍返回 "Resource has been exhausted"，
-	// 说明积分也已耗尽，应该标记。clearCreditsExhausted 会在后续成功时自动清除。
+	//
+	// "Resource has been exhausted"，
+	//
 	if info := parseAntigravitySmartRetryInfo(respBody); info != nil {
 		return false
 	}
@@ -168,7 +168,7 @@ type creditsOveragesRetryResult struct {
 	resp    *http.Response
 }
 
-// attemptCreditsOveragesRetry 在确认免费配额耗尽后，尝试注入 AI Credits 继续请求。
+// attemptCreditsOveragesRetry
 func (s *AntigravityGatewayService) attemptCreditsOveragesRetry(
 	p antigravityRetryLoopParams,
 	baseURL string,

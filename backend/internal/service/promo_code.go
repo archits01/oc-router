@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// PromoCode 注册优惠码
+// PromoCode
 type PromoCode struct {
 	ID          int64
 	Code        string
@@ -17,11 +17,10 @@ type PromoCode struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 
-	// 关联
 	UsageRecords []PromoCodeUsage
 }
 
-// PromoCodeUsage 优惠码使用记录
+// PromoCodeUsage
 type PromoCodeUsage struct {
 	ID          int64
 	PromoCodeID int64
@@ -29,12 +28,11 @@ type PromoCodeUsage struct {
 	BonusAmount float64
 	UsedAt      time.Time
 
-	// 关联
 	PromoCode *PromoCode
 	User      *User
 }
 
-// CanUse 检查优惠码是否可用
+// CanUse
 func (p *PromoCode) CanUse() bool {
 	if p.Status != PromoCodeStatusActive {
 		return false
@@ -48,12 +46,12 @@ func (p *PromoCode) CanUse() bool {
 	return true
 }
 
-// IsExpired 检查是否已过期
+// IsExpired
 func (p *PromoCode) IsExpired() bool {
 	return p.ExpiresAt != nil && time.Now().After(*p.ExpiresAt)
 }
 
-// CreatePromoCodeInput 创建优惠码输入
+// CreatePromoCodeInput
 type CreatePromoCodeInput struct {
 	Code        string
 	BonusAmount float64
@@ -62,7 +60,7 @@ type CreatePromoCodeInput struct {
 	Notes       string
 }
 
-// UpdatePromoCodeInput 更新优惠码输入
+// UpdatePromoCodeInput
 type UpdatePromoCodeInput struct {
 	Code        *string
 	BonusAmount *float64

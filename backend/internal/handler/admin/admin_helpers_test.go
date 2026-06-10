@@ -224,9 +224,9 @@ func TestOpsWSHelpers(t *testing.T) {
 	require.False(t, isAddrInTrustedProxies(netip.MustParseAddr("192.168.0.1"), prefixes))
 }
 
-// TestOpenAIFastPolicySettingsFromDTO_NormalizesServiceTier 验证 admin
-// 写入路径会把 ServiceTier 的空字符串/空白/大小写归一化为
-// service.OpenAIFastTierAny ("all")，避免落盘时 "" 与 "all" 双语义。
+// TestOpenAIFastPolicySettingsFromDTO_NormalizesServiceTier
+//
+// service.OpenAIFastTierAny ("all")，"" "all"
 func TestOpenAIFastPolicySettingsFromDTO_NormalizesServiceTier(t *testing.T) {
 	t.Run("nil input returns nil", func(t *testing.T) {
 		require.Nil(t, openaiFastPolicySettingsFromDTO(nil))

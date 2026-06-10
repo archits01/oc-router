@@ -96,11 +96,10 @@ function patternsConflict(a: ModelPattern, b: ModelPattern): boolean {
   if (!a.wildcard && !b.wildcard) return a.prefix === b.prefix
   if (a.wildcard && !b.wildcard) return b.prefix.startsWith(a.prefix)
   if (!a.wildcard && b.wildcard) return a.prefix.startsWith(b.prefix)
-  // 双通配符：任一前缀是另一前缀的前缀即冲突
   return a.prefix.startsWith(b.prefix) || b.prefix.startsWith(a.prefix)
 }
 
-/** 检测模型模式列表中的冲突，返回冲突的两个模式名；无冲突返回 null */
+/** 检测模型模式列表中的冲突，Back冲突的两个模式名；无冲突Back null */
 export function findModelConflict(models: string[]): [string, string] | null {
   const patterns = models.map(toModelPattern)
   for (let i = 0; i < patterns.length; i++) {
@@ -115,11 +114,11 @@ export function findModelConflict(models: string[]): [string, string] | null {
 
 // ── 区间校验 ──────────────────────────────────────────────
 
-/** 校验区间列表的合法性，返回错误消息；通过则返回 null
+/** 校验区间列表的合法性，Back错误消息；通过则Back null
  *
  * mode 决定区间语义：
- * - token：区间是上下文 token 数分段 (min, max]，不能重叠，无上限段必须放最后
- * - per_request / image：区间是按 tier_label 分层（1K/2K/4K 等），后端按 label
+ * - token：区间Yes上下文 token 数分段 (min, max]，不能重叠，无上限段必须放最后
+ * - per_request / image：区间Yes按 tier_label 分层（1K/2K/4K 等），后端按 label
  *   匹配，不依赖 min/max，因此跳过重叠 / last-unlimited 校验
  */
 export function validateIntervals(
@@ -174,9 +173,8 @@ function validateIntervalPrices(iv: IntervalFormEntry, idx: number): string | nu
 
 function checkIntervalOverlap(sorted: IntervalFormEntry[]): string | null {
   for (let i = 0; i < sorted.length; i++) {
-    // 无上限区间必须是最后一个
     if (sorted[i].max_tokens == null && i < sorted.length - 1) {
-      return `区间 #${i + 1}: 无上限区间（最大 token 数为空）只能是最后一个`
+      return `区间 #${i + 1}: 无上限区间（最大 token 数为空）只能Yes最后一个`
     }
     if (i === 0) continue
     const prev = sorted[i - 1]

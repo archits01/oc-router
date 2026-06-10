@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-// maxRedactDepth 限制递归深度以防止栈溢出
+// maxRedactDepth
 const maxRedactDepth = 32
 
 var defaultSensitiveKeys = map[string]struct{}{
@@ -76,13 +76,11 @@ func RedactJSON(raw []byte, extraKeys ...string) string {
 	return string(encoded)
 }
 
-// RedactText 对非结构化文本做轻量脱敏。
+// RedactText
 //
-// 规则：
-// - 如果文本本身是 JSON，则按 RedactJSON 处理。
-// - 否则尝试对常见 key=value / key:"value" 片段做脱敏。
+// -
+// - =value / key:"value"
 //
-// 注意：该函数用于日志/错误信息兜底，不保证覆盖所有格式。
 func RedactText(input string, extraKeys ...string) string {
 	input = strings.TrimSpace(input)
 	if input == "" {

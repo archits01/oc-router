@@ -59,7 +59,7 @@ type CreateUserRequest struct {
 }
 
 // UpdateUserRequest represents admin update user request
-// 使用指针类型来区分"未提供"和"设置为0"
+// """"
 type UpdateUserRequest struct {
 	Email         string   `json:"email" binding:"omitempty,email"`
 	Password      string   `json:"password" binding:"omitempty,min=6"`
@@ -70,8 +70,8 @@ type UpdateUserRequest struct {
 	RPMLimit      *int     `json:"rpm_limit"`
 	Status        string   `json:"status" binding:"omitempty,oneof=active disabled"`
 	AllowedGroups *[]int64 `json:"allowed_groups"`
-	// GroupRates 用户专属分组倍率配置
-	// map[groupID]*rate，nil 表示删除该分组的专属倍率
+	// GroupRates
+	// map[groupID]*rate，nil
 	GroupRates map[int64]*float64 `json:"group_rates"`
 }
 
@@ -111,7 +111,7 @@ func (h *UserHandler) List(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
 
 	search := c.Query("search")
-	// 标准化和验证 search 参数
+	//
 	search = strings.TrimSpace(search)
 	if runes := []rune(search); len(runes) > 100 {
 		search = string(runes[:100])
@@ -296,7 +296,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// 使用指针类型直接传递，nil 表示未提供该字段
+	//
 	user, err := h.adminService.UpdateUser(c.Request.Context(), userID, &service.UpdateUserInput{
 		Email:         req.Email,
 		Password:      req.Password,
@@ -485,7 +485,7 @@ func (h *UserHandler) ReplaceGroup(c *gin.Context) {
 	})
 }
 
-// GetUserRPMStatus 返回指定用户当前分钟的 RPM 用量
+// GetUserRPMStatus
 // GET /api/v1/admin/users/:id/rpm-status
 func (h *UserHandler) GetUserRPMStatus(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -503,7 +503,7 @@ func (h *UserHandler) GetUserRPMStatus(c *gin.Context) {
 	response.Success(c, status)
 }
 
-// BatchUpdateConcurrency 批量修改用户并发数
+// BatchUpdateConcurrency
 // POST /api/v1/admin/users/batch-concurrency
 type BatchUpdateConcurrencyRequest struct {
 	UserIDs     []int64 `json:"user_ids"`
@@ -564,7 +564,7 @@ func (h *UserHandler) BatchUpdateConcurrency(c *gin.Context) {
 }
 
 // GetUserPlatformQuotas GET /admin/users/:id/platform-quotas
-// admin 视角：D14 lazy 归零 + 暴露 *_window_start 调试字段
+// admin + *_window_start
 func (h *UserHandler) GetUserPlatformQuotas(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
@@ -576,7 +576,7 @@ func (h *UserHandler) GetUserPlatformQuotas(c *gin.Context) {
 		response.Success(c, map[string]any{"platform_quotas": []any{}})
 		return
 	}
-	// 校验用户存在：与 PUT/POST 路径一致，不存在返回 404 而非空数组（避免 admin 界面误判用户存在）。
+	//
 	if _, err := h.adminService.GetUser(c.Request.Context(), userID); err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -599,7 +599,7 @@ type UpdateUserPlatformQuotasRequest struct {
 	Quotas []PlatformQuotaInput `json:"quotas" binding:"required"`
 }
 
-// PlatformQuotaInput 单平台限额输入；limit 字段为 nil 表示不限制。
+// PlatformQuotaInput
 type PlatformQuotaInput struct {
 	Platform        string   `json:"platform" binding:"required"`
 	DailyLimitUSD   *float64 `json:"daily_limit_usd"`
@@ -607,10 +607,9 @@ type PlatformQuotaInput struct {
 	MonthlyLimitUSD *float64 `json:"monthly_limit_usd"`
 }
 
-// platform 合法性由 service.IsAllowedQuotaPlatform / service.AllowedQuotaPlatforms 统一判断（单一源）。
+// platform
 
 // UpdateUserPlatformQuotas PUT /admin/users/:id/platform-quotas
-// 全量替换该用户所有平台限额。
 func (h *UserHandler) UpdateUserPlatformQuotas(c *gin.Context) {
 	if h.userPlatformQuotaRepo == nil {
 		response.Error(c, 503, "platform quota service not available")
@@ -644,12 +643,12 @@ func (h *UserHandler) UpdateUserPlatformQuotas(c *gin.Context) {
 			return
 		}
 		seen[q.Platform] = struct{}{}
-		// daily_limit_usd / weekly_limit_usd / monthly_limit_usd 的语义：
-		//   nil / not set → 无限额（完全放行）
-		//   0            → 完全禁用（任何请求都会被拒绝，因为 usage >= 0 恒成立）
-		//   > 0          → USD 限额上限
-		// 拦截 NaN / ±Inf：客户端可发送超大数（如 1e308 × 2）使 JSON 反序列化得到 +Inf，
-		// 进入 DB 后 cache check 中 usage >= limit 永不成立，limit 等同失效。
+		// daily_limit_usd / weekly_limit_usd / monthly_limit_usd
+		//   nil / not set →
+		//   0            → >= 0
+		//   > 0          → USD
+		// ±Inf：× 2）+Inf，
+		// >= limit
 		for _, f := range []struct {
 			name string
 			val  *float64
@@ -685,13 +684,13 @@ func (h *UserHandler) UpdateUserPlatformQuotas(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	// 校验用户是否存在，避免 FK 违反导致 500；用户不存在时返回 404。
+	//
 	if _, err := h.adminService.GetUser(ctx, userID); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
-	// 在 UpsertForUser 之前抓取 before snapshot 用于审计 before/after 对比。
-	// ListByUser 失败不阻断主操作（best-effort），仅记录降级 warn。
+	//
+	// ListByUser
 	beforeRecords, beforeErr := h.userPlatformQuotaRepo.ListByUser(ctx, userID)
 	if beforeErr != nil {
 		slog.Warn("quota audit before snapshot failed", "user_id", userID, "err", beforeErr)
@@ -724,8 +723,7 @@ func (h *UserHandler) UpdateUserPlatformQuotas(c *gin.Context) {
 		}
 		changes = append(changes, entry)
 	}
-	// 补 removed 条目：before 存在但 after 缺失 = 该平台被软删除。
-	// 缺少这条记录，审计消费方无法察觉"管理员把某平台从配额列表移除"的操作（合规盲区）。
+	// =
 	for _, prev := range beforeRecords {
 		if _, kept := afterPlatforms[prev.Platform]; kept {
 			continue
@@ -738,8 +736,8 @@ func (h *UserHandler) UpdateUserPlatformQuotas(c *gin.Context) {
 			"before_monthly_limit_usd": prev.MonthlyLimitUSD,
 		})
 	}
-	// before_snapshot_available 让审计消费方能识别 changes 中是否带 before_* 字段；
-	// false 时所有 entry 都会缺失 before_*_limit_usd，仅有 after 视图。
+	// before_snapshot_available *
+	// false *_limit_usd，
 	slog.Info("admin.quota_updated",
 		"actor_admin_id", getAdminIDFromContext(c),
 		"target_user_id", userID,
@@ -747,19 +745,18 @@ func (h *UserHandler) UpdateUserPlatformQuotas(c *gin.Context) {
 		"before_snapshot_available", beforeErr == nil,
 		"changes", changes)
 
-	// 失效 cache：对全部允许的 platform 统一 invalidate。
-	// Trade-off：精确失效（仅 req 涉及平台 + 被软删平台）需 upsert 前额外 ListByUser，
-	// 增加一次 DB 查询和逻辑复杂度。由于 AllowedQuotaPlatforms 只有 4 个元素，
-	// 全量 invalidate 的额外开销可接受，且能可靠覆盖软删除场景。
+	//
+	// Trade-off：+
+	//
+	//
 	if h.billingCache != nil {
 		for _, p := range service.AllowedQuotaPlatforms {
 			if err := h.billingCache.DeleteUserPlatformQuotaCache(ctx, userID, p); err != nil {
-				slog.Error("ALERT: quota cache invalidation failed after UpsertForUser; limit 生效可能延迟至 sentinel TTL(最长 1h),需人工确认或重试失效", "user_id", userID, "platform", p, "err", err)
+				slog.Error("ALERT: quota cache invalidation failed after UpsertForUser; limit 生效可能延迟至 sentinel TTL(最长 1h),需人工确认orretry失效", "user_id", userID, "platform", p, "err", err)
 			}
 		}
 	}
 
-	// 返回最新状态
 	now := time.Now().UTC()
 	records2, err := h.userPlatformQuotaRepo.ListByUser(ctx, userID)
 	if err != nil {
@@ -786,7 +783,7 @@ var allowedWindowsForQuotaReset = map[string]struct{}{
 }
 
 // ResetUserPlatformQuotaWindow POST /admin/users/:id/platform-quotas/reset
-// 立即归零指定 (platform, window) 的用量并更新 window_start。
+// (platform, window)
 func (h *UserHandler) ResetUserPlatformQuotaWindow(c *gin.Context) {
 	if h.userPlatformQuotaRepo == nil {
 		response.Error(c, 503, "platform quota service not available")
@@ -815,7 +812,7 @@ func (h *UserHandler) ResetUserPlatformQuotaWindow(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	// 校验用户是否存在，避免对不存在的用户执行操作返回误导性的 500。
+	//
 	if _, err := h.adminService.GetUser(ctx, userID); err != nil {
 		response.ErrorFrom(c, err)
 		return

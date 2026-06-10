@@ -111,66 +111,66 @@ vi.mock("@/utils/apiError", () => ({
 vi.mock("vue-i18n", async () => {
   const actual = await vi.importActual<typeof import("vue-i18n")>("vue-i18n");
   const translations: Record<string, string> = {
-    "admin.settings.wechatConnect.title": "微信登录",
-    "admin.settings.wechatConnect.description": "用于微信开放平台或公众号/小程序的第三方登录配置。",
-    "admin.settings.wechatConnect.enabledLabel": "启用微信登录",
-    "admin.settings.wechatConnect.enabledHint": "开启后可使用微信第三方登录回调与授权配置。",
+    "admin.settings.wechatConnect.title": "WeChat Login",
+    "admin.settings.wechatConnect.description": "用于微信开放平台或Official Account/小程序的第三方Login配置。",
+    "admin.settings.wechatConnect.enabledLabel": "EnableWeChat Login",
+    "admin.settings.wechatConnect.enabledHint": "开启后可使用微信第三方Login回调与授权配置。",
     "admin.settings.wechatConnect.appIdLabel": "AppID",
     "admin.settings.wechatConnect.appIdPlaceholder": "微信开放平台 AppID",
     "admin.settings.wechatConnect.appSecretLabel": "AppSecret",
-    "admin.settings.wechatConnect.appSecretConfiguredPlaceholder": "密钥已配置，留空以保留当前值。",
+    "admin.settings.wechatConnect.appSecretConfiguredPlaceholder": "Secret configured. Leave empty to keep the current value.",
     "admin.settings.wechatConnect.appSecretPlaceholder": "微信开放平台 AppSecret",
-    "admin.settings.wechatConnect.appSecretConfiguredHint": "密钥已配置，留空以保留当前值。",
+    "admin.settings.wechatConnect.appSecretConfiguredHint": "Secret configured. Leave empty to keep the current value.",
     "admin.settings.wechatConnect.appSecretHint": "填写后会覆盖当前微信密钥。",
     "admin.settings.wechatConnect.modeLabel": "模式",
     "admin.settings.wechatConnect.openModeLabel": "非微信环境使用开放平台",
     "admin.settings.wechatConnect.openModeHint": "浏览器不在微信内时，自动走开放平台扫码授权。",
-    "admin.settings.wechatConnect.mpModeLabel": "微信环境使用公众号",
-    "admin.settings.wechatConnect.mpModeHint": "浏览器在微信内时，自动走公众号授权。",
+    "admin.settings.wechatConnect.mpModeLabel": "微信环境使用Official Account",
+    "admin.settings.wechatConnect.mpModeHint": "浏览器在微信内时，自动走Official Account授权。",
     "admin.settings.wechatConnect.redirectUrlLabel": "回调地址",
     "admin.settings.wechatConnect.redirectUrlPlaceholder": "https://your-site.com/api/v1/auth/oauth/wechat/callback",
-    "admin.settings.wechatConnect.generateAndCopy": "使用当前站点生成并复制",
+    "admin.settings.wechatConnect.generateAndCopy": "使用当前站点Generate and copy",
     "admin.settings.wechatConnect.redirectUrlSetAndCopied": "已使用当前站点生成回调地址并复制到剪贴板",
     "admin.settings.wechatConnect.frontendRedirectUrlLabel": "前端回调地址",
     "admin.settings.wechatConnect.frontendRedirectUrlPlaceholder": "/auth/wechat/callback",
     "admin.settings.wechatConnect.frontendRedirectUrlHint": "通常用于前端路由回调地址，需与后端配置保持一致。",
     "admin.settings.authSourceDefaults.title": "认证来源默认值",
-    "admin.settings.authSourceDefaults.description": "按注册来源配置新用户默认余额、并发、订阅与授权策略。",
-    "admin.settings.authSourceDefaults.requireEmailLabel": "第三方注册强制补充邮箱",
-    "admin.settings.authSourceDefaults.requireEmailHint": "启用后，Linux DO、OIDC、微信注册缺少邮箱时必须先补充邮箱地址。",
-    "admin.settings.authSourceDefaults.enabledHint": "以下默认值会在该来源注册新用户时发放；首次绑定时授权仅作用于已有账号绑定该来源。",
-    "admin.settings.authSourceDefaults.sources.email.title": "邮箱注册",
-    "admin.settings.authSourceDefaults.sources.email.description": "适用于邮箱密码注册的新用户默认配额。",
-    "admin.settings.authSourceDefaults.sources.linuxdo.title": "Linux DO 登录",
-    "admin.settings.authSourceDefaults.sources.linuxdo.description": "适用于 Linux DO 第三方注册的新用户默认配额。",
-    "admin.settings.authSourceDefaults.sources.oidc.title": "OIDC 登录",
-    "admin.settings.authSourceDefaults.sources.oidc.description": "适用于 OIDC 第三方注册的新用户默认配额。",
-    "admin.settings.authSourceDefaults.sources.wechat.title": "微信登录",
-    "admin.settings.authSourceDefaults.sources.wechat.description": "适用于微信第三方注册的新用户默认配额。",
+    "admin.settings.authSourceDefaults.description": "按Register来源配置新User默认余额、并发、订阅与授权策略。",
+    "admin.settings.authSourceDefaults.requireEmailLabel": "第三方Register强制Complete email",
+    "admin.settings.authSourceDefaults.requireEmailHint": "Enable后，Linux DO、OIDC、微信Register缺少Email时必须先Complete email地址。",
+    "admin.settings.authSourceDefaults.enabledHint": "以下默认值会在该来源Register新User时发放；首次绑定时授权仅作用于已有账号绑定该来源。",
+    "admin.settings.authSourceDefaults.sources.email.title": "EmailRegister",
+    "admin.settings.authSourceDefaults.sources.email.description": "适用于Email密码Register的新User默认配额。",
+    "admin.settings.authSourceDefaults.sources.linuxdo.title": "Linux DO Login",
+    "admin.settings.authSourceDefaults.sources.linuxdo.description": "适用于 Linux DO 第三方Register的新User默认配额。",
+    "admin.settings.authSourceDefaults.sources.oidc.title": "OIDC Login",
+    "admin.settings.authSourceDefaults.sources.oidc.description": "适用于 OIDC 第三方Register的新User默认配额。",
+    "admin.settings.authSourceDefaults.sources.wechat.title": "WeChat Login",
+    "admin.settings.authSourceDefaults.sources.wechat.description": "适用于微信第三方Register的新User默认配额。",
     "admin.settings.authSourceDefaults.grantOnFirstBindLabel": "首次绑定时授权",
     "admin.settings.authSourceDefaults.grantOnFirstBindHint": "已有账号首次绑定该来源时发放默认权益。",
     "admin.settings.authSourceDefaults.defaultSubscriptionsLabel": "默认订阅",
     "admin.settings.authSourceDefaults.defaultSubscriptionsHint": "仅对当前认证来源生效，未配置时不追加来源专属订阅。",
     "admin.settings.authSourceDefaults.noSourceSubscriptions": "当前来源未配置专属默认订阅。",
     "admin.settings.paymentVisibleMethods.methodLabel": "{title} 可见方式",
-    "admin.settings.paymentVisibleMethods.methodHint": "控制前台结算页是否展示该方式，以及展示时使用的来源键。",
+    "admin.settings.paymentVisibleMethods.methodHint": "控制前台结算页YesNo展示该方式，以及展示时使用的来源键。",
     "admin.settings.paymentVisibleMethods.sourceLabel": "支付来源",
-    "admin.settings.paymentVisibleMethods.sourceHint": "启用后必须明确选择一个来源；未配置状态不会对外展示该支付方式。",
-    "admin.settings.paymentVisibleMethods.sourceRequiredError": "{title} 已启用，请先选择支付来源。",
+    "admin.settings.paymentVisibleMethods.sourceHint": "Enable后必须明确选择一个来源；未配置Status不会对外展示该支付方式。",
+    "admin.settings.paymentVisibleMethods.sourceRequiredError": "{title} Enabled，请先选择支付来源。",
     "admin.settings.payment.configGuide": "查看支付配置说明",
     "admin.settings.payment.findProvider": "查看支持的支付方式",
     "admin.settings.openaiExperimentalScheduler.title": "OpenAI 实验调度策略",
-    "admin.settings.openaiExperimentalScheduler.description": "默认关闭。开启后仅影响本网关在 OpenAI 账号间的实验性调度选择逻辑，不代表上游 OpenAI 官方能力。",
+    "admin.settings.openaiExperimentalScheduler.description": "默认Close。开启后仅影响本网关在 OpenAI 账号间的实验性调度选择逻辑，不代表上游 OpenAI 官方能力。",
     "admin.settings.site.uploadImage": "上传图片",
     "admin.settings.site.remove": "移除",
     "admin.settings.platformQuota.platform": "平台",
     "admin.settings.platformQuota.daily": "日限额 (USD)",
-    "admin.settings.platformQuota.weekly": "周限额 (USD)",
-    "admin.settings.platformQuota.monthly": "月限额 (USD, 30天滚动)",
+    "admin.settings.platformQuota.weekly": "weeks限额 (USD)",
+    "admin.settings.platformQuota.monthly": "months限额 (USD, 30days滚动)",
     "admin.settings.platformQuota.placeholder": "不限",
-    "admin.settings.defaults.defaultPlatformQuotas": "默认平台限额（注册时分配）",
-    "admin.settings.defaults.defaultPlatformQuotasHint": "新用户注册时自动写入平台限额记录；已有用户不受影响。留空 = 该平台该窗口不限制。",
-    "admin.settings.defaults.platformQuotaNotice": "月限额为 30 天滚动窗口，非自然月",
+    "admin.settings.defaults.defaultPlatformQuotas": "默认平台限额（Register时分配）",
+    "admin.settings.defaults.defaultPlatformQuotasHint": "新UserRegister时自动写入平台限额记录；已有User不受影响。留空 = 该平台该窗口不限制。",
+    "admin.settings.defaults.platformQuotaNotice": "months限额为 30 days滚动窗口，非自然months",
     "admin.settings.authSourceDefaults.platformQuotasOverride": "平台限额覆盖",
     "admin.settings.authSourceDefaults.platformQuotasOverrideHint": "留空的字段继承「系统默认平台限额」；填 0 表示禁止该窗口使用。",
   };
@@ -301,7 +301,7 @@ const baseSettingsResponse = {
   default_balance: 0,
   default_concurrency: 1,
   default_subscriptions: [],
-  site_name: "Sub2API",
+  site_name: "OC Router",
   site_logo: "",
   site_subtitle: "",
   api_base_url: "",
@@ -413,7 +413,6 @@ const baseSettingsResponse = {
   subscription_expiry_notify_enabled: true,
   account_quota_notify_enabled: false,
   account_quota_notify_emails: [],
-  // 平台限额嵌套字段（新后端契约）
   default_platform_quotas: {
     anthropic:   { daily: null, weekly: null, monthly: null },
     openai:      { daily: null, weekly: 12.5, monthly: null },
@@ -732,7 +731,7 @@ describe("admin SettingsView payment visible method controls", () => {
 
     expect(wrapper.text()).toContain("OpenAI 实验调度策略");
     expect(wrapper.text()).toContain(
-      "默认关闭。开启后仅影响本网关在 OpenAI 账号间的实验性调度选择逻辑",
+      "默认Close。开启后仅影响本网关在 OpenAI 账号间的实验性调度选择逻辑",
     );
     expect(wrapper.text()).not.toContain("OpenAI 高级调度器");
   });
@@ -965,7 +964,7 @@ describe("admin SettingsView wechat connect controls", () => {
     expect(
       wrapper.find('[data-testid="auth-source-email-panel"]').exists(),
     ).toBe(false);
-    expect(wrapper.text()).not.toContain("注册即授权");
+    expect(wrapper.text()).not.toContain("Register即授权");
 
     await wrapper
       .get('[data-testid="auth-source-email-enabled"]')
@@ -1061,7 +1060,7 @@ describe("admin SettingsView platform quota matrix", () => {
     expect(html).toContain("antigravity");
   });
 
-  it("保存时 updateSettings payload 应包含嵌套 default_platform_quotas 对象（含全 4 平台）", async () => {
+  it("Save时 updateSettings payload 应包含嵌套 default_platform_quotas 对象（含全 4 平台）", async () => {
     const wrapper = mountView();
     await flushPromises();
     await openUsersTab(wrapper);
@@ -1074,7 +1073,6 @@ describe("admin SettingsView platform quota matrix", () => {
     expect(lastCallArgs).toBeDefined();
     const payload = lastCallArgs![0] as Record<string, unknown>;
 
-    // 应携带嵌套对象，而非扁平字段
     expect(payload).toHaveProperty("default_platform_quotas");
     const quotas = payload["default_platform_quotas"] as Record<string, unknown>;
     const platforms = ["anthropic", "openai", "gemini", "antigravity"];
@@ -1086,7 +1084,6 @@ describe("admin SettingsView platform quota matrix", () => {
       expect(pq).toHaveProperty("monthly");
     }
 
-    // 不应存在旧扁平字段
     expect(payload).not.toHaveProperty("default_platform_quota_anthropic_daily");
     expect(payload).not.toHaveProperty("default_platform_quota_openai_weekly");
   });
@@ -1118,8 +1115,8 @@ describe("admin SettingsView platform quota matrix", () => {
     expect(quotas["antigravity"]).toEqual({ daily: null, weekly: null, monthly: null });
   });
 
-  it("空输入（v-model.number 产出 \"\"）在提交时清洗为 null 而非空字符串", async () => {
-    // 模拟后端返回带有 anthropic daily 值的配额
+  it("空输入（v-model.number 产出 \"\"）在Submit时清洗为 null 而非空字符串", async () => {
+    // 模拟后端Back带有 anthropic daily 值的配额
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,
       default_platform_quotas: {
@@ -1134,7 +1131,7 @@ describe("admin SettingsView platform quota matrix", () => {
     await flushPromises();
     await openUsersTab(wrapper);
 
-    // 找到 anthropic daily 输入框并清空（模拟用户删除值）
+    // 找到 anthropic daily 输入框并清空（模拟UserDelete值）
     const inputs = wrapper.findAll('input[type="number"]');
     const anthropicDailyInput = inputs.find((i) => {
       const parent = i.element.closest("tr");
@@ -1142,7 +1139,7 @@ describe("admin SettingsView platform quota matrix", () => {
     });
 
     if (anthropicDailyInput) {
-      // 设置为空字符串，模拟 v-model.number 在清空时产出 ""
+      // Settings为空字符串，模拟 v-model.number 在清空时产出 ""
       await anthropicDailyInput.setValue("");
     }
 
@@ -1151,7 +1148,7 @@ describe("admin SettingsView platform quota matrix", () => {
 
     const payload = updateSettings.mock.calls.at(-1)![0] as Record<string, unknown>;
     const quotas = payload["default_platform_quotas"] as Record<string, Record<string, unknown>>;
-    // 不管输入是什么，提交值应为 null（而非 "" 或 NaN）
+    // 不管输入Yes什么，Submit值应为 null（而非 "" 或 NaN）
     expect(quotas["anthropic"]?.["daily"]).toBe(null);
   });
 });

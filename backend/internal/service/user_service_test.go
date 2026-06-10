@@ -347,7 +347,7 @@ func (m *mockBillingCache) BatchGetUserPlatformQuotaCache(context.Context, []Use
 	return nil, nil
 }
 
-// --- 测试 ---
+// ---
 
 func TestUpdateBalance_Success(t *testing.T) {
 	repo := &mockUserRepo{}
@@ -357,7 +357,7 @@ func TestUpdateBalance_Success(t *testing.T) {
 	err := svc.UpdateBalance(context.Background(), 42, 100.0)
 	require.NoError(t, err)
 
-	// 等待异步 goroutine 完成
+	//
 	require.Eventually(t, func() bool {
 		return cache.invalidateCallCount.Load() == 1
 	}, 2*time.Second, 10*time.Millisecond, "应异步调用 InvalidateUserBalance")
@@ -600,12 +600,12 @@ func TestUpdateBalance_CacheFailure_DoesNotAffectReturn(t *testing.T) {
 	svc := NewUserService(repo, nil, nil, cache)
 
 	err := svc.UpdateBalance(context.Background(), 99, 200.0)
-	require.NoError(t, err, "缓存失效失败不应影响主流程返回值")
+	require.NoError(t, err, "缓存失效failed不应影响主流程returned值")
 
-	// 等待异步 goroutine 完成（即使失败也应调用）
+	//
 	require.Eventually(t, func() bool {
 		return cache.invalidateCallCount.Load() == 1
-	}, 2*time.Second, 10*time.Millisecond, "即使失败也应调用 InvalidateUserBalance")
+	}, 2*time.Second, 10*time.Millisecond, "即使failed也应调用 InvalidateUserBalance")
 }
 
 func TestTouchLastActive_UpdatesWhenStale(t *testing.T) {
@@ -647,13 +647,13 @@ func TestUpdateBalance_RepoError_ReturnsError(t *testing.T) {
 	svc := NewUserService(repo, nil, nil, cache)
 
 	err := svc.UpdateBalance(context.Background(), 1, 100.0)
-	require.Error(t, err, "repo 失败时应返回错误")
+	require.Error(t, err, "repo failed时应returnederror")
 	require.Contains(t, err.Error(), "update balance")
 
-	// repo 失败时不应触发缓存失效
+	// repo
 	time.Sleep(100 * time.Millisecond)
 	require.Equal(t, int64(0), cache.invalidateCallCount.Load(),
-		"repo 失败时不应调用 InvalidateUserBalance")
+		"repo failed时不应调用 InvalidateUserBalance")
 }
 
 func TestUpdateBalance_WithAuthCacheInvalidator(t *testing.T) {
@@ -665,12 +665,12 @@ func TestUpdateBalance_WithAuthCacheInvalidator(t *testing.T) {
 	err := svc.UpdateBalance(context.Background(), 77, 300.0)
 	require.NoError(t, err)
 
-	// 验证 auth cache 同步失效
+	//
 	auth.mu.Lock()
 	require.Equal(t, []int64{77}, auth.invalidatedUserIDs)
 	auth.mu.Unlock()
 
-	// 验证 billing cache 异步失效
+	//
 	require.Eventually(t, func() bool {
 		return cache.invalidateCallCount.Load() == 1
 	}, 2*time.Second, 10*time.Millisecond)

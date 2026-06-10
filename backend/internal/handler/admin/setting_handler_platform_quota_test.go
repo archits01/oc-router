@@ -118,7 +118,7 @@ func TestAppendAuthSourceDefaultChanges_DetectsPerWindow(t *testing.T) {
 	}
 
 	changed := appendAuthSourceDefaultChanges([]string{}, before, after)
-	// 改动 B5：整体替换语义，审计 log 发单个 JSON key，而非展开 84 个扁平 key。
+	//
 	key := service.SettingKeyAuthSourcePlatformQuotas("linuxdo")
 	found := false
 	for _, k := range changed {
@@ -132,8 +132,8 @@ func TestAppendAuthSourceDefaultChanges_DetectsPerWindow(t *testing.T) {
 	}
 }
 
-// TestSettingHandler_AuthSourcePlatformQuotas_PutGetRoundTrip 验证 Bug A 修复：
-// PUT 发 auth_source_default_email_platform_quotas，GET 能读回相同值（端到端往返）。
+// TestSettingHandler_AuthSourcePlatformQuotas_PutGetRoundTrip
+// PUT
 func TestSettingHandler_AuthSourcePlatformQuotas_PutGetRoundTrip(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &settingHandlerRepoStub{
@@ -144,7 +144,7 @@ func TestSettingHandler_AuthSourcePlatformQuotas_PutGetRoundTrip(t *testing.T) {
 	svc := service.NewSettingService(repo, &config.Config{Default: config.DefaultConfig{UserConcurrency: 5}})
 	handler := NewSettingHandler(svc, nil, nil, nil, nil, nil, nil)
 
-	// PUT：发 email platform quota（openai monthly=20）
+	// PUT：=20）
 	putBody := map[string]any{
 		"auth_source_default_email_platform_quotas": map[string]any{
 			"openai": map[string]any{
@@ -162,11 +162,11 @@ func TestSettingHandler_AuthSourcePlatformQuotas_PutGetRoundTrip(t *testing.T) {
 	handler.UpdateSettings(c)
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	// 验证 DB 中写入了 JSON key
+	//
 	jsonKey := service.SettingKeyAuthSourcePlatformQuotas("email")
 	require.NotEmpty(t, repo.values[jsonKey], "expected JSON key to be written to DB")
 
-	// GET：验证响应中 auth_source_default_email_platform_quotas.openai.monthly = 20
+	// GET：= 20
 	rec2 := httptest.NewRecorder()
 	c2, _ := gin.CreateTestContext(rec2)
 	c2.Request = httptest.NewRequest(http.MethodGet, "/api/v1/admin/settings", nil)

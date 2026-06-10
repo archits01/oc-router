@@ -22,21 +22,21 @@ func TestClaudeTokenRefresher_NeedsRefresh(t *testing.T) {
 		{
 			name: "expires_at as string - expired",
 			credentials: map[string]any{
-				"expires_at": "1000", // 1970-01-01 00:16:40 UTC, 已过期
+				"expires_at": "1000", // 1970-01-01 00:16:40 UTC, expired
 			},
 			wantRefresh: true,
 		},
 		{
 			name: "expires_at as float64 - expired",
 			credentials: map[string]any{
-				"expires_at": float64(1000), // 数字类型，已过期
+				"expires_at": float64(1000), // 数字类型，expired
 			},
 			wantRefresh: true,
 		},
 		{
 			name: "expires_at as RFC3339 - expired",
 			credentials: map[string]any{
-				"expires_at": "1970-01-01T00:00:00Z", // RFC3339 格式，已过期
+				"expires_at": "1970-01-01T00:00:00Z", // RFC3339 格式，expired
 			},
 			wantRefresh: true,
 		},
@@ -105,7 +105,7 @@ func TestClaudeTokenRefresher_NeedsRefresh_WithinWindow(t *testing.T) {
 	refresher := &ClaudeTokenRefresher{}
 	refreshWindow := 30 * time.Minute
 
-	// 设置一个在刷新窗口内的时间（当前时间 + 15分钟）
+	// + 15
 	expiresAt := time.Now().Add(15 * time.Minute).Unix()
 
 	tests := []struct {
@@ -144,7 +144,7 @@ func TestClaudeTokenRefresher_NeedsRefresh_OutsideWindow(t *testing.T) {
 	refresher := &ClaudeTokenRefresher{}
 	refreshWindow := 30 * time.Minute
 
-	// 设置一个在刷新窗口外的时间（当前时间 + 1小时）
+	// + 1
 	expiresAt := time.Now().Add(1 * time.Hour).Unix()
 
 	tests := []struct {

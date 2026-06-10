@@ -160,13 +160,12 @@ func TestSetOverloadCooldownSettings_DisabledNormalizesOutOfRange(t *testing.T) 
 	repo := newMockSettingRepo()
 	svc := NewSettingService(repo, &config.Config{})
 
-	// enabled=false + cooldown_minutes=0 应该保存成功，值被归一化为10
+	// enabled=false + cooldown_minutes=0
 	err := svc.SetOverloadCooldownSettings(context.Background(), &OverloadCooldownSettings{
 		Enabled: false, CooldownMinutes: 0,
 	})
 	require.NoError(t, err, "disabled with invalid minutes should NOT be rejected")
 
-	// 验证持久化后读回来的值
 	settings, err := svc.GetOverloadCooldownSettings(context.Background())
 	require.NoError(t, err)
 	require.False(t, settings.Enabled)

@@ -31,12 +31,12 @@ describe('useAppStore', () => {
   describe('Toast 消息管理', () => {
     it('showSuccess 创建 success 类型 toast', () => {
       const store = useAppStore()
-      const id = store.showSuccess('操作成功')
+      const id = store.showSuccess('Actions成功')
 
       expect(id).toMatch(/^toast-/)
       expect(store.toasts).toHaveLength(1)
       expect(store.toasts[0].type).toBe('success')
-      expect(store.toasts[0].message).toBe('操作成功')
+      expect(store.toasts[0].message).toBe('Actions成功')
     })
 
     it('showError 创建 error 类型 toast', () => {
@@ -101,7 +101,7 @@ describe('useAppStore', () => {
       expect(store.toasts).toHaveLength(0)
     })
 
-    it('hasActiveToasts 正确反映 toast 状态', () => {
+    it('hasActiveToasts 正确反映 toast Status', () => {
       const store = useAppStore()
       expect(store.hasActiveToasts).toBe(false)
 
@@ -126,7 +126,7 @@ describe('useAppStore', () => {
   // --- 侧边栏 ---
 
   describe('侧边栏管理', () => {
-    it('toggleSidebar 切换折叠状态', () => {
+    it('toggleSidebar 切换折叠Status', () => {
       const store = useAppStore()
       expect(store.sidebarCollapsed).toBe(false)
 
@@ -137,7 +137,7 @@ describe('useAppStore', () => {
       expect(store.sidebarCollapsed).toBe(false)
     })
 
-    it('setSidebarCollapsed 直接设置状态', () => {
+    it('setSidebarCollapsed 直接SettingsStatus', () => {
       const store = useAppStore()
 
       store.setSidebarCollapsed(true)
@@ -147,7 +147,7 @@ describe('useAppStore', () => {
       expect(store.sidebarCollapsed).toBe(false)
     })
 
-    it('toggleMobileSidebar 切换移动端状态', () => {
+    it('toggleMobileSidebar 切换移动端Status', () => {
       const store = useAppStore()
       expect(store.mobileOpen).toBe(false)
 
@@ -159,9 +159,9 @@ describe('useAppStore', () => {
     })
   })
 
-  // --- Loading 状态 ---
+  // --- Loading Status ---
 
-  describe('Loading 状态管理', () => {
+  describe('Loading Status管理', () => {
     it('setLoading 管理引用计数', () => {
       const store = useAppStore()
       expect(store.loading).toBe(false)
@@ -172,7 +172,7 @@ describe('useAppStore', () => {
       store.setLoading(true) // 两次 true
       expect(store.loading).toBe(true)
 
-      store.setLoading(false) // 第一次 false，计数还是 1
+      store.setLoading(false) // 第一次 false，计数还Yes 1
       expect(store.loading).toBe(true)
 
       store.setLoading(false) // 第二次 false，计数为 0
@@ -193,7 +193,7 @@ describe('useAppStore', () => {
       expect(store.loading).toBe(false)
     })
 
-    it('withLoading 自动管理 loading 状态', async () => {
+    it('withLoading 自动管理 loading Status', async () => {
       const store = useAppStore()
 
       const result = await store.withLoading(async () => {
@@ -205,19 +205,19 @@ describe('useAppStore', () => {
       expect(store.loading).toBe(false)
     })
 
-    it('withLoading 错误时也恢复 loading 状态', async () => {
+    it('withLoading 错误时也恢复 loading Status', async () => {
       const store = useAppStore()
 
       await expect(
         store.withLoading(async () => {
-          throw new Error('操作失败')
+          throw new Error('Actions失败')
         })
-      ).rejects.toThrow('操作失败')
+      ).rejects.toThrow('Actions失败')
 
       expect(store.loading).toBe(false)
     })
 
-    it('withLoadingAndError 错误时显示 toast 并返回 null', async () => {
+    it('withLoadingAndError 错误时显示 toast 并Back null', async () => {
       const store = useAppStore()
 
       const result = await store.withLoadingAndError(async () => {
@@ -234,7 +234,7 @@ describe('useAppStore', () => {
   // --- reset ---
 
   describe('reset', () => {
-    it('重置所有 UI 状态', () => {
+    it('Reset所有 UI Status', () => {
       const store = useAppStore()
 
       store.setSidebarCollapsed(true)
@@ -249,9 +249,9 @@ describe('useAppStore', () => {
     })
   })
 
-  // --- 公开设置 ---
+  // --- 公开Settings ---
 
-  describe('公开设置加载', () => {
+  describe('公开Settings加载', () => {
     it('从 window.__APP_CONFIG__ 初始化', () => {
       const windowAny = window as any
       windowAny.__APP_CONFIG__ = {
@@ -273,7 +273,7 @@ describe('useAppStore', () => {
       expect(store.publicSettingsLoaded).toBe(true)
     })
 
-    it('无注入配置时返回 false', () => {
+    it('无注入配置时Back false', () => {
       const store = useAppStore()
       const result = store.initFromInjectedConfig()
 

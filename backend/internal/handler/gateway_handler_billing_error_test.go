@@ -29,7 +29,7 @@ func TestBillingErrorDetails_MapsUserRPMExceededToTooManyRequests(t *testing.T) 
 }
 
 func TestBillingErrorDetails_APIKeyRateLimitStillMaps(t *testing.T) {
-	// 回归保护：加 RPM 分支后不应影响已有 APIKey rate limit 的映射。
+	//
 	for _, err := range []error{
 		service.ErrAPIKeyRateLimit5hExceeded,
 		service.ErrAPIKeyRateLimit1dExceeded,
@@ -81,9 +81,8 @@ func TestExtractQuotaResetSeconds_T21_BadFormatFallback(t *testing.T) {
 }
 
 func TestExtractQuotaResetSeconds_T22_PastResetFallsBackToDefault(t *testing.T) {
-	// 当 window_resets_at 已过去时返回 fallback (60s) 而非 1s：
-	// 1 秒会导致客户端立即重试仍触发限额的退避循环；
-	// 60s 让客户端按常规节奏退避，cache/DB 自愈期间不会反复打抖。
+	// (60s)
+	// 60s
 	err := service.ErrUserPlatformDailyQuotaExhausted.WithMetadata(map[string]string{
 		"window_resets_at": time.Now().Add(-5 * time.Second).UTC().Format(time.RFC3339),
 	})
@@ -93,10 +92,10 @@ func TestExtractQuotaResetSeconds_T22_PastResetFallsBackToDefault(t *testing.T) 
 }
 
 func TestBillingErrorDetails_T10_QuotaExhaustedReturns429WithRetryAfter(t *testing.T) {
-	// quota 超限映射 429 + Retry-After（RFC 6585 / 与 RPM 一致），
-	// 让 SDK（OpenAI 兼容客户端等）能按 Retry-After 自动退避。
-	// 旧实现用 403 导致客户端不退避直接报错。
-	// 三个窗口共用同一映射分支，循环覆盖避免漏测某个窗口的 status/code。
+	// quota + Retry-After（RFC 6585 /
+	//
+	//
+	//
 	cases := []struct {
 		name string
 		err  error

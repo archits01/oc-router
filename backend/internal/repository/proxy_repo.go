@@ -16,8 +16,8 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 )
 
-// sqlQuerier 已替换为 sqlExecutor（定义在 group_repo.go），
-// proxyRepository 使用同一接口以支持 ExecContext。
+// sqlQuerier
+// proxyRepository
 type proxyRepository struct {
 	client *dbent.Client
 	sql    sqlExecutor
@@ -278,10 +278,9 @@ func proxyListOrder(params pagination.PaginationParams) []func(*entsql.Selector)
 	case "created_at":
 		field = proxy.FieldCreatedAt
 	case "expiry":
-		// expires_at 可空(NULL=永不过期)。不写显式 NULLS:
-		// dbent.Asc/Desc 不带 NULLS 子句,继承 PG 默认
-		// (ASC→NULLS LAST、DESC→NULLS FIRST),即 NULL 视为最晚——
-		// 升序垫底、降序置顶。
+		// expires_at (NULL=)。
+		// dbent.Asc/Desc
+		// (ASC→NULLS LAST、DESC→NULLS FIRST),——
 		field = proxy.FieldExpiresAt
 	default:
 		field = proxy.FieldID
@@ -473,7 +472,7 @@ func applyProxyEntityToService(dst *service.Proxy, src *dbent.Proxy) {
 	dst.UpdatedAt = src.UpdatedAt
 }
 
-// ListAllForFallback 返回所有代理（含过期/非活跃），供改投逻辑使用。
+// ListAllForFallback
 func (r *proxyRepository) ListAllForFallback(ctx context.Context) ([]service.Proxy, error) {
 	proxies, err := r.client.Proxy.Query().All(ctx)
 	if err != nil {
@@ -486,13 +485,12 @@ func (r *proxyRepository) ListAllForFallback(ctx context.Context) ([]service.Pro
 	return out, nil
 }
 
-// SweepExpiredProxies 扫描到期 active 代理，标记 expired 并按 fallback 策略改写绑定账号的 proxy_id，
-// 最终触发 scheduler outbox 使 Redis 快照缓存失效。返回受影响的账号行数。
-// 原子性边界：每个过期代理的「标记 expired + 改投账号」在各自子事务内原子执行（见 sweepOneExpiredProxy）；
-// 全部代理处理完后若有账号被改投，再统一 enqueue 一次 full_rebuild 事件——该 enqueue 在子事务之外
-// （走 r.sql、失败仅记日志、由调度器周期性 full rebuild 兜底），故「改投 → 失效」整体并非原子。
+// SweepExpiredProxies
+//
+// 「+ 」
+// ——
+// （「→ 」
 func (r *proxyRepository) SweepExpiredProxies(ctx context.Context, now time.Time) (int64, error) {
-	// 快照读（事务前）：允许脏读不影响正确性，事务内已加锁写。
 	all, err := r.ListAllForFallback(ctx)
 	if err != nil {
 		return 0, err
@@ -512,7 +510,7 @@ func (r *proxyRepository) SweepExpiredProxies(ctx context.Context, now time.Time
 
 		target, change := service.ResolveProxyFallbackTarget(p, byID, now)
 		if !change && p.FallbackMode == service.FallbackModeProxy {
-			// 配置了 proxy 回退但链路无解（成环或全部已过期），记录告警日志
+			//
 			logger.LegacyPrintf("repository.proxy", "[ProxyExpiry] proxy %d expired but fallback chain unresolved (cycle/all-expired); accounts kept", p.ID)
 		}
 
@@ -534,20 +532,19 @@ func (r *proxyRepository) SweepExpiredProxies(ctx context.Context, now time.Time
 	return totalChanged, nil
 }
 
-// sweepOneExpiredProxy 在单事务内原子执行：标记代理 expired + 改投绑定账号。
-// 若 r.client 已绑定事务（测试注入场景），直接在 r.sql 上执行，由外层事务保证原子性。
+// sweepOneExpiredProxy +
+//
 func (r *proxyRepository) sweepOneExpiredProxy(ctx context.Context, proxyID int64, target *int64, change bool) (int64, error) {
-	// 尝试开启子事务；若 r.client 已是事务 client，则返回 ErrTxStarted，退回使用 r.sql。
+	//
 	tx, txErr := r.client.Tx(ctx)
 	if txErr != nil {
 		if txErr != dbent.ErrTxStarted {
 			return 0, txErr
 		}
-		// 已在外层事务中（集成测试场景），直接用 r.sql 执行
+		//
 		return r.sweepOneExpiredProxyOnExec(ctx, r.sql, proxyID, target, change)
 	}
 
-	// 使用新事务执行
 	var n int64
 	var err error
 	n, err = r.sweepOneExpiredProxyOnExec(ctx, tx, proxyID, target, change)
@@ -561,7 +558,7 @@ func (r *proxyRepository) sweepOneExpiredProxy(ctx context.Context, proxyID int6
 	return n, nil
 }
 
-// sweepOneExpiredProxyOnExec 在给定的 sqlExecutor 上执行：标记 expired + 改投账号。
+// sweepOneExpiredProxyOnExec +
 func (r *proxyRepository) sweepOneExpiredProxyOnExec(ctx context.Context, exec sqlExecutor, proxyID int64, target *int64, change bool) (int64, error) {
 	if _, err := exec.ExecContext(ctx,
 		`UPDATE proxies SET status=$1, updated_at=NOW() WHERE id=$2 AND deleted_at IS NULL`,
@@ -591,14 +588,14 @@ func (r *proxyRepository) sweepOneExpiredProxyOnExec(ctx context.Context, exec s
 	return n, nil
 }
 
-// CountExpired 返回已过期（status=expired）的代理数量。
+// CountExpired =expired）
 func (r *proxyRepository) CountExpired(ctx context.Context) (int64, error) {
 	var c int64
 	err := scanSingleRow(ctx, r.sql, `SELECT COUNT(*) FROM proxies WHERE status=$1 AND deleted_at IS NULL`, []any{service.StatusExpired}, &c)
 	return c, err
 }
 
-// CountExpiringSoon 返回即将到期（在 expiry_warn_days 天内）的活跃代理数量。
+// CountExpiringSoon
 func (r *proxyRepository) CountExpiringSoon(ctx context.Context, now time.Time) (int64, error) {
 	var c int64
 	err := scanSingleRow(ctx, r.sql, `

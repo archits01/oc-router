@@ -68,7 +68,7 @@ func (s *ApiKeyCacheSuite) TestCreateAttemptCount() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			// 每个 case 重新获取隔离资源
+			//
 			rdb := testRedis(s.T())
 			cache := &apiKeyCache{rdb: rdb}
 			ctx := context.Background()

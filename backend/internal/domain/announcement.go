@@ -38,12 +38,12 @@ var (
 )
 
 type AnnouncementTargeting struct {
-	// AnyOf 表示 OR：任意一个条件组满足即可展示。
+	// AnyOf
 	AnyOf []AnnouncementConditionGroup `json:"any_of,omitempty"`
 }
 
 type AnnouncementConditionGroup struct {
-	// AllOf 表示 AND：组内所有条件都满足才算命中该组。
+	// AllOf
 	AllOf []AnnouncementCondition `json:"all_of,omitempty"`
 }
 
@@ -56,22 +56,21 @@ type AnnouncementCondition struct {
 	// - balance: gt/gte/lt/lte/eq
 	Operator string `json:"operator"`
 
-	// subscription 条件：匹配的订阅套餐（group_id）
+	// subscription
 	GroupIDs []int64 `json:"group_ids,omitempty"`
 
-	// balance 条件：比较阈值
+	// balance
 	Value float64 `json:"value,omitempty"`
 }
 
 func (t AnnouncementTargeting) Matches(balance float64, activeSubscriptionGroupIDs map[int64]struct{}) bool {
-	// 空规则：展示给所有用户
 	if len(t.AnyOf) == 0 {
 		return true
 	}
 
 	for _, group := range t.AnyOf {
 		if len(group.AllOf) == 0 {
-			// 空条件组不命中（避免 OR 中出现无条件 “全命中”）
+			// “”）
 			continue
 		}
 		allMatched := true
@@ -132,7 +131,7 @@ func (c AnnouncementCondition) Matches(balance float64, activeSubscriptionGroupI
 func (t AnnouncementTargeting) NormalizeAndValidate() (AnnouncementTargeting, error) {
 	normalized := AnnouncementTargeting{AnyOf: make([]AnnouncementConditionGroup, 0, len(t.AnyOf))}
 
-	// 允许空 targeting（展示给所有用户）
+	//
 	if len(t.AnyOf) == 0 {
 		return normalized, nil
 	}
@@ -225,7 +224,7 @@ func (a *Announcement) IsActiveAt(now time.Time) bool {
 		return false
 	}
 	if a.EndsAt != nil && !now.Before(*a.EndsAt) {
-		// ends_at 语义：到点即下线
+		// ends_at
 		return false
 	}
 	return true

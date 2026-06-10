@@ -9,8 +9,8 @@ var CodexCLIUserAgentPrefixes = []string{
 	"codex_cli_rs/",
 }
 
-// CodexOfficialClientUserAgentPrefixes matches Codex 官方客户端家族 User-Agent 前缀。
-// 该列表仅用于 OpenAI OAuth `codex_cli_only` 访问限制判定。
+// CodexOfficialClientUserAgentPrefixes matches Codex
+// `codex_cli_only`
 var CodexOfficialClientUserAgentPrefixes = []string{
 	"codex_cli_rs/",
 	"codex_vscode/",
@@ -22,17 +22,17 @@ var CodexOfficialClientUserAgentPrefixes = []string{
 	"codex ",
 }
 
-// CodexOfficialClientOriginatorPrefixes matches Codex 官方客户端家族 originator 前缀。
-// 说明：OpenAI 官方 Codex 客户端并不只使用固定的 codex_app 标识。
-// 例如 codex_cli_rs、codex_vscode、codex_chatgpt_desktop、codex_atlas、codex_exec、codex_sdk_ts 等。
+// CodexOfficialClientOriginatorPrefixes matches Codex
+//
+//
 var CodexOfficialClientOriginatorPrefixes = []string{
 	"codex_",
 	"codex ",
 }
 
-// IsBrowserUserAgent 判断 User-Agent 是否来自浏览器（Chrome/Firefox/Safari/Edge/Opera 等）。
-// 所有现代浏览器的 UA 均以 "Mozilla/" 作为前缀，CLI 工具（codex/claude/curl/postman/python-requests 等）不会。
-// 该判定用于避免 Cloudflare 对浏览器型 UA 在 OpenAI 上游接口上触发 JS 质询。
+// IsBrowserUserAgent
+// "Mozilla/"
+//
 func IsBrowserUserAgent(userAgent string) bool {
 	ua := strings.TrimSpace(userAgent)
 	if ua == "" {
@@ -50,8 +50,8 @@ func IsCodexCLIRequest(userAgent string) bool {
 	return matchCodexClientHeaderPrefixes(ua, CodexCLIUserAgentPrefixes)
 }
 
-// IsCodexOfficialClientRequest checks if the User-Agent indicates a Codex 官方客户端请求。
-// 与 IsCodexCLIRequest 解耦，避免影响历史兼容逻辑。
+// IsCodexOfficialClientRequest checks if the User-Agent indicates a Codex
+//
 func IsCodexOfficialClientRequest(userAgent string) bool {
 	ua := normalizeCodexClientHeader(userAgent)
 	if ua == "" {
@@ -60,7 +60,7 @@ func IsCodexOfficialClientRequest(userAgent string) bool {
 	return matchCodexClientHeaderPrefixes(ua, CodexOfficialClientUserAgentPrefixes)
 }
 
-// IsCodexOfficialClientOriginator checks if originator indicates a Codex 官方客户端请求。
+// IsCodexOfficialClientOriginator checks if originator indicates a Codex
 func IsCodexOfficialClientOriginator(originator string) bool {
 	v := normalizeCodexClientHeader(originator)
 	if v == "" {
@@ -85,7 +85,7 @@ func matchCodexClientHeaderPrefixes(value string, prefixes []string) bool {
 		if normalizedPrefix == "" {
 			continue
 		}
-		// 优先前缀匹配；若 UA/Originator 被网关拼接为复合字符串时，退化为包含匹配。
+		//
 		if strings.HasPrefix(value, normalizedPrefix) || strings.Contains(value, normalizedPrefix) {
 			return true
 		}

@@ -106,8 +106,8 @@ func TestAdminGetUserPlatformQuotas_NilRepoReturnsEmpty(t *testing.T) {
 	}
 }
 
-// TestAdminGetUserPlatformQuotas_UserNotFoundReturns404 验证 GET 在用户不存在时返回 404
-// （与 PUT / POST reset 端点行为一致；review fix：原实现返回空数组会让 admin 界面误判用户存在）
+// TestAdminGetUserPlatformQuotas_UserNotFoundReturns404
+// （
 func TestAdminGetUserPlatformQuotas_UserNotFoundReturns404(t *testing.T) {
 	adminSvc := newStubAdminService()
 	adminSvc.getUserErr = infraerrors.NotFound("USER_NOT_FOUND", "user not found")

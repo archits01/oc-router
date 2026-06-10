@@ -391,8 +391,7 @@ func normalizeOpsAdvancedSettings(cfg *OpsAdvancedSettings) {
 	if cfg.DataRetention.CleanupSchedule == "" {
 		cfg.DataRetention.CleanupSchedule = opsCleanupDefaultSchedule
 	}
-	// 保留天数：0 表示每次定时清理全部（清空所有），> 0 表示按天数保留；
-	// 仅在拿到非法的负数时回填默认值，避免覆盖用户主动设的 0。
+	// > 0
 	if cfg.DataRetention.ErrorLogRetentionDays < 0 {
 		cfg.DataRetention.ErrorLogRetentionDays = 30
 	}
@@ -422,7 +421,7 @@ func validateOpsAdvancedSettings(cfg *OpsAdvancedSettings) error {
 	if cfg == nil {
 		return errors.New("invalid config")
 	}
-	// 保留天数：0 表示每次清理全部，1-365 表示按天数保留。
+	//
 	if cfg.DataRetention.ErrorLogRetentionDays < 0 || cfg.DataRetention.ErrorLogRetentionDays > 365 {
 		return errors.New("error_log_retention_days must be between 0 and 365")
 	}

@@ -53,8 +53,7 @@ var (
 	}
 )
 
-// LiteLLMModelPricing LiteLLM价格数据结构
-// 只保留我们需要的字段，使用指针来处理可能缺失的值
+// LiteLLMModelPricing LiteLLM
 type LiteLLMModelPricing struct {
 	InputCostPerToken                   float64 `json:"input_cost_per_token"`
 	InputCostPerTokenPriority           float64 `json:"input_cost_per_token_priority"`
@@ -71,17 +70,17 @@ type LiteLLMModelPricing struct {
 	LiteLLMProvider                     string  `json:"litellm_provider"`
 	Mode                                string  `json:"mode"`
 	SupportsPromptCaching               bool    `json:"supports_prompt_caching"`
-	OutputCostPerImage                  float64 `json:"output_cost_per_image"`       // 图片生成模型每张图片价格
+	OutputCostPerImage                  float64 `json:"output_cost_per_image"`       // 图片生成model每张图片价格
 	OutputCostPerImageToken             float64 `json:"output_cost_per_image_token"` // 图片输出 token 价格
 }
 
-// PricingRemoteClient 远程价格数据获取接口
+// PricingRemoteClient
 type PricingRemoteClient interface {
 	FetchPricingJSON(ctx context.Context, url string) ([]byte, error)
 	FetchHashText(ctx context.Context, url string) (string, error)
 }
 
-// LiteLLMRawEntry 用于解析原始JSON数据
+// LiteLLMRawEntry
 type LiteLLMRawEntry struct {
 	InputCostPerToken                   *float64 `json:"input_cost_per_token"`
 	InputCostPerTokenPriority           *float64 `json:"input_cost_per_token_priority"`
@@ -99,7 +98,7 @@ type LiteLLMRawEntry struct {
 	OutputCostPerImageToken             *float64 `json:"output_cost_per_image_token"`
 }
 
-// PricingService 动态价格服务
+// PricingService
 type PricingService struct {
 	cfg          *config.Config
 	remoteClient PricingRemoteClient
@@ -108,12 +107,11 @@ type PricingService struct {
 	lastUpdated  time.Time
 	localHash    string
 
-	// 停止信号
 	stopCh chan struct{}
 	wg     sync.WaitGroup
 }
 
-// NewPricingService 创建价格服务
+// NewPricingService
 func NewPricingService(cfg *config.Config, remoteClient PricingRemoteClient) *PricingService {
 	s := &PricingService{
 		cfg:          cfg,
@@ -124,14 +122,12 @@ func NewPricingService(cfg *config.Config, remoteClient PricingRemoteClient) *Pr
 	return s
 }
 
-// Initialize 初始化价格服务
+// Initialize
 func (s *PricingService) Initialize() error {
-	// 确保数据目录存在
 	if err := os.MkdirAll(s.cfg.Pricing.DataDir, 0755); err != nil {
 		logger.LegacyPrintf("service.pricing", "[Pricing] Failed to create data directory: %v", err)
 	}
 
-	// 首次加载价格数据
 	if err := s.checkAndUpdatePricing(); err != nil {
 		logger.LegacyPrintf("service.pricing", "[Pricing] Initial load failed, using fallback: %v", err)
 		if err := s.useFallbackPricing(); err != nil {
@@ -139,23 +135,21 @@ func (s *PricingService) Initialize() error {
 		}
 	}
 
-	// 启动定时更新
 	s.startUpdateScheduler()
 
 	logger.LegacyPrintf("service.pricing", "[Pricing] Service initialized with %d models", len(s.pricingData))
 	return nil
 }
 
-// Stop 停止价格服务
+// Stop
 func (s *PricingService) Stop() {
 	close(s.stopCh)
 	s.wg.Wait()
 	logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Service stopped")
 }
 
-// startUpdateScheduler 启动定时更新调度器
+// startUpdateScheduler
 func (s *PricingService) startUpdateScheduler() {
-	// 定期检查哈希更新
 	hashInterval := time.Duration(s.cfg.Pricing.HashCheckIntervalMinutes) * time.Minute
 	if hashInterval < time.Minute {
 		hashInterval = 10 * time.Minute
@@ -182,28 +176,26 @@ func (s *PricingService) startUpdateScheduler() {
 	logger.LegacyPrintf("service.pricing", "[Pricing] Update scheduler started (check every %v)", hashInterval)
 }
 
-// checkAndUpdatePricing 检查并更新价格数据
+// checkAndUpdatePricing
 func (s *PricingService) checkAndUpdatePricing() error {
 	pricingFile := s.getPricingFilePath()
 
-	// 检查本地文件是否存在
 	if _, err := os.Stat(pricingFile); os.IsNotExist(err) {
 		logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Local pricing file not found, downloading...")
 		return s.downloadPricingData()
 	}
 
-	// 先加载本地文件（确保服务可用），再检查是否需要更新
 	if err := s.loadPricingData(pricingFile); err != nil {
 		logger.LegacyPrintf("service.pricing", "[Pricing] Failed to load local file, downloading: %v", err)
 		return s.downloadPricingData()
 	}
 
-	// 如果配置了哈希URL，通过远程哈希检查是否有更新
+	//
 	if s.cfg.Pricing.HashURL != "" {
 		remoteHash, err := s.fetchRemoteHash()
 		if err != nil {
 			logger.LegacyPrintf("service.pricing", "[Pricing] Failed to fetch remote hash on startup: %v", err)
-			return nil // 已加载本地文件，哈希获取失败不影响启动
+			return nil // 已load本地文件，哈希获取failed不影响started
 		}
 
 		s.mu.RLock()
@@ -220,10 +212,10 @@ func (s *PricingService) checkAndUpdatePricing() error {
 		return nil
 	}
 
-	// 没有哈希URL时，基于文件年龄检查
+	//
 	info, err := os.Stat(pricingFile)
 	if err != nil {
-		return nil // 已加载本地文件
+		return nil // 已load本地文件
 	}
 
 	fileAge := time.Since(info.ModTime())
@@ -239,14 +231,14 @@ func (s *PricingService) checkAndUpdatePricing() error {
 	return nil
 }
 
-// syncWithRemote 与远程同步（基于哈希校验）
+// syncWithRemote
 func (s *PricingService) syncWithRemote() error {
-	// 如果配置了哈希URL，从远程获取哈希进行比对
+	//
 	if s.cfg.Pricing.HashURL != "" {
 		remoteHash, err := s.fetchRemoteHash()
 		if err != nil {
 			logger.LegacyPrintf("service.pricing", "[Pricing] Failed to fetch remote hash: %v", err)
-			return nil // 哈希获取失败不影响正常使用
+			return nil // 哈希获取failed不影响正常使用
 		}
 
 		s.mu.RLock()
@@ -262,7 +254,7 @@ func (s *PricingService) syncWithRemote() error {
 		return nil
 	}
 
-	// 没有哈希URL时，基于时间检查
+	//
 	pricingFile := s.getPricingFilePath()
 	info, err := os.Stat(pricingFile)
 	if err != nil {
@@ -280,7 +272,7 @@ func (s *PricingService) syncWithRemote() error {
 	return nil
 }
 
-// downloadPricingData 从远程下载价格数据
+// downloadPricingData
 func (s *PricingService) downloadPricingData() error {
 	remoteURL, err := s.validatePricingURL(s.cfg.Pricing.RemoteURL)
 	if err != nil {
@@ -291,7 +283,6 @@ func (s *PricingService) downloadPricingData() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// 获取远程哈希（用于同步锚点，不作为完整性校验）
 	var remoteHash string
 	if strings.TrimSpace(s.cfg.Pricing.HashURL) != "" {
 		remoteHash, err = s.fetchRemoteHash()
@@ -305,8 +296,6 @@ func (s *PricingService) downloadPricingData() error {
 		return fmt.Errorf("download failed: %w", err)
 	}
 
-	// 哈希校验：不匹配时仅告警，不阻止更新
-	// 远程哈希文件可能与数据文件不同步（如维护者更新了数据但未更新哈希文件）
 	dataHash := sha256.Sum256(body)
 	dataHashStr := hex.EncodeToString(dataHash[:])
 	if remoteHash != "" && !strings.EqualFold(remoteHash, dataHashStr) {
@@ -314,20 +303,17 @@ func (s *PricingService) downloadPricingData() error {
 			remoteHash[:min(8, len(remoteHash))], dataHashStr[:8])
 	}
 
-	// 解析JSON数据（使用灵活的解析方式）
+	//
 	data, err := s.parsePricingData(body)
 	if err != nil {
 		return fmt.Errorf("parse pricing data: %w", err)
 	}
 
-	// 保存到本地文件
 	pricingFile := s.getPricingFilePath()
 	if err := os.WriteFile(pricingFile, body, 0644); err != nil {
 		logger.LegacyPrintf("service.pricing", "[Pricing] Failed to save file: %v", err)
 	}
 
-	// 使用远程哈希作为同步锚点，防止重复下载
-	// 当远程哈希不可用时，回退到数据本身的哈希
 	syncHash := dataHashStr
 	if remoteHash != "" {
 		syncHash = remoteHash
@@ -337,7 +323,6 @@ func (s *PricingService) downloadPricingData() error {
 		logger.LegacyPrintf("service.pricing", "[Pricing] Failed to save hash: %v", err)
 	}
 
-	// 更新内存数据
 	s.mu.Lock()
 	s.pricingData = data
 	s.lastUpdated = time.Now()
@@ -348,9 +333,9 @@ func (s *PricingService) downloadPricingData() error {
 	return nil
 }
 
-// parsePricingData 解析价格数据（处理各种格式）
+// parsePricingData
 func (s *PricingService) parsePricingData(body []byte) (map[string]*LiteLLMModelPricing, error) {
-	// 首先解析为 map[string]json.RawMessage
+	// [string]json.RawMessage
 	var rawData map[string]json.RawMessage
 	if err := json.Unmarshal(body, &rawData); err != nil {
 		return nil, fmt.Errorf("parse raw JSON: %w", err)
@@ -360,19 +345,17 @@ func (s *PricingService) parsePricingData(body []byte) (map[string]*LiteLLMModel
 	skipped := 0
 
 	for modelName, rawEntry := range rawData {
-		// 跳过 sample_spec 等文档条目
+		//
 		if modelName == "sample_spec" {
 			continue
 		}
 
-		// 尝试解析每个条目
 		var entry LiteLLMRawEntry
 		if err := json.Unmarshal(rawEntry, &entry); err != nil {
 			skipped++
 			continue
 		}
 
-		// 只保留有有效价格的条目
 		if entry.InputCostPerToken == nil && entry.OutputCostPerToken == nil {
 			continue
 		}
@@ -429,20 +412,18 @@ func (s *PricingService) parsePricingData(body []byte) (map[string]*LiteLLMModel
 	return result, nil
 }
 
-// loadPricingData 从本地文件加载价格数据
+// loadPricingData
 func (s *PricingService) loadPricingData(filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("read file failed: %w", err)
 	}
 
-	// 使用灵活的解析方式
 	pricingData, err := s.parsePricingData(data)
 	if err != nil {
 		return fmt.Errorf("parse pricing data: %w", err)
 	}
 
-	// 计算哈希
 	hash := sha256.Sum256(data)
 	hashStr := hex.EncodeToString(hash[:])
 
@@ -462,7 +443,7 @@ func (s *PricingService) loadPricingData(filePath string) error {
 	return nil
 }
 
-// useFallbackPricing 使用回退价格文件
+// useFallbackPricing
 func (s *PricingService) useFallbackPricing() error {
 	fallbackFile := s.cfg.Pricing.FallbackFile
 
@@ -472,7 +453,6 @@ func (s *PricingService) useFallbackPricing() error {
 
 	logger.LegacyPrintf("service.pricing", "[Pricing] Using fallback file: %s", fallbackFile)
 
-	// 复制到数据目录
 	data, err := os.ReadFile(fallbackFile)
 	if err != nil {
 		return fmt.Errorf("read fallback failed: %w", err)
@@ -486,7 +466,7 @@ func (s *PricingService) useFallbackPricing() error {
 	return s.loadPricingData(fallbackFile)
 }
 
-// fetchRemoteHash 从远程获取哈希值
+// fetchRemoteHash
 func (s *PricingService) fetchRemoteHash() (string, error) {
 	hashURL, err := s.validatePricingURL(s.cfg.Pricing.HashURL)
 	if err != nil {
@@ -522,7 +502,7 @@ func (s *PricingService) validatePricingURL(raw string) (string, error) {
 	return normalized, nil
 }
 
-// GetModelPricing 获取模型价格（带模糊匹配）
+// GetModelPricing
 func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -531,11 +511,10 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 		return nil
 	}
 
-	// 标准化模型名称（同时兼容 "models/xxx"、VertexAI 资源名等前缀）
+	// "models/xxx"、VertexAI
 	modelLower := strings.ToLower(strings.TrimSpace(modelName))
 	lookupCandidates := s.buildModelLookupCandidates(modelLower)
 
-	// 1. 精确匹配
 	for _, candidate := range lookupCandidates {
 		if candidate == "" {
 			continue
@@ -545,7 +524,6 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 		}
 	}
 
-	// 2. 处理常见的模型名称变体
 	// claude-opus-4-5-20251101 -> claude-opus-4.5-20251101
 	for _, candidate := range lookupCandidates {
 		normalized := strings.ReplaceAll(candidate, "-4-5-", "-4.5-")
@@ -554,7 +532,6 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 		}
 	}
 
-	// 3. 尝试模糊匹配（去掉版本号后缀）
 	// claude-opus-4-5-20251101 -> claude-opus-4.5
 	baseName := s.extractBaseName(lookupCandidates[0])
 	for key, pricing := range s.pricingData {
@@ -564,12 +541,12 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 		}
 	}
 
-	// 4. 基于模型系列匹配（Claude）
+	// 4.
 	if pricing := s.matchByModelFamily(lookupCandidates[0]); pricing != nil {
 		return pricing
 	}
 
-	// 5. OpenAI 模型回退策略
+	// 5. OpenAI
 	if strings.HasPrefix(lookupCandidates[0], "gpt-") {
 		return s.matchOpenAIModel(lookupCandidates[0])
 	}
@@ -639,17 +616,16 @@ func lastSegment(model string) string {
 	return model
 }
 
-// extractBaseName 提取基础模型名称（去掉日期版本号）
+// extractBaseName
 func (s *PricingService) extractBaseName(model string) string {
-	// 移除日期后缀 (如 -20251101, -20241022)
+	// ()
 	parts := strings.Split(model, "-")
 	result := make([]string, 0, len(parts))
 	for _, part := range parts {
-		// 跳过看起来像日期的部分（8位数字）
 		if len(part) == 8 && isNumeric(part) {
 			continue
 		}
-		// 跳过版本号（如 v1:0）
+		//
 		if strings.Contains(part, ":") {
 			continue
 		}
@@ -658,18 +634,18 @@ func (s *PricingService) extractBaseName(model string) string {
 	return strings.Join(result, "-")
 }
 
-// matchByModelFamily 基于模型系列匹配
+// matchByModelFamily
 func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
-	// modelFamily 定义一个模型系列的匹配和定价查找规则。
+	// modelFamily
 	type modelFamily struct {
 		name    string   // 系列名称
-		match   []string // 用于将模型归类到此系列的模式（strings.Contains 匹配）
+		match   []string // 用于将model归类到此系列的模式（strings.Contains 匹配）
 		pricing []string // 用于在定价数据中查找价格的模式（nil 则复用 match；可包含低版本 fallback）
 	}
 
-	// 按特异性降序排列：高版本号在前，避免 "claude-opus-4"（opus-4 系列）
-	// 因子串关系误匹配 "claude-opus-4-7"（opus-4.7 系列）。
-	// 注意：原 map 实现存在 Go map 迭代随机性导致的同类 bug，此处改为有序切片修复。
+	// "claude-opus-4"（opus-4
+	// "claude-opus-4-7"（opus-4.7
+	//
 	families := []modelFamily{
 		{name: "opus-4.7", match: []string{"claude-opus-4-7", "claude-opus-4.7"}, pricing: []string{"claude-opus-4-7", "claude-opus-4.7", "claude-opus-4-6"}},
 		{name: "opus-4.6", match: []string{"claude-opus-4-6", "claude-opus-4.6"}},
@@ -683,7 +659,7 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 		{name: "haiku-3", match: []string{"claude-3-haiku"}},
 	}
 
-	// Phase 1: 按有序切片归类（最具体的系列优先匹配）
+	// Phase 1:
 	var matched *modelFamily
 	for i := range families {
 		for _, pattern := range families[i].match {
@@ -697,7 +673,7 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 		}
 	}
 
-	// Phase 2: 二次兜底——当模型 ID 不含已知模式串时，按关键字粗分
+	// Phase 2: ——
 	if matched == nil {
 		var fallbackName string
 		switch {
@@ -743,7 +719,7 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 		return nil
 	}
 
-	// Phase 3: 在定价数据中查找该系列的价格
+	// Phase 3:
 	lookups := matched.pricing
 	if lookups == nil {
 		lookups = matched.match
@@ -761,14 +737,13 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 	return nil
 }
 
-// matchOpenAIModel OpenAI 模型回退匹配策略
-// 回退顺序：
-// 1. gpt-5.3-codex-spark* -> gpt-5.1-codex（按业务要求固定计费）
-// 2. gpt-5.2-codex -> gpt-5.2（去掉后缀如 -codex, -mini, -max 等）
-// 3. gpt-5.2-20251222 -> gpt-5.2（去掉日期版本号）
+// matchOpenAIModel OpenAI
+// 1. gpt-5.3-codex-spark* -> gpt-5.1-codex（
+// 2. gpt-5.2-codex -> gpt-5.2（
+// 3. gpt-5.2-20251222 -> gpt-5.2（
 // 4. gpt-5.3-codex -> gpt-5.2-codex
-// 5. gpt-5.4* -> 业务静态兜底价
-// 6. 最终回退到 DefaultTestModel (gpt-5.1-codex)
+// 5. gpt-5.4* ->
+// 6. (gpt-5.1-codex)
 func (s *PricingService) matchOpenAIModel(model string) *LiteLLMModelPricing {
 	if strings.HasPrefix(model, "gpt-5.3-codex-spark") {
 		if pricing, ok := s.pricingData["gpt-5.1-codex"]; ok {
@@ -779,7 +754,6 @@ func (s *PricingService) matchOpenAIModel(model string) *LiteLLMModelPricing {
 		}
 	}
 
-	// 尝试的回退变体
 	variants := s.generateOpenAIModelVariants(model, openAIModelDatePattern)
 
 	for _, variant := range variants {
@@ -798,7 +772,7 @@ func (s *PricingService) matchOpenAIModel(model string) *LiteLLMModelPricing {
 		}
 	}
 
-	// GPT-5.5 回退到 GPT-5.4 定价
+	// GPT-5.5
 	if strings.HasPrefix(model, "gpt-5.5") {
 		logger.With(zap.String("component", "service.pricing")).
 			Info(fmt.Sprintf("[Pricing] OpenAI fallback matched %s -> %s", model, "gpt-5.4(static)"))
@@ -833,7 +807,7 @@ func (s *PricingService) matchOpenAIModel(model string) *LiteLLMModelPricing {
 		return nil
 	}
 
-	// 最终回退到 DefaultTestModel
+	//
 	defaultModel := strings.ToLower(openai.DefaultTestModel)
 	if pricing, ok := s.pricingData[defaultModel]; ok {
 		logger.LegacyPrintf("service.pricing", "[Pricing] OpenAI fallback to default model %s -> %s", model, defaultModel)
@@ -843,7 +817,7 @@ func (s *PricingService) matchOpenAIModel(model string) *LiteLLMModelPricing {
 	return nil
 }
 
-// generateOpenAIModelVariants 生成 OpenAI 模型的回退变体列表
+// generateOpenAIModelVariants
 func (s *PricingService) generateOpenAIModelVariants(model string, datePattern *regexp.Regexp) []string {
 	seen := make(map[string]bool)
 	var variants []string
@@ -855,19 +829,18 @@ func (s *PricingService) generateOpenAIModelVariants(model string, datePattern *
 		}
 	}
 
-	// 1. 去掉日期版本号: gpt-5.2-20251222 -> gpt-5.2
+	// 1. > gpt-5.2
 	withoutDate := datePattern.ReplaceAllString(model, "")
 	if withoutDate != model {
 		addVariant(withoutDate)
 	}
 
-	// 2. 提取基础版本号: gpt-5.2-codex -> gpt-5.2
-	// 只匹配纯数字版本号格式 gpt-X 或 gpt-X.Y，不匹配 gpt-4o 这种带字母后缀的
+	// 2. > gpt-5.2
+	//
 	if matches := openAIModelBasePattern.FindStringSubmatch(model); len(matches) > 1 {
 		addVariant(matches[1])
 	}
 
-	// 3. 同时去掉日期后再提取基础版本号
 	if withoutDate != model {
 		if matches := openAIModelBasePattern.FindStringSubmatch(withoutDate); len(matches) > 1 {
 			addVariant(matches[1])
@@ -877,7 +850,7 @@ func (s *PricingService) generateOpenAIModelVariants(model string, datePattern *
 	return variants
 }
 
-// GetStatus 获取服务状态
+// GetStatus
 func (s *PricingService) GetStatus() map[string]any {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -889,17 +862,17 @@ func (s *PricingService) GetStatus() map[string]any {
 	}
 }
 
-// ForceUpdate 强制更新
+// ForceUpdate
 func (s *PricingService) ForceUpdate() error {
 	return s.downloadPricingData()
 }
 
-// getPricingFilePath 获取价格文件路径
+// getPricingFilePath
 func (s *PricingService) getPricingFilePath() string {
 	return filepath.Join(s.cfg.Pricing.DataDir, "model_pricing.json")
 }
 
-// getHashFilePath 获取哈希文件路径
+// getHashFilePath
 func (s *PricingService) getHashFilePath() string {
 	return filepath.Join(s.cfg.Pricing.DataDir, "model_pricing.sha256")
 }
@@ -922,7 +895,7 @@ func (s *PricingService) ListModelNamesByProvider(provider string) []string {
 	return names
 }
 
-// isNumeric 检查字符串是否为纯数字
+// isNumeric
 func isNumeric(s string) bool {
 	for _, c := range s {
 		if c < '0' || c > '9' {

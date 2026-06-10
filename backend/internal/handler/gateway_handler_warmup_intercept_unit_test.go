@@ -20,9 +20,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// 目标：严格验证“antigravity 账号通过 /v1/messages 提供 Claude 服务时”，
-// 当账号 credentials.intercept_warmup_requests=true 且请求为 Warmup 时，
-// 后端会在转发上游前直接拦截并返回 mock 响应（不依赖上游）。
+// “antigravity ”，
+// =true
+//
 
 type fakeSchedulerCache struct {
 	accounts []*service.Account
@@ -175,7 +175,7 @@ func newTestGatewayHandler(t *testing.T, group *service.Group, accounts []*servi
 		nil, // userPlatformQuotaRepo
 	)
 
-	// RunModeSimple：跳过计费检查，避免引入 repo/cache 依赖。
+	// RunModeSimple：
 	cfg := &config.Config{RunMode: config.RunModeSimple}
 	billingCacheSvc := service.NewBillingCacheService(nil, nil, nil, nil, nil, nil, cfg, nil)
 
@@ -186,7 +186,6 @@ func newTestGatewayHandler(t *testing.T, group *service.Group, accounts []*servi
 		gatewayService:      gwSvc,
 		billingCacheService: billingCacheSvc,
 		concurrencyHelper:   concurrencyHelper,
-		// 这些字段对本测试不敏感，保持较小即可
 		maxAccountSwitches:       1,
 		maxAccountSwitchesGemini: 1,
 	}
@@ -265,7 +264,7 @@ func TestGatewayHandlerMessages_InterceptWarmup_AntigravityAccount_MixedScheduli
 
 	require.Equal(t, 200, rec.Code)
 
-	// 断言：确实选中了 antigravity 账号（不是纯函数测试，而是从 Handler 里验证调度结果）
+	//
 	selected, ok := c.Get(opsAccountIDKey)
 	require.True(t, ok)
 	require.Equal(t, accountID, selected)
@@ -326,9 +325,9 @@ func TestGatewayHandlerMessages_InterceptWarmup_AntigravityAccount_ForcePlatform
 	req := httptest.NewRequest("POST", "/antigravity/v1/messages", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	// 模拟 routes/gateway.go 里的 ForcePlatform 中间件效果：
-	// - 写入 request.Context（Service读取）
-	// - 写入 gin.Context（Handler快速读取）
+	//
+	// -
+	// -
 	ctx := context.WithValue(req.Context(), ctxkey.Group, group)
 	ctx = context.WithValue(ctx, ctxkey.ForcePlatform, service.PlatformAntigravity)
 	req = req.WithContext(ctx)

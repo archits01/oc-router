@@ -11,30 +11,28 @@ import (
 	"github.com/imroc/req/v3"
 )
 
-// reqClientOptions 定义 req 客户端的构建参数
+// reqClientOptions
 type reqClientOptions struct {
-	ProxyURL    string        // 代理 URL（支持 http/https/socks5）
-	Timeout     time.Duration // 请求超时时间
-	Impersonate bool          // 是否模拟 Chrome 浏览器指纹
-	ForceHTTP2  bool          // 是否强制使用 HTTP/2
+	ProxyURL    string        // proxy URL (supports http/https/socks5)
+	Timeout     time.Duration // request timeout
+	Impersonate bool          // whether to impersonate Chrome browser fingerprint
+	ForceHTTP2  bool          // whether to force HTTP/2
 }
 
-// sharedReqClients 存储按配置参数缓存的 req 客户端实例
+// sharedReqClients
 //
-// 性能优化说明：
-// 原实现在每次 OAuth 刷新时都创建新的 req.Client：
-// 1. claude_oauth_service.go: 每次刷新创建新客户端
-// 2. openai_oauth_service.go: 每次刷新创建新客户端
-// 3. gemini_oauth_client.go: 每次刷新创建新客户端
 //
-// 新实现使用 sync.Map 缓存客户端：
-// 1. 相同配置（代理+超时+模拟设置）复用同一客户端
-// 2. 复用底层连接池，减少 TLS 握手开销
-// 3. LoadOrStore 保证并发安全，避免重复创建
+// 1. claude_oauth_service.go:
+// 2. openai_oauth_service.go:
+// 3. gemini_oauth_client.go:
+//
+//
+// 1. ++
+// 2.
+// 3. LoadOrStore
 var sharedReqClients sync.Map
 
-// getSharedReqClient 获取共享的 req 客户端实例
-// 性能优化：相同配置复用同一客户端，避免重复创建
+// getSharedReqClient
 func getSharedReqClient(opts reqClientOptions) (*req.Client, error) {
 	key := buildReqClientKey(opts)
 	if cached, ok := sharedReqClients.Load(key); ok {

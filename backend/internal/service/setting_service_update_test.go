@@ -323,7 +323,7 @@ func TestSettingService_GetAntigravityUserAgentVersion_Precedence(t *testing.T) 
 		require.Equal(t, "1.24.0", svc.GetAntigravityUserAgentVersion(context.Background()))
 	})
 
-	t.Run("空值回退配置默认值", func(t *testing.T) {
+	t.Run("空值fallbackconfiguration默认值", func(t *testing.T) {
 		svc := NewSettingService(&settingAntigravityUARepoStub{values: map[string]string{
 			SettingKeyAntigravityUserAgentVersion: "",
 		}}, &config.Config{})
@@ -331,7 +331,7 @@ func TestSettingService_GetAntigravityUserAgentVersion_Precedence(t *testing.T) 
 		require.Equal(t, antigravity.GetDefaultUserAgentVersion(), svc.GetAntigravityUserAgentVersion(context.Background()))
 	})
 
-	t.Run("缺失回退配置默认值", func(t *testing.T) {
+	t.Run("缺失fallbackconfiguration默认值", func(t *testing.T) {
 		svc := NewSettingService(&settingAntigravityUARepoStub{values: map[string]string{}}, &config.Config{})
 
 		require.Equal(t, antigravity.GetDefaultUserAgentVersion(), svc.GetAntigravityUserAgentVersion(context.Background()))

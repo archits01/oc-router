@@ -275,8 +275,8 @@ func pendingSessionWantsInvitation(payload map[string]any) bool {
 	return strings.EqualFold(strings.TrimSpace(pendingSessionStringValue(payload, "error")), "invitation_required")
 }
 
-// pendingSessionRequiresEmailCompletion 判断 callback 写入的 completion payload 是否处于"补邮箱"状态。
-// 钉钉跨组织/staff 邮箱缺失时进入此状态：前端跳到补邮箱页，exchange 不应走 adoption apply。
+// pendingSessionRequiresEmailCompletion ""
+//
 func pendingSessionRequiresEmailCompletion(payload map[string]any) bool {
 	if v, ok := payload["requires_email_completion"].(bool); ok && v {
 		return true
@@ -284,9 +284,9 @@ func pendingSessionRequiresEmailCompletion(payload map[string]any) bool {
 	return strings.EqualFold(strings.TrimSpace(pendingSessionStringValue(payload, "step")), "email_completion")
 }
 
-// pendingSessionRequiresBindLogin 判断 callback 写入的 completion payload 是否处于"必须绑定已有账户"状态。
-// 钉钉 signupBlocked=true（注册关 + 钉钉企业豁免关）时进入此状态：前端渲染 bind_login 表单，
-// exchange 不应消费 session，否则后续 /pending/bind-login 找不到 session。
+// pendingSessionRequiresBindLogin ""
+// =true（+
+// exchange
 func pendingSessionRequiresBindLogin(payload map[string]any) bool {
 	return strings.EqualFold(strings.TrimSpace(pendingSessionStringValue(payload, "step")), "bind_login_required")
 }
@@ -1492,8 +1492,8 @@ func normalizePendingOAuthCompletionResponse(payload map[string]any) map[string]
 		delete(normalized, key)
 	}
 	step := strings.ToLower(strings.TrimSpace(pendingSessionStringValue(normalized, "step")))
-	// 把多种 choice 别名归一为 oauthPendingChoiceStep；bind_login_required 是独立终态
-	// （前端渲染 needsBindLogin 而非 needsChooser），故不能并入归一化列表。
+	//
+	// （
 	switch step {
 	case "choice", "choose_account_action", "choose_account", "choose", "email_required":
 		normalized["step"] = oauthPendingChoiceStep
@@ -1621,7 +1621,7 @@ func (h *AuthHandler) bindPendingOAuthLogin(c *gin.Context, provider string) {
 	}
 
 	h.authService.RecordSuccessfulLogin(c.Request.Context(), user.ID)
-	// bindPendingOAuthLogin = 绑定已有账户登录，不动 users.username（用户已有自己的名字）
+	// bindPendingOAuthLogin =
 	h.maybeSyncDingTalkAfterLogin(c.Request.Context(), session, user.ID)
 	tokenPair, err := h.authService.GenerateTokenPair(c.Request.Context(), user, "")
 	if err != nil {
@@ -1821,7 +1821,7 @@ func (h *AuthHandler) createPendingOAuthAccount(c *gin.Context, provider string)
 	}
 
 	h.authService.RecordSuccessfulLogin(c.Request.Context(), user.ID)
-	// createPendingOAuthAccount = 注册新账户，需要把钉钉昵称同步到 users.username 作为初始值
+	// createPendingOAuthAccount =
 	h.maybeSyncDingTalkAfterRegistration(c.Request.Context(), session, user.ID)
 	clearCookies()
 	writeOAuthTokenPairResponse(c, tokenPair)

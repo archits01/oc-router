@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// NewJWTAuthMiddleware 创建 JWT 认证中间件
+// NewJWTAuthMiddleware
 func NewJWTAuthMiddleware(authService *service.AuthService, userService *service.UserService) JWTAuthMiddleware {
 	return JWTAuthMiddleware(jwtAuth(authService, userService, userService))
 }
@@ -23,17 +23,17 @@ type userActivityToucher interface {
 	TouchLastActiveForUser(ctx context.Context, user *service.User)
 }
 
-// jwtAuth JWT认证中间件实现
+// jwtAuth JWT
 func jwtAuth(authService *service.AuthService, userService jwtUserReader, activityToucher userActivityToucher) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 从Authorization header中提取token
+		//
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			AbortWithError(c, 401, "UNAUTHORIZED", "Authorization header is required")
 			return
 		}
 
-		// 验证Bearer scheme
+		//
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
 			AbortWithError(c, 401, "INVALID_AUTH_HEADER", "Authorization header format must be 'Bearer {token}'")
@@ -46,7 +46,7 @@ func jwtAuth(authService *service.AuthService, userService jwtUserReader, activi
 			return
 		}
 
-		// 验证token
+		//
 		claims, err := authService.ValidateToken(tokenString)
 		if err != nil {
 			if errors.Is(err, service.ErrTokenExpired) {
@@ -57,14 +57,12 @@ func jwtAuth(authService *service.AuthService, userService jwtUserReader, activi
 			return
 		}
 
-		// 从数据库获取最新的用户信息
 		user, err := userService.GetByID(c.Request.Context(), claims.UserID)
 		if err != nil {
 			AbortWithError(c, 401, "USER_NOT_FOUND", "User not found")
 			return
 		}
 
-		// 检查用户状态
 		if !user.IsActive() {
 			AbortWithError(c, 401, "USER_INACTIVE", "User account is not active")
 			return

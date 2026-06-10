@@ -15,7 +15,7 @@ import (
 )
 
 func TestUserAvailableChannel_Unauthenticated401(t *testing.T) {
-	// 没有 AuthSubject 注入时，handler 应返回 401 且不触达 service 依赖。
+	//
 	gin.SetMode(gin.TestMode)
 	h := &AvailableChannelHandler{} // nil services — 401 路径不会调用它们
 	w := httptest.NewRecorder()
@@ -28,7 +28,7 @@ func TestUserAvailableChannel_Unauthenticated401(t *testing.T) {
 }
 
 func TestFilterUserVisibleGroups_IntersectionOnly(t *testing.T) {
-	// 渠道挂在 {g1, g2, g3}，用户只允许 {g1, g3} —— 响应必须仅含 g1/g3。
+	// {g1, g2, g3}，{g1, g3} ——
 	groups := []service.AvailableGroupRef{
 		{ID: 1, Name: "g1", Platform: "anthropic"},
 		{ID: 2, Name: "g2", Platform: "anthropic"},
@@ -43,7 +43,7 @@ func TestFilterUserVisibleGroups_IntersectionOnly(t *testing.T) {
 }
 
 func TestToUserSupportedModels_FiltersByAllowedPlatforms(t *testing.T) {
-	// 用户可访问分组只覆盖 anthropic；anthropic 平台的模型保留，openai 模型被剔除。
+	//
 	src := []service.SupportedModel{
 		{Name: "claude-sonnet-4-6", Platform: "anthropic", Pricing: nil},
 		{Name: "gpt-4o", Platform: "openai", Pricing: nil},
@@ -55,7 +55,7 @@ func TestToUserSupportedModels_FiltersByAllowedPlatforms(t *testing.T) {
 }
 
 func TestToUserSupportedModels_NilAllowedPlatformsKeepsAll(t *testing.T) {
-	// 显式传 nil allowedPlatforms 表示不做过滤。
+	//
 	src := []service.SupportedModel{
 		{Name: "a", Platform: "anthropic"},
 		{Name: "b", Platform: "openai"},
@@ -64,8 +64,8 @@ func TestToUserSupportedModels_NilAllowedPlatformsKeepsAll(t *testing.T) {
 }
 
 func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
-	// 通过序列化 userAvailableChannel 结构体验证响应形状：
-	// 只有 name / description / platforms；不含管理端字段。
+	//
+	//
 	row := userAvailableChannel{
 		Name:        "ch",
 		Description: "d",
@@ -91,7 +91,7 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 		require.Truef(t, exists, "user DTO must expose %q", key)
 	}
 
-	// 验证 section 的字段（platform / groups / supported_models）。
+	//
 	rawSection, err := json.Marshal(row.Platforms[0])
 	require.NoError(t, err)
 	var sectionDecoded map[string]any
@@ -101,8 +101,8 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 		require.Truef(t, exists, "platform section must expose %q", key)
 	}
 
-	// Group DTO 暴露区分专属/公开、订阅类型、默认倍率所需的字段，
-	// 前端据此渲染 GroupBadge 并与 API 密钥页保持一致的视觉。
+	// Group DTO
+	//
 	rawGroup, err := json.Marshal(row.Platforms[0].Groups[0])
 	require.NoError(t, err)
 	var groupDecoded map[string]any
@@ -112,7 +112,7 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 		require.Truef(t, exists, "group DTO must expose %q", key)
 	}
 
-	// pricing interval 白名单：不应暴露 id / sort_order。
+	// pricing interval
 	pricing := toUserPricing(&service.ChannelModelPricing{
 		BillingMode: service.BillingModeToken,
 		Intervals: []service.PricingInterval{
@@ -132,8 +132,8 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 }
 
 func TestBuildPlatformSections_GroupsByPlatform(t *testing.T) {
-	// 一个渠道横跨 anthropic / openai / 空平台：应该生成 2 个 section，
-	// 按 platform 字母序排序，各自 groups 和 supported_models 只含同平台条目。
+	//
+	//
 	ch := service.AvailableChannel{
 		Name: "ch",
 		SupportedModels: []service.SupportedModel{

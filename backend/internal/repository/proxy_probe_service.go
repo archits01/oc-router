@@ -44,8 +44,8 @@ const (
 	defaultProxyProbeResponseMaxBytes = int64(1024 * 1024)
 )
 
-// probeURLs 按优先级排列的探测 URL 列表
-// 某些 AI API 专用代理只允许访问特定域名，因此需要多个备选
+// probeURLs
+//
 var probeURLs = []struct {
 	url    string
 	parser string // "ip-api" or "httpbin"
@@ -166,7 +166,7 @@ func (s *proxyProbeService) parseIPAPI(body []byte, latencyMs int64) (*service.P
 }
 
 func (s *proxyProbeService) parseHTTPBin(body []byte, latencyMs int64) (*service.ProxyExitInfo, int64, error) {
-	// httpbin.org/ip 返回格式: {"origin": "1.2.3.4"}
+	// httpbin.org/ip {"origin": "1.2.3.4"}
 	var result struct {
 		Origin string `json:"origin"`
 	}

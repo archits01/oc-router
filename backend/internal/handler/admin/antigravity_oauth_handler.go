@@ -29,7 +29,7 @@ func (h *AntigravityOAuthHandler) GenerateAuthURL(c *gin.Context) {
 
 	result, err := h.antigravityOAuthService.GenerateAuthURL(c.Request.Context(), req.ProxyID)
 	if err != nil {
-		response.InternalError(c, "生成授权链接失败: "+err.Error())
+		response.InternalError(c, "生成授权链接failed: "+err.Error())
 		return
 	}
 
@@ -43,7 +43,7 @@ type AntigravityExchangeCodeRequest struct {
 	ProxyID   *int64 `json:"proxy_id"`
 }
 
-// ExchangeCode 用 authorization code 交换 token
+// ExchangeCode
 // POST /api/v1/admin/antigravity/oauth/exchange-code
 func (h *AntigravityOAuthHandler) ExchangeCode(c *gin.Context) {
 	var req AntigravityExchangeCodeRequest
@@ -59,7 +59,7 @@ func (h *AntigravityOAuthHandler) ExchangeCode(c *gin.Context) {
 		ProxyID:   req.ProxyID,
 	})
 	if err != nil {
-		response.BadRequest(c, "Token 交换失败: "+err.Error())
+		response.BadRequest(c, "Token 交换failed: "+err.Error())
 		return
 	}
 

@@ -8,7 +8,6 @@ import { useNavigationLoadingState } from '@/composables/useNavigationLoading'
 
 const { isLoading } = useNavigationLoadingState()
 
-// 进度条可见性
 const isVisible = computed(() => isLoading.value)
 </script>
 

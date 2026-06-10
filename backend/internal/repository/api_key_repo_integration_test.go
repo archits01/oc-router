@@ -459,16 +459,16 @@ func (s *APIKeyRepoSuite) TestIncrementQuotaUsed_Basic() {
 
 	newQuota, err := s.repo.IncrementQuotaUsed(s.ctx, key.ID, 1.5)
 	s.Require().NoError(err, "IncrementQuotaUsed")
-	s.Require().Equal(1.5, newQuota, "第一次递增后应为 1.5")
+	s.Require().Equal(1.5, newQuota, "should be 1.5 after first increment")
 
 	newQuota, err = s.repo.IncrementQuotaUsed(s.ctx, key.ID, 2.5)
 	s.Require().NoError(err, "IncrementQuotaUsed second")
-	s.Require().Equal(4.0, newQuota, "第二次递增后应为 4.0")
+	s.Require().Equal(4.0, newQuota, "should be 4.0 after second increment")
 }
 
 func (s *APIKeyRepoSuite) TestIncrementQuotaUsed_NotFound() {
 	_, err := s.repo.IncrementQuotaUsed(s.ctx, 999999, 1.0)
-	s.Require().ErrorIs(err, service.ErrAPIKeyNotFound, "不存在的 key 应返回 ErrAPIKeyNotFound")
+	s.Require().ErrorIs(err, service.ErrAPIKeyNotFound, "non-existent key should return ErrAPIKeyNotFound")
 }
 
 func (s *APIKeyRepoSuite) TestIncrementQuotaUsed_DeletedKey() {
@@ -478,7 +478,7 @@ func (s *APIKeyRepoSuite) TestIncrementQuotaUsed_DeletedKey() {
 	s.Require().NoError(s.repo.Delete(s.ctx, key.ID), "Delete")
 
 	_, err := s.repo.IncrementQuotaUsed(s.ctx, key.ID, 1.0)
-	s.Require().ErrorIs(err, service.ErrAPIKeyNotFound, "已删除的 key 应返回 ErrAPIKeyNotFound")
+	s.Require().ErrorIs(err, service.ErrAPIKeyNotFound, "deleted key should return ErrAPIKeyNotFound")
 }
 
 func (s *APIKeyRepoSuite) TestIncrementQuotaUsedAndGetState() {
@@ -502,14 +502,14 @@ func (s *APIKeyRepoSuite) TestIncrementQuotaUsedAndGetState() {
 	s.Require().Equal(service.StatusAPIKeyQuotaExhausted, got.Status)
 }
 
-// TestIncrementQuotaUsed_Concurrent 使用真实数据库验证并发原子性。
-// 注意：此测试使用 testEntClient（非事务隔离），数据会真正写入数据库。
+// TestIncrementQuotaUsed_Concurrent
+//
 func TestIncrementQuotaUsed_Concurrent(t *testing.T) {
 	client := testEntClient(t)
 	repo := NewAPIKeyRepository(client, integrationDB).(*apiKeyRepository)
 	ctx := context.Background()
 
-	// 创建测试用户和 API Key
+	//
 	u, err := client.User.Create().
 		SetEmail("concurrent-incr-" + time.Now().Format(time.RFC3339Nano) + "@test.com").
 		SetPasswordHash("hash").
@@ -530,7 +530,7 @@ func TestIncrementQuotaUsed_Concurrent(t *testing.T) {
 		_ = client.User.DeleteOneID(u.ID).Exec(ctx)
 	})
 
-	// 10 个 goroutine 各递增 1.0，总计应为 10.0
+	// 10
 	const goroutines = 10
 	const increment = 1.0
 	var wg sync.WaitGroup
@@ -549,11 +549,10 @@ func TestIncrementQuotaUsed_Concurrent(t *testing.T) {
 		require.NoError(t, e, "goroutine %d failed", i)
 	}
 
-	// 验证最终结果
 	got, err := repo.GetByID(ctx, k.ID)
 	require.NoError(t, err, "GetByID")
 	require.Equal(t, float64(goroutines)*increment, got.QuotaUsed,
-		"并发递增后总和应为 %v，实际为 %v", float64(goroutines)*increment, got.QuotaUsed)
+		"sum after concurrent increments should be %v, actual is %v", float64(goroutines)*increment, got.QuotaUsed)
 }
 
 func (s *APIKeyRepoSuite) TestDeleteWithAudit_WritesAuditAndSoftDeletes() {

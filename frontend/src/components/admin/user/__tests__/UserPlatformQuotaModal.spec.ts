@@ -99,11 +99,11 @@ describe('UserPlatformQuotaModal', () => {
     const inputs = w.findAll('input[type=number]')
     // 4 platforms × 3 windows = 12 inputs
     expect(inputs.length).toBe(12)
-    // 第一个 input 是 anthropic.daily = 10
+    // 第一个 input Yes anthropic.daily = 10
     expect((inputs[0].element as HTMLInputElement).value).toBe('10')
   })
 
-  it('保存提交完整 4 platform payload', async () => {
+  it('SaveSubmit完整 4 platform payload', async () => {
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
         { platform: 'openai', daily_limit_usd: null, weekly_limit_usd: 20, monthly_limit_usd: null,
@@ -111,7 +111,6 @@ describe('UserPlatformQuotaModal', () => {
       ],
     })
     const w = await mountAndOpen()
-    // 找到「保存」按钮（包含中文「保存」字样的按钮）
     const buttons = w.findAll('button')
     const saveBtn = buttons.find((b) => b.text() === 'admin.users.platformQuota.save')
     expect(saveBtn).toBeTruthy()
@@ -125,7 +124,7 @@ describe('UserPlatformQuotaModal', () => {
     expect(openai.weekly_limit_usd).toBe(20)
   })
 
-  it('全部清空把所有 limit 置 null（确认通过）', async () => {
+  it('All清空把所有 limit 置 null（Confirm通过）', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
@@ -147,7 +146,7 @@ describe('UserPlatformQuotaModal', () => {
     confirmSpy.mockRestore()
   })
 
-  it('全部清空 confirm 取消则保持原值', async () => {
+  it('All清空 confirm Cancel则保持原值', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
@@ -167,7 +166,7 @@ describe('UserPlatformQuotaModal', () => {
     confirmSpy.mockRestore()
   })
 
-  it('重置按钮 confirm 取消则不调用 API', async () => {
+  it('Reset按钮 confirm Cancel则不调用 API', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const w = await mountAndOpen()
     const resetBtns = w.findAll('button').filter((b) => b.text() === '↻')
@@ -178,11 +177,11 @@ describe('UserPlatformQuotaModal', () => {
     confirmSpy.mockRestore()
   })
 
-  it('重置按钮 confirm 确认则调用 API', async () => {
+  it('Reset按钮 confirm Confirm则调用 API', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const w = await mountAndOpen()
     const resetBtns = w.findAll('button').filter((b) => b.text() === '↻')
-    await resetBtns[0].trigger('click') // 第一个是 anthropic.daily
+    await resetBtns[0].trigger('click') // 第一个Yes anthropic.daily
     await flushPromises()
     expect(apiMocks.resetPlatformQuotaWindow).toHaveBeenCalledWith(99, 'anthropic', 'daily')
     confirmSpy.mockRestore()

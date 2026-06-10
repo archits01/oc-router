@@ -98,14 +98,14 @@ func TestClaudeCodeValidator_MessagesPathFullValid(t *testing.T) {
 }
 
 func TestClaudeCodeValidator_BillingBlockRecognizedWithoutIdentityPrompt(t *testing.T) {
-	// 真实抓取的完整安全监视器 system prompt（不含身份 prose）。
+	//
 	monitorPrompt, err := os.ReadFile("testdata/security_monitor_system_prompt.txt")
 	require.NoError(t, err)
 
 	validator := NewClaudeCodeValidator()
 
-	// 前提：完整监视器正文经 Dice 相似度远低于阈值，无法被身份 prose 机制识别——
-	// 故下面 Validate 的放行只可能来自计费归因块识别。
+	// ——
+	//
 	require.Less(t, validator.bestSimilarityScore(string(monitorPrompt)), systemPromptThreshold)
 
 	req := httptest.NewRequest(http.MethodPost, "http://example.com/v1/messages", nil)
@@ -114,8 +114,8 @@ func TestClaudeCodeValidator_BillingBlockRecognizedWithoutIdentityPrompt(t *test
 	req.Header.Set("anthropic-beta", "claude-code-20250219")
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	// Claude Code 安全监视器子请求：不携带身份 prose，但 system 数组携带计费归因块
-	// cc_entrypoint=cli，应据此识别为 Claude Code 客户端。
+	// Claude Code
+	// cc_entrypoint=cli，
 	ok := validator.Validate(req, map[string]any{
 		"model": "claude-3-5-haiku-20241022",
 		"system": []any{
@@ -143,8 +143,8 @@ func TestClaudeCodeValidator_BillingBlockNonCLIEntrypointFallsThrough(t *testing
 	req.Header.Set("anthropic-beta", "claude-code-20250219")
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	// 计费块存在但 entrypoint 不是 cli（如 sdk），且无身份 prose：
-	// 不应凭前缀放行，应落回 Dice 检查并失败。验证 cc_entrypoint=cli 这一条件是必要的。
+	//
+	// =cli
 	ok := validator.Validate(req, map[string]any{
 		"model": "claude-3-5-haiku-20241022",
 		"system": []any{
@@ -172,7 +172,7 @@ func TestClaudeCodeValidator_BillingBlockStillRequiresClaudeCodeUA(t *testing.T)
 	req.Header.Set("anthropic-beta", "claude-code-20250219")
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	// 计费块无法绕过 UA 校验：非 claude-cli 客户端在 Step 1 即被拒。
+	//
 	ok := validator.Validate(req, map[string]any{
 		"model": "claude-3-5-haiku-20241022",
 		"system": []any{
@@ -247,9 +247,9 @@ func TestExtractVersion(t *testing.T) {
 	}{
 		{"claude-cli/2.1.22 (darwin; arm64)", "2.1.22"},
 		{"claude-cli/1.0.0", "1.0.0"},
-		{"Claude-CLI/3.10.5 (linux; x86_64)", "3.10.5"}, // 大小写不敏感
+		{"Claude-CLI/3.10.5 (linux; x86_64)", "3.10.5"}, // case insensitive
 		{"curl/8.0.0", ""},                              // 非 Claude CLI
-		{"", ""},                                        // 空字符串
+		{"", ""},                                        // empty string
 		{"claude-cli/", ""},                             // 无版本号
 		{"claude-cli/2.1.22-beta", "2.1.22"},            // 带后缀仍提取主版本号
 	}
@@ -270,7 +270,7 @@ func TestCompareVersions(t *testing.T) {
 		{"3.0.0", "2.99.99", 1}, // major 更大
 		{"1.0.0", "2.0.0", -1},  // major 更小
 		{"0.0.1", "0.0.0", 1},   // patch 差异
-		{"", "1.0.0", -1},       // 空字符串 vs 正常版本
+		{"", "1.0.0", -1},       // empty string vs 正常版本
 		{"v2.1.0", "2.1.0", 0},  // v 前缀处理
 	}
 	for _, tt := range tests {

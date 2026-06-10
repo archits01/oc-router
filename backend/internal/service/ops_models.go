@@ -65,7 +65,7 @@ type OpsErrorLog struct {
 	UpstreamModel    string `json:"upstream_model"`
 	RequestType      *int16 `json:"request_type"`
 
-	// 关联 api_key 名称（LEFT JOIN api_keys 取得；软删只覆盖 key 列，name 保留，故已删 key 仍有原名）。
+	//
 	APIKeyName    string `json:"api_key_name,omitempty"`
 	APIKeyDeleted bool   `json:"api_key_deleted,omitempty"`
 }
@@ -128,14 +128,14 @@ type OpsErrorLogFilter struct {
 	UserID   *int64
 	APIKeyID *int64
 
-	// MatchDeletedKeyOwner: 用户侧专用。UserID 设置且为 true 时,归属从 user_id=UserID
-	// 放宽为 (user_id=UserID OR deleted_key_owner_user_id=UserID),使原所有者能看到
-	// 自己「已删除 key 认证失败」的记录。admin 路径不设此开关 → 行为不变。
+	// MatchDeletedKeyOwner: =UserID
+	// (user_id=UserID OR deleted_key_owner_user_id=UserID),
+	// 「」→
 	MatchDeletedKeyOwner bool
 
 	// Model matches against requested_model first, then model.
 	Model string
-	// ModelFuzzy 为 true 时 Model 走 ILIKE 模糊匹配（仅用户端启用）；false（默认）保持精确 =，管理端语义不变。
+	// ModelFuzzy =，
 	ModelFuzzy bool
 
 	// ExcludeCountTokens drops count_tokens probe errors (is_count_tokens=true).

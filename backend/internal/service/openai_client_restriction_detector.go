@@ -7,35 +7,35 @@ import (
 )
 
 const (
-	// CodexClientRestrictionReasonDisabled 表示账号未开启 codex_cli_only。
+	// CodexClientRestrictionReasonDisabled
 	CodexClientRestrictionReasonDisabled = "codex_cli_only_disabled"
-	// CodexClientRestrictionReasonMatchedUA 表示请求命中官方客户端 UA 白名单。
+	// CodexClientRestrictionReasonMatchedUA
 	CodexClientRestrictionReasonMatchedUA = "official_client_user_agent_matched"
-	// CodexClientRestrictionReasonMatchedOriginator 表示请求命中官方客户端 originator 白名单。
+	// CodexClientRestrictionReasonMatchedOriginator
 	CodexClientRestrictionReasonMatchedOriginator = "official_client_originator_matched"
-	// CodexClientRestrictionReasonMatchedAllowedClient 表示请求命中账号级额外放行的命名客户端预设。
+	// CodexClientRestrictionReasonMatchedAllowedClient
 	CodexClientRestrictionReasonMatchedAllowedClient = "allowed_client_matched"
-	// CodexClientRestrictionReasonMatchedGlobalAllowedClient 表示请求命中全局额外放行的命名客户端预设。
+	// CodexClientRestrictionReasonMatchedGlobalAllowedClient
 	CodexClientRestrictionReasonMatchedGlobalAllowedClient = "global_allowed_client_matched"
-	// CodexClientRestrictionReasonNotMatchedUA 表示请求未命中官方客户端 UA 白名单。
+	// CodexClientRestrictionReasonNotMatchedUA
 	CodexClientRestrictionReasonNotMatchedUA = "official_client_user_agent_not_matched"
-	// CodexClientRestrictionReasonForceCodexCLI 表示通过 ForceCodexCLI 配置兜底放行。
+	// CodexClientRestrictionReasonForceCodexCLI
 	CodexClientRestrictionReasonForceCodexCLI = "force_codex_cli_enabled"
 )
 
-// CodexClientRestrictionDetectionResult 是 codex_cli_only 统一检测入口结果。
+// CodexClientRestrictionDetectionResult
 type CodexClientRestrictionDetectionResult struct {
 	Enabled bool
 	Matched bool
 	Reason  string
 }
 
-// CodexClientRestrictionDetector 定义 codex_cli_only 统一检测入口。
+// CodexClientRestrictionDetector
 type CodexClientRestrictionDetector interface {
 	Detect(c *gin.Context, account *Account, globalAllowedClients []string) CodexClientRestrictionDetectionResult
 }
 
-// OpenAICodexClientRestrictionDetector 为 OpenAI OAuth codex_cli_only 的默认实现。
+// OpenAICodexClientRestrictionDetector
 type OpenAICodexClientRestrictionDetector struct {
 	cfg *config.Config
 }
@@ -82,7 +82,7 @@ func (d *OpenAICodexClientRestrictionDetector) Detect(c *gin.Context, account *A
 		}
 	}
 
-	// 官方客户端白名单未命中时，先尝试账号级额外放行的命名客户端预设（如 Claude Code codex 插件）。
+	//
 	if allowed := account.GetCodexCLIOnlyAllowedClients(); len(allowed) > 0 &&
 		openai.MatchAllowedClients(userAgent, originator, allowed) {
 		return CodexClientRestrictionDetectionResult{
@@ -92,7 +92,6 @@ func (d *OpenAICodexClientRestrictionDetector) Detect(c *gin.Context, account *A
 		}
 	}
 
-	// 再尝试由更高作用域（全局设置）注入的额外放行客户端列表。
 	if len(globalAllowedClients) > 0 &&
 		openai.MatchAllowedClients(userAgent, originator, globalAllowedClients) {
 		return CodexClientRestrictionDetectionResult{

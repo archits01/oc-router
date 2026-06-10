@@ -126,7 +126,7 @@ func normalizeAirwallexAPIBase(raw string) (string, error) {
 	return parsed.String(), nil
 }
 
-func (a *Airwallex) Name() string        { return "空中云汇" }
+func (a *Airwallex) Name() string        { return "Airwallex" }
 func (a *Airwallex) ProviderKey() string { return payment.TypeAirwallex }
 func (a *Airwallex) SupportedTypes() []payment.PaymentType {
 	return []payment.PaymentType{payment.TypeAirwallex}

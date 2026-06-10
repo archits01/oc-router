@@ -18,7 +18,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-// upsertCapturingQuotaRepo 实现 service.UserPlatformQuotaRepository，捕获 UpsertForUser 调用。
+// upsertCapturingQuotaRepo
 type upsertCapturingQuotaRepo struct {
 	service.UserPlatformQuotaRepository
 	listRecords []service.UserPlatformQuotaRecord
@@ -54,7 +54,7 @@ func (r *upsertCapturingQuotaRepo) ResetExpiredWindow(_ context.Context, userID 
 	return r.resetErr
 }
 
-// billingCacheStub 实现 service.BillingCache 中本测试关心的 Delete 方法；其他方法 panic。
+// billingCacheStub
 type billingCacheStub struct {
 	service.BillingCache
 	deleteCalls []deleteCall
@@ -112,7 +112,7 @@ func TestUpdateUserPlatformQuotas_Success(t *testing.T) {
 	if repo.upsertCalls[0].userID != 42 || len(repo.upsertCalls[0].records) != 2 {
 		t.Errorf("unexpected upsert call: %+v", repo.upsertCalls[0])
 	}
-	// 缓存失效：请求中 2 个 platform + 软删除的 2 个 platform（gemini, antigravity）= 4 次
+	// + = 4
 	if len(cache.deleteCalls) != 4 {
 		t.Errorf("expected 4 cache delete calls, got %d: %+v", len(cache.deleteCalls), cache.deleteCalls)
 	}
@@ -180,7 +180,7 @@ func TestUpdateUserPlatformQuotas_ReturnsLatestState(t *testing.T) {
 	}
 }
 
-// ───────── T4: Reset 测试 ─────────
+// ───────── T4: Reset ─────────
 
 func postReq(t *testing.T, body string) (*gin.Context, *httptest.ResponseRecorder) {
 	t.Helper()
@@ -238,7 +238,7 @@ func TestResetUserPlatformQuotaWindow_RejectsInvalidPlatform(t *testing.T) {
 }
 
 func TestResetUserPlatformQuotaWindow_NotFound(t *testing.T) {
-	// handler 检查 service.ErrUserPlatformQuotaNotFound（由 adapter 包装而来）
+	// handler
 	repo := &upsertCapturingQuotaRepo{resetErr: service.ErrUserPlatformQuotaNotFound}
 	h := buildTestHandler(repo, &billingCacheStub{})
 	c, w := postReq(t, `{"platform":"anthropic","window":"daily"}`)
@@ -258,7 +258,7 @@ func TestUpdateUserPlatformQuotas_JSONErrorOnRepoFailure(t *testing.T) {
 	if w.Code < 500 {
 		t.Errorf("expected 5xx, got %d", w.Code)
 	}
-	// 返回 JSON 错误响应
+	//
 	var body2 map[string]any
 	if err := json.Unmarshal(w.Body.Bytes(), &body2); err != nil {
 		t.Errorf("expected JSON error body, got: %s", w.Body.String())

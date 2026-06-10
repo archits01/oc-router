@@ -57,7 +57,7 @@ func TestAPIKeyService_TouchLastUsed_ExpiredDebounceTouchesAgain(t *testing.T) {
 
 	require.NoError(t, svc.TouchLastUsed(context.Background(), 123))
 
-	// 强制将 debounce 时间回拨到窗口之外，触发第二次写库。
+	//
 	svc.lastUsedTouchL1.Store(int64(123), time.Now().Add(-apiKeyLastUsedMinTouch-time.Second))
 
 	require.NoError(t, svc.TouchLastUsed(context.Background(), 123))

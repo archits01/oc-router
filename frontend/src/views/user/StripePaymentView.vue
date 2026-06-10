@@ -13,7 +13,7 @@
         <button class="btn btn-primary mt-6" @click="router.push('/purchase')">{{ t('payment.result.backToRecharge') }}</button>
       </div>
       <template v-else>
-        <!-- 金额头部 -->
+        <!-- Amount头部 -->
         <div v-if="order" class="card overflow-hidden">
           <div class="bg-gradient-to-br from-[#635bff] to-[#4f46e5] px-6 py-6 text-center">
             <p class="text-sm font-medium text-indigo-200">{{ t('payment.actualPay') }}</p>
@@ -42,7 +42,7 @@
           </div>
         </template>
 
-        <!-- 支付宝跳转状态 -->
+        <!-- 支付宝跳转Status -->
         <template v-else-if="redirecting">
           <div class="card p-6">
             <div class="flex flex-col items-center space-y-4 py-4">
@@ -52,7 +52,7 @@
           </div>
         </template>
 
-        <!-- 成功状态 -->
+        <!-- 成功Status -->
         <template v-else-if="stripeSuccess">
           <div class="card p-6 text-center">
             <div class="flex flex-col items-center gap-3 py-4">
@@ -65,7 +65,7 @@
           </div>
         </template>
 
-        <!-- 无指定方式或未知方式时展示完整 Payment Element -->
+        <!-- 无指定方式或Unknown方式时展示完整 Payment Element -->
         <template v-else-if="showPaymentElement">
           <div class="card p-6">
             <div id="stripe-payment-element" class="min-h-[200px]"></div>
@@ -83,7 +83,7 @@
           </div>
         </template>
 
-        <!-- 错误状态 -->
+        <!-- 错误Status -->
         <div v-if="stripeError && !showPaymentElement" class="card p-4">
           <p class="text-sm text-red-600 dark:text-red-400">{{ stripeError }}</p>
           <button class="btn btn-secondary mt-3 w-full" @click="router.push('/purchase')">{{ t('payment.result.backToRecharge') }}</button>
@@ -172,7 +172,7 @@ onMounted(async () => {
     stripeInstance = stripe
     loading.value = false
 
-    // 指定方式直接确认，无需渲染完整 Payment Element
+    // 指定方式直接Confirm，无需渲染完整 Payment Element
     if (method === 'alipay') {
       await confirmAlipay(stripe, clientSecret, orderId)
     } else if (method === 'wechat_pay') {
@@ -230,7 +230,6 @@ async function confirmWechatPay(stripe: Stripe, clientSecret: string) {
   const qrData = paymentIntent?.next_action?.wechat_pay_display_qr_code?.image_data_url
   if (qrData) {
     wechatQrUrl.value = qrData
-    // 轮询支付完成状态
     startPolling()
   } else if (paymentIntent?.status === 'succeeded') {
     stripeSuccess.value = true

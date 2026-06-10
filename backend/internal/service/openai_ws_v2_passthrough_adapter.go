@@ -128,7 +128,7 @@ type openAIWSPassthroughUsageMeta struct {
 	serviceTier     atomic.Pointer[string]
 	reasoningEffort atomic.Pointer[string]
 
-	// 仅在 client->upstream filter goroutine 中读写；Load 侧通过上方原子指针同步。
+	// >upstream filter goroutine
 	sessionRequestModel string
 }
 
@@ -298,19 +298,19 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 	}
 	firstClientMessage = updatedFirst
 
-	// 在 policy filter 之后再提取 service_tier / reasoning_effort 用于
-	// usage 上报：filter
-	// 命中时 service_tier 已经从 firstClientMessage 中删除，billing 应当
-	// 反映上游实际处理的 tier（nil = default），而不是用户最初请求的
-	// "priority"。HTTP 入口（line ~2728 extractOpenAIServiceTier(reqBody)）
-	// 与 WS ingress（openai_ws_forwarder.go:2991 取自 payload）的语义一致。
 	//
-	// 多轮 passthrough：OpenAI Realtime / Responses WS 协议允许客户端在
-	// 同一连接的不同 response.create 帧上发送不同 service_tier（参考
-	// codex-rs/core/src/client.rs build_responses_request 每次重新填值）。
-	// 因此使用 atomic.Pointer[string] 在 filter（runClientToUpstream
-	// goroutine）和 OnTurnComplete / final result（runUpstreamToClient
-	// goroutine）之间同步当前 turn 的 usage metadata。
+	// usage
+	//
+	// = default），
+	// "priority"。HTTP ~2728 extractOpenAIServiceTier(reqBody)）
+	//
+	//
+	//
+	//
+	// codex-rs/core/src/client.rs build_responses_request
+	// [string]
+	// goroutine）
+	// goroutine）
 	usageMeta.initFromFirstFrame(firstClientMessage)
 	promptCacheKey := strings.TrimSpace(gjson.GetBytes(firstClientMessage, "prompt_cache_key").String())
 
@@ -393,10 +393,9 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 	completedTurns := atomic.Int32{}
 	policyClientConn := &openAIWSPolicyEnforcingFrameConn{
 		inner: &openAIWSClientFrameConn{conn: clientConn},
-		// 注意线程安全：filter 仅在 runClientToUpstream 这一条
-		// goroutine 中被调用（passthrough_relay.go: ReadFrame loop），
-		// capturedSessionModel 的读写都发生在该 goroutine 内，因此无需
-		// 加锁/原子化。
+		//
+		// goroutine
+		// capturedSessionModel
 		filter: func(msgType coderws.MessageType, payload []byte) ([]byte, *OpenAIFastBlockedError, error) {
 			if msgType != coderws.MessageText {
 				return payload, nil, nil
@@ -414,13 +413,13 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 					return payload, nil, err
 				}
 			}
-			// 在评估策略前先刷新 capturedSessionModel：客户端可能通过
-			// session.update 修改 session-level model（Realtime /
-			// Responses WS 协议允许），如果不刷新就会出现
-			// "首帧 model=gpt-4o（pass）→ session.update 改成 gpt-5.5
-			// → 不带 model 的 response.create fallback 到 gpt-4o" 的
-			// 绕过路径。这里只看 session.update 事件中的 session.model
-			// 字段，response.create 自己的 model 仍然由其本帧字段决定。
+			//
+			// session.update
+			// Responses WS
+			// "=gpt-4o（pass）→ session.update
+			// → "
+			//
+			//
 			if updated := openAIWSPassthroughPolicyModelFromSessionFrame(account, payload); updated != "" {
 				capturedSessionModel = updated
 			}
@@ -436,20 +435,19 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 				model = capturedSessionModel
 			}
 			out, blocked, policyErr := s.applyOpenAIFastPolicyToWSResponseCreate(ctx, account, model, payload)
-			// 多轮 passthrough usage：仅在成功（non-block / non-err）
-			// 的 response.create 帧上更新 usageMeta，使用
-			// filter 处理后的 payload，与首帧 policy-after-extract 语义
-			// 保持一致（参见上方 extractOpenAIServiceTierFromBody 注释）。
-			//   - 非 response.create 帧（response.cancel /
-			//     conversation.item.create / session.update 等）不携带
-			//     per-response metadata，不应覆盖前一轮值。
-			//   - blocked != nil：该帧不会发送上游，usage metadata 应保持
-			//     上一轮值。
-			//   - policyErr != nil：异常路径，保持上一轮值。
-			//   - 不带 service_tier 的 response.create 会让
-			//     extractOpenAIServiceTierFromBody 返回 nil；这里有意
-			//     覆盖（Store(nil)），因为 OpenAI 上游对该帧实际不传
-			//     service_tier 时按 default 处理，billing 应如实反映。
+			//
+			//
+			// filter
+			//
+			//   -
+			//     conversation.item.create / session.update
+			//     per-response metadata，
+			//   - blocked != nil：
+			//   - policyErr != nil：
+			//   -
+			//     extractOpenAIServiceTierFromBody
+			//     (nil)），
+			//     service_tier
 			if policyErr == nil && blocked == nil &&
 				strings.TrimSpace(gjson.GetBytes(payload, "type").String()) == "response.create" {
 				usageMeta.updateFromResponseCreate(out, requestModelForThisFrame)
@@ -626,7 +624,7 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 			relayResult.DroppedDownstreamFrames,
 			turnCount,
 		)
-		// 正常路径按 terminal 事件逐 turn 已回调；仅在零 turn 场景兜底回调一次。
+		//
 		if turnCount == 0 && hooks != nil && hooks.AfterTurn != nil {
 			hooks.AfterTurn(1, result, nil)
 		}

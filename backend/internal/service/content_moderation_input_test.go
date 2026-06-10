@@ -6,8 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// 当数组末尾不是用户消息时（典型场景：Agent 工具循环结束于 tool/assistant），
-// 应直接跳过审计——不再回溯查找历史中的某条用户消息。
+//
 
 func TestExtractContentModerationInput_AnthropicAgentToolLoopSkipsAudit(t *testing.T) {
 	body := []byte(`{
@@ -97,7 +96,7 @@ func TestExtractContentModerationInput_OpenAIChatMultiTurnExtractsLatestUser(t *
 func TestExtractContentModerationInput_GeminiAgentToolLoopSkipsAudit(t *testing.T) {
 	body := []byte(`{
 		"contents": [
-			{"role":"user","parts":[{"text":"查询天气"}]},
+			{"role":"user","parts":[{"text":"query天气"}]},
 			{"role":"model","parts":[{"functionCall":{"name":"weather","args":{}}}]},
 			{"role":"user","parts":[{"functionResponse":{"name":"weather","response":{"temp":25}}}]}
 		]
@@ -138,7 +137,7 @@ func TestExtractContentModerationInput_GeminiMultiTurnExtractsLatestUser(t *test
 func TestExtractContentModerationInput_ResponsesAgentToolLoopSkipsAudit(t *testing.T) {
 	body := []byte(`{
 		"input":[
-			{"type":"message","role":"user","content":[{"type":"input_text","text":"运行测试"}]},
+			{"type":"message","role":"user","content":[{"type":"input_text","text":"运行test"}]},
 			{"type":"function_call","call_id":"call_1","name":"run_tests","arguments":"{}"},
 			{"type":"function_call_output","call_id":"call_1","output":"all passed"}
 		]

@@ -15,7 +15,7 @@ const (
 	TaskTypePasswordReset = "password_reset"
 )
 
-// EmailTask 邮件发送任务
+// EmailTask
 type EmailTask struct {
 	Email    string
 	SiteName string
@@ -24,7 +24,7 @@ type EmailTask struct {
 	Locale   string // Optional Accept-Language locale hint
 }
 
-// EmailQueueService 异步邮件队列服务
+// EmailQueueService
 type EmailQueueService struct {
 	emailService *EmailService
 	taskChan     chan EmailTask
@@ -33,7 +33,7 @@ type EmailQueueService struct {
 	workers      int
 }
 
-// NewEmailQueueService 创建邮件队列服务
+// NewEmailQueueService
 func NewEmailQueueService(emailService *EmailService, workers int) *EmailQueueService {
 	if workers <= 0 {
 		workers = 3 // 默认3个工作协程
@@ -46,13 +46,12 @@ func NewEmailQueueService(emailService *EmailService, workers int) *EmailQueueSe
 		workers:      workers,
 	}
 
-	// 启动工作协程
 	service.start()
 
 	return service
 }
 
-// start 启动工作协程
+// start
 func (s *EmailQueueService) start() {
 	for i := 0; i < s.workers; i++ {
 		s.wg.Add(1)
@@ -61,7 +60,7 @@ func (s *EmailQueueService) start() {
 	logger.LegacyPrintf("service.email_queue", "[EmailQueue] Started %d workers", s.workers)
 }
 
-// worker 工作协程
+// worker
 func (s *EmailQueueService) worker(id int) {
 	defer s.wg.Done()
 
@@ -76,7 +75,7 @@ func (s *EmailQueueService) worker(id int) {
 	}
 }
 
-// processTask 处理任务
+// processTask
 func (s *EmailQueueService) processTask(workerID int, task EmailTask) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -99,7 +98,7 @@ func (s *EmailQueueService) processTask(workerID int, task EmailTask) {
 	}
 }
 
-// EnqueueVerifyCode 将验证码发送任务加入队列
+// EnqueueVerifyCode
 func (s *EmailQueueService) EnqueueVerifyCode(email, siteName string, locale ...string) error {
 	task := EmailTask{
 		Email:    email,
@@ -117,7 +116,7 @@ func (s *EmailQueueService) EnqueueVerifyCode(email, siteName string, locale ...
 	}
 }
 
-// EnqueuePasswordReset 将密码重置邮件任务加入队列
+// EnqueuePasswordReset
 func (s *EmailQueueService) EnqueuePasswordReset(email, siteName, resetURL string, locale ...string) error {
 	task := EmailTask{
 		Email:    email,
@@ -136,7 +135,7 @@ func (s *EmailQueueService) EnqueuePasswordReset(email, siteName, resetURL strin
 	}
 }
 
-// Stop 停止队列服务
+// Stop
 func (s *EmailQueueService) Stop() {
 	close(s.stopChan)
 	s.wg.Wait()

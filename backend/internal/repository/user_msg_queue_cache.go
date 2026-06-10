@@ -12,15 +12,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Redis Key 模式（使用 hash tag 确保 Redis Cluster 下同一 accountID 的 key 落入同一 slot）
-// 格式: umq:{accountID}:lock / umq:{accountID}:last
+// Redis Key
+// {accountID}:lock / umq:{accountID}:last
 const (
 	umqKeyPrefix  = "umq:"
 	umqLockSuffix = ":lock" // STRING (requestID), PX lockTtlMs
-	umqLastSuffix = ":last" // STRING (毫秒时间戳), EX 60s
+	umqLastSuffix = ":last" // STRING (millisecond timestamp), EX 60s
 )
 
-// Lua 脚本：原子获取串行锁（SET NX PX + 重入安全）
+// Lua +
 var acquireLockScript = redis.NewScript(`
 local cur = redis.call('GET', KEYS[1])
 if cur == ARGV[1] then
@@ -32,7 +32,7 @@ redis.call('SET', KEYS[1], ARGV[1], 'PX', tonumber(ARGV[2]))
 return 1
 `)
 
-// Lua 脚本：原子释放锁 + 记录完成时间（使用 Redis TIME 避免时钟偏差）
+// Lua +
 var releaseLockScript = redis.NewScript(`
 -- Redis 3.2-4.x compat: opt into effects replication so redis.call('TIME')
 -- replicates correctly. No-op on Redis 5.0+ (effects replication is default).
@@ -48,7 +48,7 @@ end
 return 0
 `)
 
-// Lua 脚本：原子清理孤儿锁（仅在 PTTL == -1 时删除，避免 TOCTOU 竞态误删合法锁）
+// Lua == -1
 var forceReleaseLockScript = redis.NewScript(`
 local pttl = redis.call('PTTL', KEYS[1])
 if pttl == -1 then
@@ -62,27 +62,27 @@ type userMsgQueueCache struct {
 	rdb *redis.Client
 }
 
-// NewUserMsgQueueCache 创建用户消息队列缓存
+// NewUserMsgQueueCache
 func NewUserMsgQueueCache(rdb *redis.Client) service.UserMsgQueueCache {
 	return &userMsgQueueCache{rdb: rdb}
 }
 
 func umqLockKey(accountID int64) string {
-	// 格式: umq:{123}:lock — 花括号确保 Redis Cluster hash tag 生效
+	// {123}:lock —
 	return umqKeyPrefix + "{" + strconv.FormatInt(accountID, 10) + "}" + umqLockSuffix
 }
 
 func umqLastKey(accountID int64) string {
-	// 格式: umq:{123}:last — 与 lockKey 同一 hash slot
+	// {123}:last —
 	return umqKeyPrefix + "{" + strconv.FormatInt(accountID, 10) + "}" + umqLastSuffix
 }
 
-// umqScanPattern 用于 SCAN 扫描锁 key
+// umqScanPattern
 func umqScanPattern() string {
 	return umqKeyPrefix + "{*}" + umqLockSuffix
 }
 
-// AcquireLock 尝试获取账号级串行锁
+// AcquireLock
 func (c *userMsgQueueCache) AcquireLock(ctx context.Context, accountID int64, requestID string, lockTtlMs int) (bool, error) {
 	key := umqLockKey(accountID)
 	result, err := acquireLockScript.Run(ctx, c.rdb, []string{key}, requestID, lockTtlMs).Int()
@@ -92,7 +92,7 @@ func (c *userMsgQueueCache) AcquireLock(ctx context.Context, accountID int64, re
 	return result == 1, nil
 }
 
-// ReleaseLock 释放锁并记录完成时间
+// ReleaseLock
 func (c *userMsgQueueCache) ReleaseLock(ctx context.Context, accountID int64, requestID string) (bool, error) {
 	lockKey := umqLockKey(accountID)
 	lastKey := umqLastKey(accountID)
@@ -103,7 +103,7 @@ func (c *userMsgQueueCache) ReleaseLock(ctx context.Context, accountID int64, re
 	return result == 1, nil
 }
 
-// GetLastCompletedMs 获取上次完成时间（毫秒时间戳）
+// GetLastCompletedMs
 func (c *userMsgQueueCache) GetLastCompletedMs(ctx context.Context, accountID int64) (int64, error) {
 	key := umqLastKey(accountID)
 	val, err := c.rdb.Get(ctx, key).Result()
@@ -120,7 +120,7 @@ func (c *userMsgQueueCache) GetLastCompletedMs(ctx context.Context, accountID in
 	return ms, nil
 }
 
-// ForceReleaseLock 原子清理孤儿锁（仅在 PTTL == -1 时删除，防止 TOCTOU 竞态误删合法锁）
+// ForceReleaseLock == -1
 func (c *userMsgQueueCache) ForceReleaseLock(ctx context.Context, accountID int64) error {
 	key := umqLockKey(accountID)
 	_, err := forceReleaseLockScript.Run(ctx, c.rdb, []string{key}).Result()
@@ -130,8 +130,8 @@ func (c *userMsgQueueCache) ForceReleaseLock(ctx context.Context, accountID int6
 	return nil
 }
 
-// ScanLockKeys 扫描所有锁 key，仅返回 PTTL == -1（无过期时间）的孤儿锁 accountID 列表
-// 正常的锁都有 PX 过期时间，PTTL == -1 表示异常状态（如 Redis 故障恢复后丢失 TTL）
+// ScanLockKeys == -1（
+// == -1
 func (c *userMsgQueueCache) ScanLockKeys(ctx context.Context, maxCount int) ([]int64, error) {
 	var accountIDs []int64
 	var cursor uint64
@@ -143,19 +143,18 @@ func (c *userMsgQueueCache) ScanLockKeys(ctx context.Context, maxCount int) ([]i
 			return nil, fmt.Errorf("umq scan lock keys: %w", err)
 		}
 		for _, key := range keys {
-			// 检查 PTTL：只清理 PTTL == -1（无过期时间）的异常锁
+			// == -1（
 			pttl, err := c.rdb.PTTL(ctx, key).Result()
 			if err != nil {
 				continue
 			}
-			// PTTL 返回值：-2 = key 不存在，-1 = 无过期时间，>0 = 剩余毫秒
-			// go-redis 对哨兵值 -1/-2 不乘精度系数，直接返回 time.Duration(-1)/-2
-			// 只删除 -1（无过期时间的异常锁），跳过正常持有的锁
+			// PTTL = key = >0 =
+			// go-redis (-1)/-2
 			if pttl != time.Duration(-1) {
 				continue
 			}
 
-			// 从 key 中提取 accountID: umq:{123}:lock → 提取 {} 内的数字
+			// {123}:lock → {}
 			openBrace := strings.IndexByte(key, '{')
 			closeBrace := strings.IndexByte(key, '}')
 			if openBrace < 0 || closeBrace <= openBrace+1 {
@@ -179,7 +178,7 @@ func (c *userMsgQueueCache) ScanLockKeys(ctx context.Context, maxCount int) ([]i
 	return accountIDs, nil
 }
 
-// GetCurrentTimeMs 通过 Redis TIME 命令获取当前服务器时间（毫秒），确保与锁记录的时间源一致
+// GetCurrentTimeMs
 func (c *userMsgQueueCache) GetCurrentTimeMs(ctx context.Context) (int64, error) {
 	t, err := c.rdb.Time(ctx).Result()
 	if err != nil {

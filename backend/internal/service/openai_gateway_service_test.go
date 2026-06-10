@@ -21,7 +21,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// 编译期接口断言
 var _ AccountRepository = (*stubOpenAIAccountRepo)(nil)
 var _ GatewayCache = (*stubGatewayCache)(nil)
 
@@ -1763,7 +1762,7 @@ func TestOpenAIStreamingTooLong(t *testing.T) {
 
 	go func() {
 		defer func() { _ = pw.Close() }()
-		// 写入超过 MaxLineSize 的单行数据，触发 ErrTooLong
+		//
 		payload := "data: " + strings.Repeat("a", 128*1024) + "\n"
 		_, _ = pw.Write([]byte(payload))
 	}()
@@ -2202,9 +2201,9 @@ func TestOpenAIBuildUpstreamRequestOAuthOfficialClientOriginatorCompatibility(t 
 	}
 }
 
-// ==================== P1-08 修复：model 替换性能优化测试 ====================
+// ==================== P1-08 ====================
 
-// ==================== P1-08 修复：model 替换性能优化测试 =============
+// ==================== P1-08 =============
 func TestReplaceModelInSSELine(t *testing.T) {
 	svc := &OpenAIGatewayService{}
 
@@ -2230,7 +2229,7 @@ func TestReplaceModelInSSELine(t *testing.T) {
 			expected: `data: {"type":"response","response":{"id":"resp-1","model":"my-model","output":[]}}`,
 		},
 		{
-			name:     "model 不匹配时不替换",
+			name:     "model mismatch时不替换",
 			line:     `data: {"id":"chatcmpl-123","model":"gpt-3.5-turbo","choices":[]}`,
 			from:     "gpt-4o",
 			to:       "my-model",
@@ -2382,7 +2381,7 @@ func TestReplaceModelInResponseBody(t *testing.T) {
 			expected: `{"id":"chatcmpl-123","model":"alias","choices":[]}`,
 		},
 		{
-			name:     "model 不匹配不替换",
+			name:     "model mismatch不替换",
 			body:     `{"id":"chatcmpl-123","model":"gpt-3.5-turbo","choices":[]}`,
 			from:     "gpt-4o",
 			to:       "alias",
@@ -2396,14 +2395,14 @@ func TestReplaceModelInResponseBody(t *testing.T) {
 			expected: `{"id":"chatcmpl-123","choices":[]}`,
 		},
 		{
-			name:     "非法 JSON 返回原值",
+			name:     "非法 JSON returned原值",
 			body:     `not json`,
 			from:     "gpt-4o",
 			to:       "alias",
 			expected: `not json`,
 		},
 		{
-			name:     "空 body 返回原值",
+			name:     "空 body returned原值",
 			body:     ``,
 			from:     "gpt-4o",
 			to:       "alias",
@@ -2435,7 +2434,7 @@ func TestExtractOpenAISSEDataLine(t *testing.T) {
 	}{
 		{name: "标准格式", line: `data: {"type":"x"}`, wantData: `{"type":"x"}`, wantOK: true},
 		{name: "无空格格式", line: `data:{"type":"x"}`, wantData: `{"type":"x"}`, wantOK: true},
-		{name: "纯空数据", line: `data:   `, wantData: ``, wantOK: true},
+		{name: "纯empty data", line: `data:   `, wantData: ``, wantOK: true},
 		{name: "非 data 行", line: `event: message`, wantData: ``, wantOK: false},
 	}
 
@@ -2452,25 +2451,25 @@ func TestParseSSEUsage_SelectiveParsing(t *testing.T) {
 	svc := &OpenAIGatewayService{}
 	usage := &OpenAIUsage{InputTokens: 9, OutputTokens: 8, CacheReadInputTokens: 7}
 
-	// 非 completed 事件，不应覆盖 usage
+	//
 	svc.parseSSEUsage(`{"type":"response.in_progress","response":{"usage":{"input_tokens":1,"output_tokens":2}}}`, usage)
 	require.Equal(t, 9, usage.InputTokens)
 	require.Equal(t, 8, usage.OutputTokens)
 	require.Equal(t, 7, usage.CacheReadInputTokens)
 
-	// completed 事件，应提取 usage
+	// completed
 	svc.parseSSEUsage(`{"type":"response.completed","response":{"usage":{"input_tokens":3,"output_tokens":5,"input_tokens_details":{"cached_tokens":2}}}}`, usage)
 	require.Equal(t, 3, usage.InputTokens)
 	require.Equal(t, 5, usage.OutputTokens)
 	require.Equal(t, 2, usage.CacheReadInputTokens)
 
-	// done 事件同样可能携带最终 usage
+	// done
 	svc.parseSSEUsage(`{"type":"response.done","response":{"usage":{"input_tokens":13,"output_tokens":15,"input_tokens_details":{"cached_tokens":4}}}}`, usage)
 	require.Equal(t, 13, usage.InputTokens)
 	require.Equal(t, 15, usage.OutputTokens)
 	require.Equal(t, 4, usage.CacheReadInputTokens)
 
-	// failed 事件在部分上游路径也会携带已消耗 usage，应与 WS/passthrough 保持一致
+	// failed
 	svc.parseSSEUsage(`{"type":"response.failed","response":{"usage":{"input_tokens":17,"output_tokens":19,"input_tokens_details":{"cached_tokens":6}}}}`, usage)
 	require.Equal(t, 17, usage.InputTokens)
 	require.Equal(t, 19, usage.OutputTokens)
@@ -2533,7 +2532,7 @@ func TestHandleSSEToJSON_CompletedEventReturnsJSON(t *testing.T) {
 	require.Equal(t, 7, usage.InputTokens)
 	require.Equal(t, 9, usage.OutputTokens)
 	require.Equal(t, 1, usage.CacheReadInputTokens)
-	// Header 可能由上游 Content-Type 透传；关键是 body 已转换为最终 JSON 响应。
+	// Header
 	require.NotContains(t, rec.Body.String(), "event:")
 	require.Contains(t, rec.Body.String(), `"id":"resp_2"`)
 	require.NotContains(t, rec.Body.String(), "data:")

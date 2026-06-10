@@ -95,17 +95,16 @@ func TestJitteredTTL(t *testing.T) {
 
 	for i := 0; i < 200; i++ {
 		ttl := jitteredTTL()
-		require.GreaterOrEqual(t, ttl, minTTL, "jitteredTTL() 返回值低于下限: %v", ttl)
-		require.LessOrEqual(t, ttl, maxTTL, "jitteredTTL() 返回值超过上限: %v", ttl)
+		require.GreaterOrEqual(t, ttl, minTTL, "jitteredTTL() return value below minimum: %v", ttl)
+		require.LessOrEqual(t, ttl, maxTTL, "jitteredTTL() return value exceeds maximum: %v", ttl)
 	}
 }
 
 func TestJitteredTTL_HasVariation(t *testing.T) {
-	// 多次调用应该产生不同的值（验证抖动存在）
 	seen := make(map[time.Duration]struct{}, 50)
 	for i := 0; i < 50; i++ {
 		seen[jitteredTTL()] = struct{}{}
 	}
-	// 50 次调用中应该至少有 2 个不同的值
-	require.Greater(t, len(seen), 1, "jitteredTTL() 应产生不同的 TTL 值")
+	// 50
+	require.Greater(t, len(seen), 1, "jitteredTTL() should produce different TTL values")
 }

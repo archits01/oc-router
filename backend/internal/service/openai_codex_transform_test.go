@@ -9,7 +9,7 @@ import (
 )
 
 func TestApplyCodexOAuthTransform_ToolContinuationPreservesInput(t *testing.T) {
-	// 续链场景：保留 item_reference 与 id，但不再强制 store=true。
+	// =true。
 
 	reqBody := map[string]any{
 		"model": "gpt-5.2",
@@ -22,7 +22,7 @@ func TestApplyCodexOAuthTransform_ToolContinuationPreservesInput(t *testing.T) {
 
 	applyCodexOAuthTransform(reqBody, false, false)
 
-	// 未显式设置 store=true，默认为 false。
+	// =true，
 	store, ok := reqBody["store"].(bool)
 	require.True(t, ok)
 	require.False(t, store)
@@ -31,13 +31,13 @@ func TestApplyCodexOAuthTransform_ToolContinuationPreservesInput(t *testing.T) {
 	require.True(t, ok)
 	require.Len(t, input, 2)
 
-	// 校验 input[0] 为 map，避免断言失败导致测试中断。
+	// [0]
 	first, ok := input[0].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "item_reference", first["type"])
 	require.Equal(t, "ref1", first["id"])
 
-	// 校验 input[1] 为 map，确保后续字段断言安全。
+	// [1]
 	second, ok := input[1].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "o1", second["id"])
@@ -395,7 +395,7 @@ func TestCodexInputItemRequiresNameTypesAllowCallID(t *testing.T) {
 }
 
 func TestApplyCodexOAuthTransform_ExplicitStoreFalsePreserved(t *testing.T) {
-	// 续链场景：显式 store=false 不再强制为 true，保持 false。
+	// =false
 
 	reqBody := map[string]any{
 		"model": "gpt-5.1",
@@ -414,7 +414,7 @@ func TestApplyCodexOAuthTransform_ExplicitStoreFalsePreserved(t *testing.T) {
 }
 
 func TestApplyCodexOAuthTransform_ExplicitStoreTrueForcedFalse(t *testing.T) {
-	// 显式 store=true 也会强制为 false。
+	// =true
 
 	reqBody := map[string]any{
 		"model": "gpt-5.1",
@@ -449,7 +449,7 @@ func TestApplyCodexOAuthTransform_CompactForcesNonStreaming(t *testing.T) {
 }
 
 func TestApplyCodexOAuthTransform_NonContinuationDefaultsStoreFalseAndStripsIDs(t *testing.T) {
-	// 非续链场景：未设置 store 时默认 false，并移除 input 中的 id。
+	//
 
 	reqBody := map[string]any{
 		"model": "gpt-5.1",
@@ -467,7 +467,7 @@ func TestApplyCodexOAuthTransform_NonContinuationDefaultsStoreFalseAndStripsIDs(
 	input, ok := reqBody["input"].([]any)
 	require.True(t, ok)
 	require.Len(t, input, 1)
-	// 校验 input[0] 为 map，避免类型不匹配触发 errcheck。
+	// [0]
 	item, ok := input[0].(map[string]any)
 	require.True(t, ok)
 	_, hasID := item["id"]
@@ -482,7 +482,7 @@ func TestFilterCodexInput_RemovesItemReferenceWhenNotPreserved(t *testing.T) {
 
 	filtered := filterCodexInput(input, false)
 	require.Len(t, filtered, 1)
-	// 校验 filtered[0] 为 map，确保字段检查可靠。
+	// [0]
 	item, ok := filtered[0].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "text", item["type"])
@@ -820,7 +820,7 @@ func TestValidateOpenAIResponsesImageModel_RejectsImageOnlyModel(t *testing.T) {
 }
 
 func TestApplyCodexOAuthTransform_EmptyInput(t *testing.T) {
-	// 空 input 应保持为空且不触发异常。
+	//
 
 	reqBody := map[string]any{
 		"model": "gpt-5.1",
@@ -917,7 +917,7 @@ func TestApplyCodexOAuthTransform_TrimmedModelWithoutPolicyRewrite(t *testing.T)
 }
 
 func TestApplyCodexOAuthTransform_CodexCLI_PreservesExistingInstructions(t *testing.T) {
-	// Codex CLI 场景：已有 instructions 时不修改
+	// Codex CLI
 
 	reqBody := map[string]any{
 		"model":        "gpt-5.1",
@@ -929,16 +929,16 @@ func TestApplyCodexOAuthTransform_CodexCLI_PreservesExistingInstructions(t *test
 	instructions, ok := reqBody["instructions"].(string)
 	require.True(t, ok)
 	require.Equal(t, "existing instructions", instructions)
-	// Modified 仍可能为 true（因为其他字段被修改），但 instructions 应保持不变
+	// Modified
 	_ = result
 }
 
 func TestApplyCodexOAuthTransform_CodexCLI_SuppliesDefaultWhenEmpty(t *testing.T) {
-	// Codex CLI 场景：无 instructions 时补充默认值
+	// Codex CLI
 
 	reqBody := map[string]any{
 		"model": "gpt-5.1",
-		// 没有 instructions 字段
+		//
 	}
 
 	result := applyCodexOAuthTransform(reqBody, true, false) // isCodexCLI=true
@@ -950,7 +950,7 @@ func TestApplyCodexOAuthTransform_CodexCLI_SuppliesDefaultWhenEmpty(t *testing.T
 }
 
 func TestApplyCodexOAuthTransform_NonCodexCLI_PreservesExistingInstructions(t *testing.T) {
-	// 非 Codex CLI 场景：已有 instructions 时保留客户端的值，不再覆盖
+	//
 
 	reqBody := map[string]any{
 		"model":        "gpt-5.1",

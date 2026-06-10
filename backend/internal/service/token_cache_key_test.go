@@ -247,7 +247,6 @@ func TestClaudeTokenCacheKey(t *testing.T) {
 }
 
 func TestCacheKeyUniqueness(t *testing.T) {
-	// 确保不同平台的缓存键不会冲突
 	account := &Account{ID: 123}
 
 	openaiKey := OpenAITokenCacheKey(account)

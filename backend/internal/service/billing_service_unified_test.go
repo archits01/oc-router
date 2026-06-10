@@ -147,8 +147,8 @@ func TestCalculateCostUnified_ImageMode(t *testing.T) {
 	require.Equal(t, string(BillingModeImage), cost.BillingMode)
 }
 
-// TestCalculateCostUnified_RateMultiplierZeroProducesZero 锁定新行为：
-// 保存时强制 > 0；若 0 仍泄漏到计费层，按 0 计费（而非历史上的 1.0）。
+// TestCalculateCostUnified_RateMultiplierZeroProducesZero
+// > 0；
 func TestCalculateCostUnified_RateMultiplierZeroProducesZero(t *testing.T) {
 	bs := newTestBillingService()
 	resolver := NewModelPricingResolver(nil, bs)
@@ -167,8 +167,8 @@ func TestCalculateCostUnified_RateMultiplierZeroProducesZero(t *testing.T) {
 	require.InDelta(t, 0.0, cost.ActualCost, 1e-10)
 }
 
-// TestCalculateCostUnified_NegativeRateMultiplierClampedToZero 锁定新行为：
-// 负数倍率按 0 计费，避免历史的 <=0 → 1.0 把配置异常静默按标准价扣费。
+// TestCalculateCostUnified_NegativeRateMultiplierClampedToZero
+// <=0 → 1.0
 func TestCalculateCostUnified_NegativeRateMultiplierClampedToZero(t *testing.T) {
 	bs := newTestBillingService()
 	resolver := NewModelPricingResolver(nil, bs)

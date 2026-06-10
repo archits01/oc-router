@@ -50,8 +50,8 @@ func postCreateAndRedeemValidation(t *testing.T, handler *RedeemHandler, body an
 }
 
 func TestCreateAndRedeem_TypeDefaultsToBalance(t *testing.T) {
-	// 不传 type 字段时应默认 balance，不触发 subscription 校验。
-	// 验证通过后进入 service 层会 panic（返回 0），说明默认值生效。
+	//
+	//
 	h := newCreateAndRedeemHandler()
 	code := postCreateAndRedeemValidation(t, h, map[string]any{
 		"code":    "test-balance-default",
@@ -71,7 +71,7 @@ func TestCreateAndRedeem_SubscriptionRequiresGroupID(t *testing.T) {
 		"value":         29.9,
 		"user_id":       1,
 		"validity_days": 30,
-		// group_id 缺失
+		// group_id
 	})
 
 	assert.Equal(t, http.StatusBadRequest, code)
@@ -129,7 +129,7 @@ func TestCreateAndRedeem_SubscriptionValidParamsPassValidation(t *testing.T) {
 
 func TestCreateAndRedeem_BalanceIgnoresSubscriptionFields(t *testing.T) {
 	h := newCreateAndRedeemHandler()
-	// balance 类型不传 group_id 和 validity_days，不应报 400
+	// balance
 	code := postCreateAndRedeemValidation(t, h, map[string]any{
 		"code":    "test-balance-no-extras",
 		"type":    "balance",

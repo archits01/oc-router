@@ -20,10 +20,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// antigravityFailingWriter 模拟客户端断开连接的 gin.ResponseWriter
+// antigravityFailingWriter
 type antigravityFailingWriter struct {
 	gin.ResponseWriter
-	failAfter int // 允许成功写入的次数，之后所有写入返回错误
+	failAfter int // 允许success写入的次数，之后所有写入returnederror
 	writes    int
 }
 
@@ -35,7 +35,7 @@ func (w *antigravityFailingWriter) Write(p []byte) (int, error) {
 	return w.ResponseWriter.Write(p)
 }
 
-// newAntigravityTestService 创建用于流式测试的 AntigravityGatewayService
+// newAntigravityTestService
 func newAntigravityTestService(cfg *config.Config) *AntigravityGatewayService {
 	return &AntigravityGatewayService{
 		settingService: &SettingService{cfg: cfg},
@@ -276,8 +276,8 @@ func TestAntigravityGatewayService_Forward_PromptTooLong(t *testing.T) {
 }
 
 // TestAntigravityGatewayService_Forward_ModelRateLimitTriggersFailover
-// 验证：当账号存在模型限流且剩余时间 >= antigravityRateLimitThreshold 时，
-// Forward 方法应返回 UpstreamFailoverError，触发 Handler 切换账号
+// >= antigravityRateLimitThreshold
+// Forward
 func TestAntigravityGatewayService_Forward_ModelRateLimitTriggersFailover(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	writer := httptest.NewRecorder()
@@ -296,13 +296,12 @@ func TestAntigravityGatewayService_Forward_ModelRateLimitTriggersFailover(t *tes
 	req := httptest.NewRequest(http.MethodPost, "/v1/messages", bytes.NewReader(body))
 	c.Request = req
 
-	// 不需要真正调用上游，因为预检查会直接返回切换信号
 	svc := &AntigravityGatewayService{
 		tokenProvider: &AntigravityTokenProvider{},
 		httpUpstream:  &httpUpstreamStub{resp: nil, err: nil},
 	}
 
-	// 设置模型限流：剩余时间 30 秒（> antigravityRateLimitThreshold 7s）
+	// > antigravityRateLimitThreshold 7s）
 	futureResetAt := time.Now().Add(30 * time.Second).Format(time.RFC3339)
 	account := &Account{
 		ID:          1,
@@ -327,16 +326,16 @@ func TestAntigravityGatewayService_Forward_ModelRateLimitTriggersFailover(t *tes
 	require.Nil(t, result, "Forward should not return result when model rate limited")
 	require.NotNil(t, err, "Forward should return error")
 
-	// 核心验证：错误应该是 UpstreamFailoverError，而不是普通 502 错误
+	//
 	var failoverErr *UpstreamFailoverError
 	require.ErrorAs(t, err, &failoverErr, "error should be UpstreamFailoverError to trigger account switch")
 	require.Equal(t, http.StatusServiceUnavailable, failoverErr.StatusCode)
-	// 非粘性会话请求，ForceCacheBilling 应为 false
+	//
 	require.False(t, failoverErr.ForceCacheBilling, "ForceCacheBilling should be false for non-sticky session")
 }
 
 // TestAntigravityGatewayService_ForwardGemini_ModelRateLimitTriggersFailover
-// 验证：ForwardGemini 方法同样能正确将 AntigravityAccountSwitchError 转换为 UpstreamFailoverError
+//
 func TestAntigravityGatewayService_ForwardGemini_ModelRateLimitTriggersFailover(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	writer := httptest.NewRecorder()
@@ -352,13 +351,12 @@ func TestAntigravityGatewayService_ForwardGemini_ModelRateLimitTriggersFailover(
 	req := httptest.NewRequest(http.MethodPost, "/v1beta/models/gemini-2.5-flash:generateContent", bytes.NewReader(body))
 	c.Request = req
 
-	// 不需要真正调用上游，因为预检查会直接返回切换信号
 	svc := &AntigravityGatewayService{
 		tokenProvider: &AntigravityTokenProvider{},
 		httpUpstream:  &httpUpstreamStub{resp: nil, err: nil},
 	}
 
-	// 设置模型限流：剩余时间 30 秒（> antigravityRateLimitThreshold 7s）
+	// > antigravityRateLimitThreshold 7s）
 	futureResetAt := time.Now().Add(30 * time.Second).Format(time.RFC3339)
 	account := &Account{
 		ID:          2,
@@ -383,16 +381,16 @@ func TestAntigravityGatewayService_ForwardGemini_ModelRateLimitTriggersFailover(
 	require.Nil(t, result, "ForwardGemini should not return result when model rate limited")
 	require.NotNil(t, err, "ForwardGemini should return error")
 
-	// 核心验证：错误应该是 UpstreamFailoverError，而不是普通 502 错误
+	//
 	var failoverErr *UpstreamFailoverError
 	require.ErrorAs(t, err, &failoverErr, "error should be UpstreamFailoverError to trigger account switch")
 	require.Equal(t, http.StatusServiceUnavailable, failoverErr.StatusCode)
-	// 非粘性会话请求，ForceCacheBilling 应为 false
+	//
 	require.False(t, failoverErr.ForceCacheBilling, "ForceCacheBilling should be false for non-sticky session")
 }
 
 // TestAntigravityGatewayService_Forward_StickySessionForceCacheBilling
-// 验证：粘性会话切换时，UpstreamFailoverError.ForceCacheBilling 应为 true
+//
 func TestAntigravityGatewayService_Forward_StickySessionForceCacheBilling(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	writer := httptest.NewRecorder()
@@ -412,7 +410,7 @@ func TestAntigravityGatewayService_Forward_StickySessionForceCacheBilling(t *tes
 		httpUpstream:  &httpUpstreamStub{resp: nil, err: nil},
 	}
 
-	// 设置模型限流：剩余时间 30 秒（> antigravityRateLimitThreshold 7s）
+	// > antigravityRateLimitThreshold 7s）
 	futureResetAt := time.Now().Add(30 * time.Second).Format(time.RFC3339)
 	account := &Account{
 		ID:          3,
@@ -433,12 +431,12 @@ func TestAntigravityGatewayService_Forward_StickySessionForceCacheBilling(t *tes
 		},
 	}
 
-	// 传入 isStickySession = true
+	// = true
 	result, err := svc.Forward(context.Background(), c, account, body, true)
 	require.Nil(t, result, "Forward should not return result when model rate limited")
 	require.NotNil(t, err, "Forward should return error")
 
-	// 核心验证：粘性会话切换时，ForceCacheBilling 应为 true
+	//
 	var failoverErr *UpstreamFailoverError
 	require.ErrorAs(t, err, &failoverErr, "error should be UpstreamFailoverError to trigger account switch")
 	require.Equal(t, http.StatusServiceUnavailable, failoverErr.StatusCode)
@@ -467,7 +465,7 @@ func TestAntigravityGatewayService_ForwardGemini_StickySessionForceCacheBilling(
 		httpUpstream:  &httpUpstreamStub{resp: nil, err: nil},
 	}
 
-	// 设置模型限流：剩余时间 30 秒（> antigravityRateLimitThreshold 7s）
+	// > antigravityRateLimitThreshold 7s）
 	futureResetAt := time.Now().Add(30 * time.Second).Format(time.RFC3339)
 	account := &Account{
 		ID:          4,
@@ -488,12 +486,12 @@ func TestAntigravityGatewayService_ForwardGemini_StickySessionForceCacheBilling(
 		},
 	}
 
-	// 传入 isStickySession = true
+	// = true
 	result, err := svc.ForwardGemini(context.Background(), c, account, "gemini-2.5-flash", "generateContent", false, body, true)
 	require.Nil(t, result, "ForwardGemini should not return result when model rate limited")
 	require.NotNil(t, err, "ForwardGemini should return error")
 
-	// 核心验证：粘性会话切换时，ForceCacheBilling 应为 true
+	//
 	var failoverErr *UpstreamFailoverError
 	require.ErrorAs(t, err, &failoverErr, "error should be UpstreamFailoverError to trigger account switch")
 	require.Equal(t, http.StatusServiceUnavailable, failoverErr.StatusCode)
@@ -581,7 +579,7 @@ func TestAntigravityGatewayService_ForwardGemini_ClearsStickySessionOnGeminiRate
 }
 
 // TestAntigravityGatewayService_Forward_BillsWithMappedModel
-// 验证：Antigravity Claude 转发返回的计费模型使用映射后的模型
+//
 func TestAntigravityGatewayService_Forward_BillsWithMappedModel(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	writer := httptest.NewRecorder()
@@ -637,7 +635,7 @@ func TestAntigravityGatewayService_Forward_BillsWithMappedModel(t *testing.T) {
 }
 
 // TestAntigravityGatewayService_ForwardGemini_BillsWithMappedModel
-// 验证：Antigravity Gemini 转发返回的计费模型使用映射后的模型
+//
 func TestAntigravityGatewayService_ForwardGemini_BillsWithMappedModel(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	writer := httptest.NewRecorder()
@@ -862,7 +860,7 @@ func TestAntigravityGatewayService_ForwardGemini_SignatureRetryPropagatesFailove
 }
 
 // TestStreamUpstreamResponse_UsageAndFirstToken
-// 验证：usage 字段可被累积/覆盖更新，并且能记录首 token 时间
+//
 func TestStreamUpstreamResponse_UsageAndFirstToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -889,20 +887,19 @@ func TestStreamUpstreamResponse_UsageAndFirstToken(t *testing.T) {
 	require.NotNil(t, result)
 	require.NotNil(t, result.usage)
 	require.Equal(t, 1, result.usage.InputTokens)
-	// 第二次事件覆盖 output_tokens
+	//
 	require.Equal(t, 5, result.usage.OutputTokens)
 	require.Equal(t, 3, result.usage.CacheReadInputTokens)
 	require.Equal(t, 4, result.usage.CacheCreationInputTokens)
 	require.NotNil(t, result.firstTokenMs)
 
-	// 确保有透传输出
 	require.Contains(t, rec.Body.String(), "data:")
 }
 
-// --- 流式 happy path 测试 ---
+// ---
 
 // TestStreamUpstreamResponse_NormalComplete
-// 验证：正常流式转发完成时，数据正确透传、usage 正确收集、clientDisconnect=false
+// =false
 func TestStreamUpstreamResponse_NormalComplete(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -938,7 +935,6 @@ func TestStreamUpstreamResponse_NormalComplete(t *testing.T) {
 	require.Equal(t, 5, result.usage.OutputTokens, "should collect output_tokens from message_delta")
 	require.NotNil(t, result.firstTokenMs, "should record first token time")
 
-	// 验证数据被透传到客户端
 	body := rec.Body.String()
 	require.Contains(t, body, "event: message_start")
 	require.Contains(t, body, "content_block_delta")
@@ -946,7 +942,7 @@ func TestStreamUpstreamResponse_NormalComplete(t *testing.T) {
 }
 
 // TestHandleGeminiStreamingResponse_NormalComplete
-// 验证：正常 Gemini 流式转发，数据正确透传、usage 正确收集
+//
 func TestHandleGeminiStreamingResponse_NormalComplete(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -962,10 +958,10 @@ func TestHandleGeminiStreamingResponse_NormalComplete(t *testing.T) {
 
 	go func() {
 		defer func() { _ = pw.Close() }()
-		// 第一个 chunk（部分内容）
+		//
 		fmt.Fprintln(pw, `data: {"candidates":[{"content":{"parts":[{"text":"Hello"}]}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":3}}`)
 		fmt.Fprintln(pw, "")
-		// 第二个 chunk（最终内容+完整 usage）
+		// +
 		fmt.Fprintln(pw, `data: {"candidates":[{"content":{"parts":[{"text":" world"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":8,"cachedContentTokenCount":2}}`)
 		fmt.Fprintln(pw, "")
 	}()
@@ -984,16 +980,14 @@ func TestHandleGeminiStreamingResponse_NormalComplete(t *testing.T) {
 	require.Equal(t, 2, result.usage.CacheReadInputTokens)
 	require.NotNil(t, result.firstTokenMs, "should record first token time")
 
-	// 验证数据被透传到客户端
 	body := rec.Body.String()
 	require.Contains(t, body, "Hello")
 	require.Contains(t, body, "world")
-	// 不应包含错误事件
 	require.NotContains(t, body, "event: error")
 }
 
 // TestHandleClaudeStreamingResponse_NormalComplete
-// 验证：正常 Claude 流式转发（Gemini→Claude 转换），数据正确转换并输出
+// →Claude
 func TestHandleClaudeStreamingResponse_NormalComplete(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1009,8 +1003,8 @@ func TestHandleClaudeStreamingResponse_NormalComplete(t *testing.T) {
 
 	go func() {
 		defer func() { _ = pw.Close() }()
-		// v1internal 包装格式：Gemini 数据嵌套在 "response" 字段下
-		// ProcessLine 先尝试反序列化为 V1InternalResponse，裸格式会导致 Response.UsageMetadata 为空
+		// v1internal "response"
+		// ProcessLine
 		fmt.Fprintln(pw, `data: {"response":{"candidates":[{"content":{"parts":[{"text":"Hi there"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":3}}}`)
 		fmt.Fprintln(pw, "")
 	}()
@@ -1022,21 +1016,20 @@ func TestHandleClaudeStreamingResponse_NormalComplete(t *testing.T) {
 	require.NotNil(t, result)
 	require.False(t, result.clientDisconnect, "normal completion should not set clientDisconnect")
 	require.NotNil(t, result.usage)
-	// Gemini→Claude 转换的 usage：promptTokenCount=5→InputTokens=5, candidatesTokenCount=3→OutputTokens=3
+	// Gemini→Claude =5→InputTokens=5, candidatesTokenCount=3→OutputTokens=3
 	require.Equal(t, 5, result.usage.InputTokens)
 	require.Equal(t, 3, result.usage.OutputTokens)
 	require.NotNil(t, result.firstTokenMs, "should record first token time")
 
-	// 验证输出是 Claude SSE 格式（processor 会转换）
+	//
 	body := rec.Body.String()
 	require.Contains(t, body, "event: message_start", "should contain Claude message_start event")
 	require.Contains(t, body, "event: message_stop", "should contain Claude message_stop event")
-	// 不应包含错误事件
 	require.NotContains(t, body, "event: error")
 }
 
 // TestHandleGeminiStreamingResponse_ThoughtsTokenCount
-// 验证：Gemini 流式转发时 thoughtsTokenCount 被计入 OutputTokens
+//
 func TestHandleGeminiStreamingResponse_ThoughtsTokenCount(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1072,7 +1065,7 @@ func TestHandleGeminiStreamingResponse_ThoughtsTokenCount(t *testing.T) {
 }
 
 // TestHandleClaudeStreamingResponse_ThoughtsTokenCount
-// 验证：Gemini→Claude 流式转换时 thoughtsTokenCount 被计入 OutputTokens
+// →Claude
 func TestHandleClaudeStreamingResponse_ThoughtsTokenCount(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1104,10 +1097,10 @@ func TestHandleClaudeStreamingResponse_ThoughtsTokenCount(t *testing.T) {
 	require.Equal(t, 35, result.usage.OutputTokens)
 }
 
-// --- 流式客户端断开检测测试 ---
+// ---
 
 // TestStreamUpstreamResponse_ClientDisconnectDrainsUsage
-// 验证：客户端写入失败后，streamUpstreamResponse 继续读取上游以收集 usage
+//
 func TestStreamUpstreamResponse_ClientDisconnectDrainsUsage(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1142,7 +1135,7 @@ func TestStreamUpstreamResponse_ClientDisconnectDrainsUsage(t *testing.T) {
 }
 
 // TestStreamUpstreamResponse_ContextCanceled
-// 验证：context 取消时返回 usage 且标记 clientDisconnect
+//
 func TestStreamUpstreamResponse_ContextCanceled(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1165,7 +1158,7 @@ func TestStreamUpstreamResponse_ContextCanceled(t *testing.T) {
 }
 
 // TestStreamUpstreamResponse_Timeout
-// 验证：上游超时时返回已收集的 usage
+//
 func TestStreamUpstreamResponse_Timeout(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1188,7 +1181,7 @@ func TestStreamUpstreamResponse_Timeout(t *testing.T) {
 }
 
 // TestStreamUpstreamResponse_TimeoutAfterClientDisconnect
-// 验证：客户端断开后上游超时，返回 usage 并标记 clientDisconnect
+//
 func TestStreamUpstreamResponse_TimeoutAfterClientDisconnect(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1206,7 +1199,7 @@ func TestStreamUpstreamResponse_TimeoutAfterClientDisconnect(t *testing.T) {
 	go func() {
 		fmt.Fprintln(pw, `data: {"type":"message_start","message":{"usage":{"input_tokens":5}}}`)
 		fmt.Fprintln(pw, "")
-		// 不关闭 pw → 等待超时
+		// →
 	}()
 
 	result := svc.streamUpstreamResponse(c, resp, time.Now())
@@ -1218,7 +1211,7 @@ func TestStreamUpstreamResponse_TimeoutAfterClientDisconnect(t *testing.T) {
 }
 
 // TestHandleGeminiStreamingResponse_ClientDisconnect
-// 验证：Gemini 流式转发中客户端断开后继续 drain 上游
+//
 func TestHandleGeminiStreamingResponse_ClientDisconnect(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1249,7 +1242,7 @@ func TestHandleGeminiStreamingResponse_ClientDisconnect(t *testing.T) {
 }
 
 // TestHandleGeminiStreamingResponse_ContextCanceled
-// 验证：context 取消时不注入错误事件
+//
 func TestHandleGeminiStreamingResponse_ContextCanceled(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1273,7 +1266,7 @@ func TestHandleGeminiStreamingResponse_ContextCanceled(t *testing.T) {
 }
 
 // TestHandleClaudeStreamingResponse_ClientDisconnect
-// 验证：Claude 流式转发中客户端断开后继续 drain 上游
+//
 func TestHandleClaudeStreamingResponse_ClientDisconnect(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1290,7 +1283,7 @@ func TestHandleClaudeStreamingResponse_ClientDisconnect(t *testing.T) {
 
 	go func() {
 		defer func() { _ = pw.Close() }()
-		// v1internal 包装格式
+		// v1internal
 		fmt.Fprintln(pw, `data: {"response":{"candidates":[{"content":{"parts":[{"text":"hello"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":8,"candidatesTokenCount":15}}}`)
 		fmt.Fprintln(pw, "")
 	}()
@@ -1304,7 +1297,7 @@ func TestHandleClaudeStreamingResponse_ClientDisconnect(t *testing.T) {
 }
 
 // TestHandleClaudeStreamingResponse_EmptyStream
-// 验证：上游只返回无法解析的 SSE 行时，触发 UpstreamFailoverError 而不是向客户端发出残缺流
+//
 func TestHandleClaudeStreamingResponse_EmptyStream(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1320,7 +1313,7 @@ func TestHandleClaudeStreamingResponse_EmptyStream(t *testing.T) {
 
 	go func() {
 		defer func() { _ = pw.Close() }()
-		// 所有行均为无法 JSON 解析的内容，ProcessLine 全部返回 nil
+		//
 		fmt.Fprintln(pw, "data: not-valid-json")
 		fmt.Fprintln(pw, "")
 		fmt.Fprintln(pw, "data: also-invalid")
@@ -1330,13 +1323,13 @@ func TestHandleClaudeStreamingResponse_EmptyStream(t *testing.T) {
 	_, err := svc.handleClaudeStreamingResponse(c, resp, time.Now(), "claude-sonnet-4-5")
 	_ = pr.Close()
 
-	// 应当返回 UpstreamFailoverError 而非 nil，以便上层触发 failover
+	//
 	require.Error(t, err)
 	var failoverErr *UpstreamFailoverError
 	require.ErrorAs(t, err, &failoverErr)
 	require.True(t, failoverErr.RetryableOnSameAccount)
 
-	// 客户端不应收到任何 SSE 事件（既无 message_start 也无 message_stop）
+	//
 	body := rec.Body.String()
 	require.NotContains(t, body, "event: message_start")
 	require.NotContains(t, body, "event: message_stop")
@@ -1344,7 +1337,7 @@ func TestHandleClaudeStreamingResponse_EmptyStream(t *testing.T) {
 }
 
 // TestHandleClaudeStreamingResponse_ContextCanceled
-// 验证：context 取消时不注入错误事件
+//
 func TestHandleClaudeStreamingResponse_ContextCanceled(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
@@ -1367,7 +1360,7 @@ func TestHandleClaudeStreamingResponse_ContextCanceled(t *testing.T) {
 	require.NotContains(t, rec.Body.String(), "event: error")
 }
 
-// TestExtractSSEUsage 验证 extractSSEUsage 从 SSE data 行正确提取 usage
+// TestExtractSSEUsage
 func TestExtractSSEUsage(t *testing.T) {
 	svc := &AntigravityGatewayService{}
 	tests := []struct {
@@ -1391,14 +1384,14 @@ func TestExtractSSEUsage(t *testing.T) {
 			expected: ClaudeUsage{InputTokens: 10, OutputTokens: 20, CacheReadInputTokens: 5, CacheCreationInputTokens: 3},
 		},
 		{
-			// Anthropic message_start 把 usage 嵌套在 message.usage 下，
-			// 必须从这里提取输入侧字段（含 cache_read/cache_creation_input_tokens）。
+			// Anthropic message_start
+			//
 			name:     "message_start nested usage with input/cache tokens",
 			line:     `data: {"type":"message_start","message":{"id":"msg_01","usage":{"input_tokens":35576,"cache_creation_input_tokens":0,"cache_read_input_tokens":12000,"output_tokens":1}}}`,
 			expected: ClaudeUsage{InputTokens: 35576, OutputTokens: 1, CacheReadInputTokens: 12000},
 		},
 		{
-			// message_start.message.usage.cache_creation 内的 5m/1h 明细也要解析。
+			// message_start.message.usage.cache_creation
 			name:     "message_start nested usage with cache_creation breakdown",
 			line:     `data: {"type":"message_start","message":{"usage":{"input_tokens":100,"cache_creation":{"ephemeral_5m_input_tokens":30,"ephemeral_1h_input_tokens":70}}}}`,
 			expected: ClaudeUsage{InputTokens: 100, CacheCreation5mTokens: 30, CacheCreation1hTokens: 70},
@@ -1413,19 +1406,19 @@ func TestExtractSSEUsage(t *testing.T) {
 	}
 }
 
-// TestExtractSSEUsage_StreamingSequence 复现 issue #2332：完整的 Anthropic streaming
-// 序列（message_start → message_delta）必须把两类事件中的 usage 字段都汇入同一份累计值，
-// 否则透传账号产出的 usage_logs 会出现 input_tokens=0、仅有 output_tokens 的"残缺"记录。
+// TestExtractSSEUsage_StreamingSequence #2332：
+// → message_delta）
+// =0、""
 func TestExtractSSEUsage_StreamingSequence(t *testing.T) {
 	svc := &AntigravityGatewayService{}
 	usage := &ClaudeUsage{}
 
-	// 1) message_start：携带完整输入侧 usage（input_tokens + cache_read）
+	// 1) message_start：+ cache_read）
 	svc.extractSSEUsage(
 		`data: {"type":"message_start","message":{"id":"msg_01","type":"message","role":"assistant","content":[],"model":"claude-opus-4-6","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":35576,"cache_creation_input_tokens":0,"cache_read_input_tokens":12000,"output_tokens":1}}}`,
 		usage,
 	)
-	// 2) message_delta：流结束时只带 output_tokens（无 input_tokens 字段）
+	// 2) message_delta：
 	svc.extractSSEUsage(
 		`data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":816}}`,
 		usage,
@@ -1436,7 +1429,7 @@ func TestExtractSSEUsage_StreamingSequence(t *testing.T) {
 	require.Equal(t, 816, usage.OutputTokens, "message_delta 的最终 output_tokens 必须被记录")
 }
 
-// TestAntigravityClientWriter 验证 antigravityClientWriter 的断开检测
+// TestAntigravityClientWriter
 func TestAntigravityClientWriter(t *testing.T) {
 	t.Run("normal write succeeds", func(t *testing.T) {
 		gin.SetMode(gin.TestMode)
@@ -1479,11 +1472,11 @@ func TestAntigravityClientWriter(t *testing.T) {
 	})
 }
 
-// TestUnwrapV1InternalResponse 测试 unwrapV1InternalResponse 的各种输入场景
+// TestUnwrapV1InternalResponse
 func TestUnwrapV1InternalResponse(t *testing.T) {
 	svc := &AntigravityGatewayService{}
 
-	// 构造 >50KB 的大型 JSON
+	// >50KB
 	largePadding := strings.Repeat("x", 50*1024)
 	largeInput := []byte(fmt.Sprintf(`{"response":{"id":"big","pad":"%s"}}`, largePadding))
 	largeExpected := fmt.Sprintf(`{"id":"big","pad":"%s"}`, largePadding)
@@ -1549,9 +1542,9 @@ func TestUnwrapV1InternalResponse(t *testing.T) {
 	}
 }
 
-// --- unwrapV1InternalResponse benchmark 对照组 ---
+// --- unwrapV1InternalResponse benchmark
 
-// unwrapV1InternalResponseOld 旧实现：Unmarshal+Marshal 双重开销（仅用于 benchmark 对照）
+// unwrapV1InternalResponseOld +Marshal
 func unwrapV1InternalResponseOld(body []byte) ([]byte, error) {
 	var outer map[string]any
 	if err := json.Unmarshal(body, &outer); err != nil {
@@ -1597,7 +1590,7 @@ func BenchmarkUnwrapV1Internal_New_Large(b *testing.B) {
 	}
 }
 
-// generateLargeUnwrapJSON 生成指定最小大小的包含 response 包装的 JSON
+// generateLargeUnwrapJSON
 func generateLargeUnwrapJSON(minSize int) []byte {
 	parts := make([]map[string]string, 0)
 	current := 0

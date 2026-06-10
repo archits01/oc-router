@@ -67,10 +67,10 @@ func (Proxy) Fields() []ent.Field {
 	}
 }
 
-// Edges 定义代理实体的关联关系。
+// Edges
 func (Proxy) Edges() []ent.Edge {
 	return []ent.Edge{
-		// accounts: 使用此代理的账户（反向边）
+		// accounts:
 		edge.From("accounts", Account.Type).
 			Ref("proxy"),
 		edge.To("backup_proxy", Proxy.Type).

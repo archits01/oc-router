@@ -22,7 +22,7 @@ const (
 	usageCleanupWorkerName = "usage_cleanup_worker"
 )
 
-// UsageCleanupService 负责创建与执行使用记录清理任务
+// UsageCleanupService
 type UsageCleanupService struct {
 	repo        UsageCleanupRepository
 	timingWheel *TimingWheelService
@@ -216,7 +216,7 @@ func (s *UsageCleanupService) executeTask(ctx context.Context, task *UsageCleanu
 		deleted, err := s.repo.DeleteUsageLogsBatch(ctx, task.Filters, batchSize)
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-				// 任务被中断（例如服务停止/超时），保持 running 状态，后续通过 stale reclaim 续跑。
+				//
 				logger.LegacyPrintf("service.usage_cleanup", "[UsageCleanup] task interrupted: task=%d err=%v", task.ID, err)
 				return
 			}
@@ -335,7 +335,6 @@ func (s *UsageCleanupService) CancelTask(ctx context.Context, taskID int64, canc
 		return err
 	}
 	if !ok {
-		// 状态可能并发改变
 		currentStatus, getErr := s.repo.GetTaskStatus(ctx, taskID)
 		if getErr == nil && currentStatus == UsageCleanupStatusCanceled {
 			logger.LegacyPrintf("service.usage_cleanup", "[UsageCleanup] cancel_task idempotent race hit: task=%d operator=%d", taskID, canceledBy)

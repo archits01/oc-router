@@ -34,7 +34,7 @@
             v-if="entry.models.length === 0"
             class="text-xs italic text-gray-400"
           >
-            {{ t('admin.channels.form.noModels', '未添加模型') }}
+            {{ t('admin.channels.form.noModels', '未Add模型') }}
           </span>
         </div>
 
@@ -77,7 +77,7 @@
               :models="entry.models"
               :platform="props.platform"
               @update:models="onModelsUpdate($event)"
-              :placeholder="t('admin.channels.form.modelsPlaceholder', '输入模型名后按回车添加，支持通配符 *')"
+              :placeholder="t('admin.channels.form.modelsPlaceholder', '输入模型名后按回车Add，支持通配符 *')"
               class="mt-1"
             />
           </div>
@@ -137,7 +137,7 @@
                 <span class="ml-1 font-normal text-gray-400">(min, max]</span>
               </label>
               <button type="button" @click="addInterval" class="text-xs text-primary-600 hover:text-primary-700">
-                + {{ t('admin.channels.form.addInterval', '添加区间') }}
+                + {{ t('admin.channels.form.addInterval', 'Add区间') }}
               </button>
             </div>
             <div v-if="entry.intervals && entry.intervals.length > 0" class="mt-2 space-y-2">
@@ -171,7 +171,7 @@
               {{ t('admin.channels.form.requestTiers', '按次计费层级') }}
             </label>
             <button type="button" @click="addInterval" class="text-xs text-primary-600 hover:text-primary-700">
-              + {{ t('admin.channels.form.addTier', '添加层级') }}
+              + {{ t('admin.channels.form.addTier', 'Add层级') }}
             </button>
           </div>
           <div v-if="entry.intervals && entry.intervals.length > 0" class="mt-2 space-y-2">
@@ -185,7 +185,7 @@
             />
           </div>
           <div v-else class="mt-2 rounded border border-dashed border-gray-300 p-3 text-center text-xs text-gray-400 dark:border-dark-500">
-            {{ t('admin.channels.form.noTiersYet', '暂无层级，点击添加配置按次计费价格') }}
+            {{ t('admin.channels.form.noTiersYet', '暂无层级，点击Add配置按次计费价格') }}
           </div>
         </div>
 
@@ -207,7 +207,7 @@
               {{ t('admin.channels.form.imageTiers', '图片计费层级（按次）') }}
             </label>
             <button type="button" @click="addImageTier" class="text-xs text-primary-600 hover:text-primary-700">
-              + {{ t('admin.channels.form.addTier', '添加层级') }}
+              + {{ t('admin.channels.form.addTier', 'Add层级') }}
             </button>
           </div>
           <div v-if="entry.intervals && entry.intervals.length > 0" class="mt-2 space-y-2">
@@ -307,17 +307,14 @@ async function onModelsUpdate(newModels: string[]) {
   const oldModels = props.entry.models
   emit('update', { ...props.entry, models: newModels })
 
-  // 只在新增模型且当前无价格时自动填充
   const addedModels = newModels.filter(m => !oldModels.includes(m))
   if (addedModels.length === 0) return
 
-  // 检查是否所有价格字段都为空
   const e = props.entry
   const hasPrice = e.input_price != null || e.output_price != null ||
                    e.cache_write_price != null || e.cache_read_price != null
   if (hasPrice) return
 
-  // 查询第一个新增模型的默认价格
   try {
     const result = await channelsAPI.getModelDefaultPricing(addedModels[0])
     if (result.found) {
@@ -332,7 +329,6 @@ async function onModelsUpdate(newModels: string[]) {
       })
     }
   } catch {
-    // 查询失败不影响用户操作
   }
 }
 </script>

@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// OpenAIClientTransport 表示客户端入站协议类型。
+// OpenAIClientTransport
 type OpenAIClientTransport string
 
 const (
@@ -17,7 +17,7 @@ const (
 
 const openAIClientTransportContextKey = "openai_client_transport"
 
-// SetOpenAIClientTransport 标记当前请求的客户端入站协议。
+// SetOpenAIClientTransport
 func SetOpenAIClientTransport(c *gin.Context, transport OpenAIClientTransport) {
 	if c == nil {
 		return
@@ -29,7 +29,7 @@ func SetOpenAIClientTransport(c *gin.Context, transport OpenAIClientTransport) {
 	c.Set(openAIClientTransportContextKey, string(normalized))
 }
 
-// GetOpenAIClientTransport 读取当前请求的客户端入站协议。
+// GetOpenAIClientTransport
 func GetOpenAIClientTransport(c *gin.Context) OpenAIClientTransport {
 	if c == nil {
 		return OpenAIClientTransportUnknown

@@ -12,10 +12,10 @@ import (
 	"entgo.io/ent/schema/index"
 )
 
-// ChannelMonitorDailyRollup 按 (monitor_id, model, bucket_date) 维度聚合的渠道监控日统计。
-// 每天的明细被收敛为一行（保留 status 分布 + 延迟和），用于 7d/15d/30d 窗口的可用率
-// 加权计算（avg_latency = sum_latency_ms / count_latency；availability = ok_count / total_checks）。
-// 超过保留期由每日维护任务分批物理删（不用软删除，理由同 channel_monitor_history）。
+// ChannelMonitorDailyRollup (monitor_id, model, bucket_date)
+// +
+// = sum_latency_ms / count_latency；availability = ok_count / total_checks）。
+//
 type ChannelMonitorDailyRollup struct {
 	ent.Schema
 }

@@ -19,9 +19,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 )
 
-// handleBedrockStreamingResponse 处理 Bedrock InvokeModelWithResponseStream 的 EventStream 响应
-// Bedrock 返回 AWS EventStream 二进制格式，每个事件的 payload 中 chunk.bytes 是 base64 编码的
-// Claude SSE 事件 JSON。本方法解码后转换为标准 SSE 格式写入客户端。
+// handleBedrockStreamingResponse
+// Bedrock
+// Claude SSE
 func (s *GatewayService) handleBedrockStreamingResponse(
 	ctx context.Context,
 	resp *http.Response,
@@ -48,10 +48,10 @@ func (s *GatewayService) handleBedrockStreamingResponse(
 	var firstTokenMs *int
 	clientDisconnected := false
 
-	// Bedrock EventStream 使用 application/vnd.amazon.eventstream 二进制格式。
-	// 每个帧结构：total_length(4) + headers_length(4) + prelude_crc(4) + headers + payload + message_crc(4)
-	// 但更实用的方式是使用行扫描找 JSON chunks，因为 Bedrock 的响应在二进制帧中。
-	// 我们使用 EventStream decoder 来正确解析。
+	// Bedrock EventStream
+	// (4) + headers_length(4) + prelude_crc(4) + headers + payload + message_crc(4)
+	//
+	//
 	decoder := newBedrockEventStreamDecoder(resp.Body)
 
 	type decodeEvent struct {
@@ -123,7 +123,7 @@ func (s *GatewayService) handleBedrockStreamingResponse(
 				return &streamingResult{usage: usage, firstTokenMs: firstTokenMs}, fmt.Errorf("bedrock stream read error: %w", ev.err)
 			}
 
-			// payload 是 JSON，提取 chunk.bytes（base64 编码的 Claude SSE 事件数据）
+			// payload
 			sseData := extractBedrockChunkData(ev.payload)
 			if sseData == nil {
 				continue
@@ -134,17 +134,16 @@ func (s *GatewayService) handleBedrockStreamingResponse(
 				firstTokenMs = &ms
 			}
 
-			// 转换 Bedrock 特有的 amazon-bedrock-invocationMetrics 为标准 Anthropic usage 格式
-			// 同时移除该字段避免透传给客户端
+			//
 			sseData = transformBedrockInvocationMetrics(sseData)
 
-			// 解析 SSE 事件数据提取 usage
+			//
 			s.parseSSEUsagePassthrough(string(sseData), usage)
 
-			// 确定 SSE event type
+			//
 			eventType := gjson.GetBytes(sseData, "type").String()
 
-			// 写入标准 SSE 格式
+			//
 			if !clientDisconnected {
 				var writeErr error
 				if eventType != "" {
@@ -177,8 +176,8 @@ func (s *GatewayService) handleBedrockStreamingResponse(
 	}
 }
 
-// extractBedrockChunkData 从 Bedrock EventStream payload 中提取 Claude SSE 事件数据
-// Bedrock payload 格式：{"bytes":"<base64-encoded-json>"}
+// extractBedrockChunkData
+// Bedrock payload {"bytes":"<base64-encoded-json>"}
 func extractBedrockChunkData(payload []byte) []byte {
 	b64 := gjson.GetBytes(payload, "bytes").String()
 	if b64 == "" {
@@ -191,14 +190,13 @@ func extractBedrockChunkData(payload []byte) []byte {
 	return decoded
 }
 
-// transformBedrockInvocationMetrics 将 Bedrock 特有的 amazon-bedrock-invocationMetrics
-// 转换为标准 Anthropic usage 格式，并从 SSE 数据中移除该字段。
+// transformBedrockInvocationMetrics
 //
-// Bedrock Invoke 返回的 message_delta 事件可能包含：
+//
+// Bedrock Invoke
 //
 //	{"type":"message_delta","delta":{...},"amazon-bedrock-invocationMetrics":{"inputTokenCount":150,"outputTokenCount":42}}
 //
-// 转换为：
 //
 //	{"type":"message_delta","delta":{...},"usage":{"input_tokens":150,"output_tokens":42}}
 func transformBedrockInvocationMetrics(data []byte) []byte {
@@ -207,15 +205,15 @@ func transformBedrockInvocationMetrics(data []byte) []byte {
 		return data
 	}
 
-	// 移除 Bedrock 特有字段
+	//
 	data, _ = sjson.DeleteBytes(data, "amazon-bedrock-invocationMetrics")
 
-	// 如果已有标准 usage 字段，不覆盖
+	//
 	if gjson.GetBytes(data, "usage").Exists() {
 		return data
 	}
 
-	// 转换 camelCase → snake_case 写入 usage
+	// → snake_case
 	inputTokens := metrics.Get("inputTokenCount")
 	outputTokens := metrics.Get("outputTokenCount")
 	if inputTokens.Exists() {
@@ -228,8 +226,8 @@ func transformBedrockInvocationMetrics(data []byte) []byte {
 	return data
 }
 
-// bedrockEventStreamDecoder 解码 AWS EventStream 二进制帧
-// EventStream 帧格式：
+// bedrockEventStreamDecoder
+// EventStream
 //
 //	[total_byte_length: 4 bytes]
 //	[headers_byte_length: 4 bytes]
@@ -247,16 +245,16 @@ func newBedrockEventStreamDecoder(r io.Reader) *bedrockEventStreamDecoder {
 	}
 }
 
-// Decode 读取下一个 EventStream 帧并返回 chunk 类型事件的 payload
+// Decode
 func (d *bedrockEventStreamDecoder) Decode() ([]byte, error) {
 	for {
-		// 读取 prelude: total_length(4) + headers_length(4) + prelude_crc(4) = 12 bytes
+		// (4) + headers_length(4) + prelude_crc(4) = 12 bytes
 		prelude := make([]byte, 12)
 		if _, err := io.ReadFull(d.reader, prelude); err != nil {
 			return nil, err
 		}
 
-		// 验证 prelude CRC（AWS EventStream 使用标准 CRC32 / IEEE）
+		//
 		preludeCRC := bedrockReadUint32(prelude[8:12])
 		if crc32.Checksum(prelude[0:8], crc32IEEETable) != preludeCRC {
 			return nil, fmt.Errorf("eventstream prelude CRC mismatch")
@@ -269,7 +267,7 @@ func (d *bedrockEventStreamDecoder) Decode() ([]byte, error) {
 			return nil, fmt.Errorf("invalid eventstream frame: total_length=%d", totalLength)
 		}
 
-		// 读取 headers + payload + message_crc
+		// + payload + message_crc
 		remaining := int(totalLength) - 12
 		if remaining <= 0 {
 			continue
@@ -279,7 +277,7 @@ func (d *bedrockEventStreamDecoder) Decode() ([]byte, error) {
 			return nil, err
 		}
 
-		// 验证 message CRC（覆盖 prelude + headers + payload）
+		// + headers + payload）
 		messageCRC := bedrockReadUint32(data[len(data)-4:])
 		h := crc32.New(crc32IEEETable)
 		_, _ = h.Write(prelude)
@@ -288,20 +286,19 @@ func (d *bedrockEventStreamDecoder) Decode() ([]byte, error) {
 			return nil, fmt.Errorf("eventstream message CRC mismatch")
 		}
 
-		// 解析 headers
+		//
 		headers := data[:headersLength]
-		payload := data[headersLength : len(data)-4] // 去掉 message_crc
+		payload := data[headersLength : len(data)-4] // strip message_crc
 
-		// 从 headers 中提取 :event-type
+		//
 		eventType := extractEventStreamHeaderValue(headers, ":event-type")
 
-		// 只处理 chunk 事件
+		//
 		if eventType == "chunk" {
-			// payload 是完整的 JSON，包含 bytes 字段
+			// payload
 			return payload, nil
 		}
 
-		// 检查异常事件
 		exceptionType := extractEventStreamHeaderValue(headers, ":exception-type")
 		if exceptionType != "" {
 			return nil, fmt.Errorf("bedrock exception: %s: %s", exceptionType, string(payload))
@@ -312,16 +309,16 @@ func (d *bedrockEventStreamDecoder) Decode() ([]byte, error) {
 			return nil, fmt.Errorf("bedrock error: %s", string(payload))
 		}
 
-		// 跳过其他事件类型（如 initial-response）
+		//
 	}
 }
 
-// extractEventStreamHeaderValue 从 EventStream headers 二进制数据中提取指定 header 的字符串值
-// EventStream header 格式：
+// extractEventStreamHeaderValue
+// EventStream header
 //
 //	[name_length: 1 byte][name: variable][value_type: 1 byte][value: variable]
 //
-// value_type = 7 表示 string 类型，前 2 bytes 为长度
+// value_type = 7
 func extractEventStreamHeaderValue(headers []byte, targetName string) string {
 	pos := 0
 	for pos < len(headers) {
@@ -396,7 +393,7 @@ func extractEventStreamHeaderValue(headers []byte, targetName string) string {
 		case 9: // uuid
 			pos += 16
 		default:
-			return "" // 未知类型，无法继续解析
+			return "" // unknown type, cannot continue parsing
 		}
 	}
 	return ""

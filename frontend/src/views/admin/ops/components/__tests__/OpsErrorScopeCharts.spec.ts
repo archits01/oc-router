@@ -121,7 +121,7 @@ describe('Ops SLA-scoped error charts', () => {
     expect(wrapper.find('.empty-state-stub').exists()).toBe(true)
   })
 
-  it('错误趋势图的请求错误详情按钮只按 SLA 错误启用', () => {
+  it('错误趋势图的请求错误详情按钮只按 SLA 错误Enable', () => {
     const wrapper = mount(OpsErrorTrendChart, {
       props: {
         loading: false,

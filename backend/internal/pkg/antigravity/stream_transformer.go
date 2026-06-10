@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// BlockType 内容块类型
+// BlockType
 type BlockType int
 
 const (
@@ -21,7 +21,7 @@ const (
 // UsageMapHook is a callback that can modify usage data before it's emitted in SSE events.
 type UsageMapHook func(usageMap map[string]any)
 
-// StreamingProcessor 流式响应处理器
+// StreamingProcessor
 type StreamingProcessor struct {
 	blockType         BlockType
 	blockIndex        int
@@ -35,14 +35,14 @@ type StreamingProcessor struct {
 	groundingChunks   []GeminiGroundingChunk
 	usageMapHook      UsageMapHook
 
-	// 累计 usage
+	//
 	inputTokens       int
 	outputTokens      int
 	cacheReadTokens   int
 	imageOutputTokens int
 }
 
-// NewStreamingProcessor 创建流式响应处理器
+// NewStreamingProcessor
 func NewStreamingProcessor(originalModel string) *StreamingProcessor {
 	return &StreamingProcessor{
 		blockType:     BlockTypeNone,
@@ -72,7 +72,7 @@ func usageToMap(u ClaudeUsage) map[string]any {
 	return m
 }
 
-// ProcessLine 处理 SSE 行，返回 Claude SSE 事件
+// ProcessLine
 func (p *StreamingProcessor) ProcessLine(line string) []byte {
 	line = strings.TrimSpace(line)
 	if line == "" || !strings.HasPrefix(line, "data:") {
@@ -84,10 +84,10 @@ func (p *StreamingProcessor) ProcessLine(line string) []byte {
 		return nil
 	}
 
-	// 解包 v1internal 响应
+	//
 	var v1Resp V1InternalResponse
 	if err := json.Unmarshal([]byte(data), &v1Resp); err != nil {
-		// 尝试直接解析为 GeminiResponse
+		//
 		var directResp GeminiResponse
 		if err2 := json.Unmarshal([]byte(data), &directResp); err2 != nil {
 			return nil
@@ -101,14 +101,14 @@ func (p *StreamingProcessor) ProcessLine(line string) []byte {
 
 	var result bytes.Buffer
 
-	// 发送 message_start
+	//
 	if !p.messageStartSent {
 		_, _ = result.Write(p.emitMessageStart(&v1Resp))
 	}
 
-	// 更新 usage
-	// 注意：Gemini 的 promptTokenCount 包含 cachedContentTokenCount，
-	// 但 Claude 的 input_tokens 不包含 cache_read_input_tokens，需要减去
+	//
+	//
+	//
 	if geminiResp.UsageMetadata != nil {
 		cached := geminiResp.UsageMetadata.CachedContentTokenCount
 		p.inputTokens = geminiResp.UsageMetadata.PromptTokenCount - cached
@@ -117,7 +117,7 @@ func (p *StreamingProcessor) ProcessLine(line string) []byte {
 		p.imageOutputTokens = geminiResp.UsageMetadata.ImageOutputTokens()
 	}
 
-	// 处理 parts
+	//
 	if len(geminiResp.Candidates) > 0 && geminiResp.Candidates[0].Content != nil {
 		for _, part := range geminiResp.Candidates[0].Content.Parts {
 			_, _ = result.Write(p.processPart(&part))
@@ -128,7 +128,6 @@ func (p *StreamingProcessor) ProcessLine(line string) []byte {
 		p.captureGrounding(geminiResp.Candidates[0].GroundingMetadata)
 	}
 
-	// 检查是否结束
 	if len(geminiResp.Candidates) > 0 {
 		finishReason := geminiResp.Candidates[0].FinishReason
 		if finishReason == "MALFORMED_FUNCTION_CALL" {
@@ -147,9 +146,9 @@ func (p *StreamingProcessor) ProcessLine(line string) []byte {
 	return result.Bytes()
 }
 
-// Finish 结束处理，返回最终事件和用量。
-// 若整个流未收到任何可解析的上游数据（messageStartSent == false），
-// 则不补发任何结束事件，防止客户端收到没有 message_start 的残缺流。
+// Finish
+// == false），
+//
 func (p *StreamingProcessor) Finish() ([]byte, *ClaudeUsage) {
 	usage := &ClaudeUsage{
 		InputTokens:          p.inputTokens,
@@ -170,12 +169,12 @@ func (p *StreamingProcessor) Finish() ([]byte, *ClaudeUsage) {
 	return result.Bytes(), usage
 }
 
-// MessageStartSent 报告流中是否已发出过 message_start 事件（即是否收到过有效的上游数据）
+// MessageStartSent
 func (p *StreamingProcessor) MessageStartSent() bool {
 	return p.messageStartSent
 }
 
-// emitMessageStart 发送 message_start 事件
+// emitMessageStart
 func (p *StreamingProcessor) emitMessageStart(v1Resp *V1InternalResponse) []byte {
 	if p.messageStartSent {
 		return nil
@@ -225,14 +224,14 @@ func (p *StreamingProcessor) emitMessageStart(v1Resp *V1InternalResponse) []byte
 	return p.formatSSE("message_start", event)
 }
 
-// processPart 处理单个 part
+// processPart
 func (p *StreamingProcessor) processPart(part *GeminiPart) []byte {
 	var result bytes.Buffer
 	signature := part.ThoughtSignature
 
-	// 1. FunctionCall 处理
+	// 1. FunctionCall
 	if part.FunctionCall != nil {
-		// 先处理 trailingSignature
+		//
 		if p.trailingSignature != "" {
 			_, _ = result.Write(p.endBlock())
 			_, _ = result.Write(p.emitEmptyThinkingWithSignature(p.trailingSignature))
@@ -243,7 +242,7 @@ func (p *StreamingProcessor) processPart(part *GeminiPart) []byte {
 		return result.Bytes()
 	}
 
-	// 2. Text 处理
+	// 2. Text
 	if part.Text != "" || part.Thought {
 		if part.Thought {
 			_, _ = result.Write(p.processThinking(part.Text, signature))
@@ -252,7 +251,7 @@ func (p *StreamingProcessor) processPart(part *GeminiPart) []byte {
 		}
 	}
 
-	// 3. InlineData (Image) 处理
+	// 3. InlineData (Image)
 	if part.InlineData != nil && part.InlineData.Data != "" {
 		markdownImg := fmt.Sprintf("![image](data:%s;base64,%s)",
 			part.InlineData.MimeType, part.InlineData.Data)
@@ -276,18 +275,18 @@ func (p *StreamingProcessor) captureGrounding(grounding *GeminiGroundingMetadata
 	}
 }
 
-// processThinking 处理 thinking
+// processThinking
 func (p *StreamingProcessor) processThinking(text, signature string) []byte {
 	var result bytes.Buffer
 
-	// 处理之前的 trailingSignature
+	//
 	if p.trailingSignature != "" {
 		_, _ = result.Write(p.endBlock())
 		_, _ = result.Write(p.emitEmptyThinkingWithSignature(p.trailingSignature))
 		p.trailingSignature = ""
 	}
 
-	// 开始或继续 thinking 块
+	//
 	if p.blockType != BlockTypeThinking {
 		_, _ = result.Write(p.startBlock(BlockTypeThinking, map[string]any{
 			"type":     "thinking",
@@ -301,7 +300,6 @@ func (p *StreamingProcessor) processThinking(text, signature string) []byte {
 		}))
 	}
 
-	// 暂存签名
 	if signature != "" {
 		p.pendingSignature = signature
 	}
@@ -309,11 +307,11 @@ func (p *StreamingProcessor) processThinking(text, signature string) []byte {
 	return result.Bytes()
 }
 
-// processText 处理普通 text
+// processText
 func (p *StreamingProcessor) processText(text, signature string) []byte {
 	var result bytes.Buffer
 
-	// 空 text 带签名 - 暂存
+	//
 	if text == "" {
 		if signature != "" {
 			p.trailingSignature = signature
@@ -321,14 +319,14 @@ func (p *StreamingProcessor) processText(text, signature string) []byte {
 		return nil
 	}
 
-	// 处理之前的 trailingSignature
+	//
 	if p.trailingSignature != "" {
 		_, _ = result.Write(p.endBlock())
 		_, _ = result.Write(p.emitEmptyThinkingWithSignature(p.trailingSignature))
 		p.trailingSignature = ""
 	}
 
-	// 非空 text 带签名 - 特殊处理
+	//
 	if signature != "" {
 		_, _ = result.Write(p.startBlock(BlockTypeText, map[string]any{
 			"type": "text",
@@ -342,7 +340,7 @@ func (p *StreamingProcessor) processText(text, signature string) []byte {
 		return result.Bytes()
 	}
 
-	// 普通 text (无签名)
+	// ()
 	if p.blockType != BlockTypeText {
 		_, _ = result.Write(p.startBlock(BlockTypeText, map[string]any{
 			"type": "text",
@@ -357,7 +355,7 @@ func (p *StreamingProcessor) processText(text, signature string) []byte {
 	return result.Bytes()
 }
 
-// processFunctionCall 处理 function call
+// processFunctionCall
 func (p *StreamingProcessor) processFunctionCall(fc *GeminiFunctionCall, signature string) []byte {
 	var result bytes.Buffer
 
@@ -381,7 +379,7 @@ func (p *StreamingProcessor) processFunctionCall(fc *GeminiFunctionCall, signatu
 
 	_, _ = result.Write(p.startBlock(BlockTypeFunction, toolUse))
 
-	// 发送 input_json_delta
+	//
 	if fc.Args != nil {
 		argsJSON, _ := json.Marshal(fc.Args)
 		_, _ = result.Write(p.emitDelta("input_json_delta", map[string]any{
@@ -394,7 +392,7 @@ func (p *StreamingProcessor) processFunctionCall(fc *GeminiFunctionCall, signatu
 	return result.Bytes()
 }
 
-// startBlock 开始新的内容块
+// startBlock
 func (p *StreamingProcessor) startBlock(blockType BlockType, contentBlock map[string]any) []byte {
 	var result bytes.Buffer
 
@@ -414,7 +412,7 @@ func (p *StreamingProcessor) startBlock(blockType BlockType, contentBlock map[st
 	return result.Bytes()
 }
 
-// endBlock 结束当前内容块
+// endBlock
 func (p *StreamingProcessor) endBlock() []byte {
 	if p.blockType == BlockTypeNone {
 		return nil
@@ -422,7 +420,7 @@ func (p *StreamingProcessor) endBlock() []byte {
 
 	var result bytes.Buffer
 
-	// Thinking 块结束时发送暂存的签名
+	// Thinking
 	if p.blockType == BlockTypeThinking && p.pendingSignature != "" {
 		_, _ = result.Write(p.emitDelta("signature_delta", map[string]any{
 			"signature": p.pendingSignature,
@@ -443,7 +441,7 @@ func (p *StreamingProcessor) endBlock() []byte {
 	return result.Bytes()
 }
 
-// emitDelta 发送 delta 事件
+// emitDelta
 func (p *StreamingProcessor) emitDelta(deltaType string, deltaContent map[string]any) []byte {
 	delta := map[string]any{
 		"type": deltaType,
@@ -461,7 +459,7 @@ func (p *StreamingProcessor) emitDelta(deltaType string, deltaContent map[string
 	return p.formatSSE("content_block_delta", event)
 }
 
-// emitEmptyThinkingWithSignature 发送空 thinking 块承载签名
+// emitEmptyThinkingWithSignature
 func (p *StreamingProcessor) emitEmptyThinkingWithSignature(signature string) []byte {
 	var result bytes.Buffer
 
@@ -480,14 +478,13 @@ func (p *StreamingProcessor) emitEmptyThinkingWithSignature(signature string) []
 	return result.Bytes()
 }
 
-// emitFinish 发送结束事件
+// emitFinish
 func (p *StreamingProcessor) emitFinish(finishReason string) []byte {
 	var result bytes.Buffer
 
-	// 关闭最后一个块
 	_, _ = result.Write(p.endBlock())
 
-	// 处理 trailingSignature
+	//
 	if p.trailingSignature != "" {
 		_, _ = result.Write(p.emitEmptyThinkingWithSignature(p.trailingSignature))
 		p.trailingSignature = ""
@@ -510,7 +507,7 @@ func (p *StreamingProcessor) emitFinish(finishReason string) []byte {
 		}
 	}
 
-	// 确定 stop_reason
+	//
 	stopReason := "end_turn"
 	if p.usedTool {
 		stopReason = "tool_use"
@@ -554,7 +551,7 @@ func (p *StreamingProcessor) emitFinish(finishReason string) []byte {
 	return result.Bytes()
 }
 
-// formatSSE 格式化 SSE 事件
+// formatSSE
 func (p *StreamingProcessor) formatSSE(eventType string, data any) []byte {
 	jsonData, err := json.Marshal(data)
 	if err != nil {

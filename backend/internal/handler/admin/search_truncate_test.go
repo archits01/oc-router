@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// truncateSearchByRune 模拟 user_handler.go 中的 search 截断逻辑
+// truncateSearchByRune
 func truncateSearchByRune(search string, maxRunes int) string {
 	if runes := []rune(search); len(runes) > maxRunes {
 		return string(runes[:maxRunes])
@@ -21,7 +21,7 @@ func TestTruncateSearchByRune(t *testing.T) {
 		name     string
 		input    string
 		maxRunes int
-		wantLen  int // 期望的 rune 长度
+		wantLen  int // 期望的 rune length
 	}{
 		{
 			name:     "纯中文超长",
@@ -36,7 +36,7 @@ func TestTruncateSearchByRune(t *testing.T) {
 			wantLen:  100,
 		},
 		{
-			name:     "空字符串",
+			name:     "empty string",
 			input:    "",
 			maxRunes: 100,
 			wantLen:  0,
@@ -64,7 +64,7 @@ func TestTruncateSearchByRune(t *testing.T) {
 }
 
 func TestTruncateSearchByRune_PreservesMultibyte(t *testing.T) {
-	// 101 个中文字符，截断到 100 个后应该仍然是有效 UTF-8
+	// 101
 	input := ""
 	for i := 0; i < 101; i++ {
 		input += "中"
@@ -72,12 +72,12 @@ func TestTruncateSearchByRune_PreservesMultibyte(t *testing.T) {
 	result := truncateSearchByRune(input, 100)
 
 	require.Equal(t, 100, len([]rune(result)))
-	// 验证截断结果是有效的 UTF-8（每个中文字符 3 字节）
+	//
 	require.Equal(t, 300, len(result))
 }
 
 func TestTruncateSearchByRune_MixedASCIIAndMultibyte(t *testing.T) {
-	// 50 个 ASCII + 51 个中文 = 101 个 rune
+	// 50 + 51 = 101
 	input := ""
 	for i := 0; i < 50; i++ {
 		input += "a"
@@ -89,7 +89,7 @@ func TestTruncateSearchByRune_MixedASCIIAndMultibyte(t *testing.T) {
 
 	runes := []rune(result)
 	require.Equal(t, 100, len(runes))
-	// 前 50 个应该是 'a'，后 50 个应该是 '中'
+	// 'a'，''
 	require.Equal(t, 'a', runes[0])
 	require.Equal(t, 'a', runes[49])
 	require.Equal(t, '中', runes[50])

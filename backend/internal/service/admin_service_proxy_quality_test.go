@@ -23,7 +23,7 @@ func TestFinalizeProxyQualityResult_ScoreAndGrade(t *testing.T) {
 	require.Equal(t, "F", result.Grade)
 	require.Contains(t, result.Summary, "通过 2 项")
 	require.Contains(t, result.Summary, "告警 1 项")
-	require.Contains(t, result.Summary, "失败 1 项")
+	require.Contains(t, result.Summary, "failed 1 项")
 	require.Contains(t, result.Summary, "挑战 1 项")
 }
 

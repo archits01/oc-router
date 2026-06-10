@@ -19,10 +19,10 @@ func TestNewTimingWheelService_InitFail_NoPanicAndReturnError(t *testing.T) {
 
 	svc, err := NewTimingWheelService()
 	if err == nil {
-		t.Fatalf("期望返回 error，但得到 nil")
+		t.Fatalf("期望returned error，但得到 nil")
 	}
 	if svc != nil {
-		t.Fatalf("期望返回 nil svc，但得到非空")
+		t.Fatalf("期望returned nil svc，但得到非空")
 	}
 }
 
@@ -84,7 +84,7 @@ func TestTimingWheelService_Schedule_ExecutesOnce(t *testing.T) {
 	select {
 	case <-ch:
 	case <-time.After(500 * time.Millisecond):
-		t.Fatalf("等待任务执行超时")
+		t.Fatalf("等待任务执行timeout")
 	}
 
 	select {
@@ -114,7 +114,7 @@ func TestTimingWheelService_Cancel_PreventsExecution(t *testing.T) {
 
 	select {
 	case <-ch:
-		t.Fatalf("任务已取消，不应执行")
+		t.Fatalf("任务已cancelled，不应执行")
 	case <-time.After(200 * time.Millisecond):
 	}
 }
@@ -126,7 +126,7 @@ func TestTimingWheelService_Schedule_AfterStop_LogsError(t *testing.T) {
 	}
 	svc.Stop()
 
-	// Stop 后调用 Schedule 应走 error 日志路径，不应 panic
+	// Stop
 	svc.Schedule("after-stop", 100*time.Millisecond, func() {
 		t.Fatal("不应被执行")
 	})
@@ -139,7 +139,7 @@ func TestTimingWheelService_ScheduleRecurring_AfterStop_LogsError(t *testing.T) 
 	}
 	svc.Stop()
 
-	// Stop 后调用 ScheduleRecurring 应走 error 日志路径，不应 panic
+	// Stop
 	svc.ScheduleRecurring("after-stop-rec", 100*time.Millisecond, func() {
 		t.Fatal("不应被执行")
 	})

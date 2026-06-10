@@ -197,7 +197,7 @@ func TestTokenRefreshService_RefreshWithRetry_NilInvalidator(t *testing.T) {
 	require.Equal(t, 1, repo.updateCalls)
 }
 
-// TestTokenRefreshService_RefreshWithRetry_Antigravity 测试 Antigravity 平台的缓存失效
+// TestTokenRefreshService_RefreshWithRetry_Antigravity
 func TestTokenRefreshService_RefreshWithRetry_Antigravity(t *testing.T) {
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -222,10 +222,10 @@ func TestTokenRefreshService_RefreshWithRetry_Antigravity(t *testing.T) {
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.NoError(t, err)
 	require.Equal(t, 1, repo.updateCalls)
-	require.Equal(t, 1, invalidator.calls) // Antigravity 也应触发缓存失效
+	require.Equal(t, 1, invalidator.calls) // Antigravity should also trigger cache invalidation
 }
 
-// TestTokenRefreshService_RefreshWithRetry_NonOAuthAccount 测试非 OAuth 账号不触发缓存失效
+// TestTokenRefreshService_RefreshWithRetry_NonOAuthAccount
 func TestTokenRefreshService_RefreshWithRetry_NonOAuthAccount(t *testing.T) {
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -239,7 +239,7 @@ func TestTokenRefreshService_RefreshWithRetry_NonOAuthAccount(t *testing.T) {
 	account := &Account{
 		ID:       9,
 		Platform: PlatformGemini,
-		Type:     AccountTypeAPIKey, // 非 OAuth
+		Type:     AccountTypeAPIKey, // non-OAuth
 	}
 	refresher := &tokenRefresherStub{
 		credentials: map[string]any{
@@ -250,10 +250,10 @@ func TestTokenRefreshService_RefreshWithRetry_NonOAuthAccount(t *testing.T) {
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.NoError(t, err)
 	require.Equal(t, 1, repo.updateCalls)
-	require.Equal(t, 0, invalidator.calls) // 非 OAuth 不触发缓存失效
+	require.Equal(t, 0, invalidator.calls) // non-OAuth does not trigger cache invalidation
 }
 
-// TestTokenRefreshService_RefreshWithRetry_OtherPlatformOAuth 测试所有 OAuth 平台都触发缓存失效
+// TestTokenRefreshService_RefreshWithRetry_OtherPlatformOAuth
 func TestTokenRefreshService_RefreshWithRetry_OtherPlatformOAuth(t *testing.T) {
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -266,7 +266,7 @@ func TestTokenRefreshService_RefreshWithRetry_OtherPlatformOAuth(t *testing.T) {
 	service := NewTokenRefreshService(repo, nil, nil, nil, nil, invalidator, nil, cfg, nil)
 	account := &Account{
 		ID:       10,
-		Platform: PlatformOpenAI, // OpenAI OAuth 账户
+		Platform: PlatformOpenAI, // OpenAI OAuth account
 		Type:     AccountTypeOAuth,
 	}
 	refresher := &tokenRefresherStub{
@@ -279,7 +279,7 @@ func TestTokenRefreshService_RefreshWithRetry_OtherPlatformOAuth(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, repo.updateCalls)
 	require.Equal(t, 1, repo.updateCredentialsCalls)
-	require.Equal(t, 1, invalidator.calls) // 所有 OAuth 账户刷新后触发缓存失效
+	require.Equal(t, 1, invalidator.calls) // all OAuth accounts trigger cache invalidation after refresh
 }
 
 func TestTokenRefreshService_RefreshWithRetry_UsesCredentialsUpdater(t *testing.T) {
@@ -315,7 +315,7 @@ func TestTokenRefreshService_RefreshWithRetry_UsesCredentialsUpdater(t *testing.
 	require.WithinDuration(t, resetAt, *account.RateLimitResetAt, time.Second)
 }
 
-// TestTokenRefreshService_RefreshWithRetry_UpdateFailed 测试更新失败的情况
+// TestTokenRefreshService_RefreshWithRetry_UpdateFailed
 func TestTokenRefreshService_RefreshWithRetry_UpdateFailed(t *testing.T) {
 	repo := &tokenRefreshAccountRepo{updateErr: errors.New("update failed")}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -341,10 +341,10 @@ func TestTokenRefreshService_RefreshWithRetry_UpdateFailed(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to save credentials")
 	require.Equal(t, 1, repo.updateCalls)
-	require.Equal(t, 0, invalidator.calls) // 更新失败时不应触发缓存失效
+	require.Equal(t, 0, invalidator.calls) // should not trigger cache invalidation on update failure
 }
 
-// TestTokenRefreshService_RefreshWithRetry_RefreshFailed 测试可重试错误耗尽不标记 error
+// TestTokenRefreshService_RefreshWithRetry_RefreshFailed
 func TestTokenRefreshService_RefreshWithRetry_RefreshFailed(t *testing.T) {
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -366,12 +366,12 @@ func TestTokenRefreshService_RefreshWithRetry_RefreshFailed(t *testing.T) {
 
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.Error(t, err)
-	require.Equal(t, 0, repo.updateCalls)   // 刷新失败不应更新
-	require.Equal(t, 0, invalidator.calls)  // 刷新失败不应触发缓存失效
-	require.Equal(t, 0, repo.setErrorCalls) // 可重试错误耗尽不标记 error，下个周期继续重试
+	require.Equal(t, 0, repo.updateCalls)   // should not update on refresh failure
+	require.Equal(t, 0, invalidator.calls)  // should not trigger cache invalidation on refresh failure
+	require.Equal(t, 0, repo.setErrorCalls) // retryable error exhausted does not mark error, continues retry next cycle
 }
 
-// TestTokenRefreshService_RefreshWithRetry_AntigravityRefreshFailed 测试 Antigravity 刷新失败不设置错误状态
+// TestTokenRefreshService_RefreshWithRetry_AntigravityRefreshFailed
 func TestTokenRefreshService_RefreshWithRetry_AntigravityRefreshFailed(t *testing.T) {
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -388,17 +388,17 @@ func TestTokenRefreshService_RefreshWithRetry_AntigravityRefreshFailed(t *testin
 		Type:     AccountTypeOAuth,
 	}
 	refresher := &tokenRefresherStub{
-		err: errors.New("network error"), // 可重试错误
+		err: errors.New("network error"), // retryable error
 	}
 
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.Error(t, err)
 	require.Equal(t, 0, repo.updateCalls)
 	require.Equal(t, 0, invalidator.calls)
-	require.Equal(t, 0, repo.setErrorCalls) // Antigravity 可重试错误不设置错误状态
+	require.Equal(t, 0, repo.setErrorCalls) // Antigravity retryable error does not set error status
 }
 
-// TestTokenRefreshService_RefreshWithRetry_AntigravityNonRetryableError 测试 Antigravity 不可重试错误
+// TestTokenRefreshService_RefreshWithRetry_AntigravityNonRetryableError
 func TestTokenRefreshService_RefreshWithRetry_AntigravityNonRetryableError(t *testing.T) {
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -415,17 +415,17 @@ func TestTokenRefreshService_RefreshWithRetry_AntigravityNonRetryableError(t *te
 		Type:     AccountTypeOAuth,
 	}
 	refresher := &tokenRefresherStub{
-		err: errors.New("invalid_grant: token revoked"), // 不可重试错误
+		err: errors.New("invalid_grant: token revoked"), // non-retryable error
 	}
 
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.Error(t, err)
 	require.Equal(t, 0, repo.updateCalls)
 	require.Equal(t, 0, invalidator.calls)
-	require.Equal(t, 1, repo.setErrorCalls) // 不可重试错误应设置错误状态
+	require.Equal(t, 1, repo.setErrorCalls) // non-retryable error should set error status
 }
 
-// TestTokenRefreshService_RefreshWithRetry_ClearsTempUnschedulable 测试刷新成功后清除临时不可调度（DB + Redis）
+// TestTokenRefreshService_RefreshWithRetry_ClearsTempUnschedulable + Redis）
 func TestTokenRefreshService_RefreshWithRetry_ClearsTempUnschedulable(t *testing.T) {
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -453,11 +453,11 @@ func TestTokenRefreshService_RefreshWithRetry_ClearsTempUnschedulable(t *testing
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.NoError(t, err)
 	require.Equal(t, 1, repo.updateCalls)
-	require.Equal(t, 1, repo.clearTempCalls)   // DB 清除
-	require.Equal(t, 1, tempCache.deleteCalls) // Redis 缓存也应清除
+	require.Equal(t, 1, repo.clearTempCalls)   // DB clear
+	require.Equal(t, 1, tempCache.deleteCalls) // Redis cache should also be cleared
 }
 
-// TestTokenRefreshService_RefreshWithRetry_NonRetryableErrorAllPlatforms 测试所有平台不可重试错误都 SetError
+// TestTokenRefreshService_RefreshWithRetry_NonRetryableErrorAllPlatforms
 func TestTokenRefreshService_RefreshWithRetry_NonRetryableErrorAllPlatforms(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -491,7 +491,7 @@ func TestTokenRefreshService_RefreshWithRetry_NonRetryableErrorAllPlatforms(t *t
 
 			err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 			require.Error(t, err)
-			require.Equal(t, 1, repo.setErrorCalls) // 所有平台不可重试错误都应 SetError
+			require.Equal(t, 1, repo.setErrorCalls) // all platform non-retryable errors should SetError
 		})
 	}
 }
@@ -521,7 +521,7 @@ func TestTokenRefreshService_RefreshWithRetry_NoRefreshTokenDoesNotTempUnschedul
 	require.Equal(t, 1, repo.setErrorCalls, "missing refresh token should be treated as a non-retryable credential state")
 }
 
-// TestIsNonRetryableRefreshError 测试不可重试错误判断
+// TestIsNonRetryableRefreshError
 func TestIsNonRetryableRefreshError(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -548,9 +548,9 @@ func TestIsNonRetryableRefreshError(t *testing.T) {
 	}
 }
 
-// ========== Path A (refreshAPI) 测试用例 ==========
+// ========== Path A (refreshAPI) ==========
 
-// mockTokenCacheForRefreshAPI 用于 Path A 测试的 GeminiTokenCache mock
+// mockTokenCacheForRefreshAPI
 type mockTokenCacheForRefreshAPI struct {
 	lockResult   bool
 	lockErr      error
@@ -578,7 +578,7 @@ func (m *mockTokenCacheForRefreshAPI) ReleaseRefreshLock(_ context.Context, _ st
 	return nil
 }
 
-// buildPathAService 构建注入了 refreshAPI 的 service（Path A 测试辅助）
+// buildPathAService
 func buildPathAService(repo *tokenRefreshAccountRepo, cache GeminiTokenCache, invalidator TokenCacheInvalidator) (*TokenRefreshService, *tokenRefresherStub) {
 	cfg := &config.Config{
 		TokenRefresh: config.TokenRefreshConfig{
@@ -598,7 +598,7 @@ func buildPathAService(repo *tokenRefreshAccountRepo, cache GeminiTokenCache, in
 	return service, refresher
 }
 
-// TestPathA_Success 统一 API 路径正常成功：刷新 + DB 更新 + postRefreshActions
+// TestPathA_Success + DB + postRefreshActions
 func TestPathA_Success(t *testing.T) {
 	account := &Account{
 		ID:       100,
@@ -614,12 +614,12 @@ func TestPathA_Success(t *testing.T) {
 
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.NoError(t, err)
-	require.Equal(t, 1, repo.updateCalls)   // DB 更新被调用
-	require.Equal(t, 1, invalidator.calls)  // 缓存失效被调用
-	require.Equal(t, 1, cache.releaseCalls) // 锁被释放
+	require.Equal(t, 1, repo.updateCalls)   // DB update was called
+	require.Equal(t, 1, invalidator.calls)  // cache invalidation was called
+	require.Equal(t, 1, cache.releaseCalls) // lock was released
 }
 
-// TestPathA_LockHeld 锁被其他 worker 持有 → 返回 errRefreshSkipped
+// TestPathA_LockHeld →
 func TestPathA_LockHeld(t *testing.T) {
 	account := &Account{
 		ID:       101,
@@ -628,19 +628,19 @@ func TestPathA_LockHeld(t *testing.T) {
 	}
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
-	cache := &mockTokenCacheForRefreshAPI{lockResult: false} // 锁获取失败（被占）
+	cache := &mockTokenCacheForRefreshAPI{lockResult: false} // lock acquisition failed (held by another)
 
 	service, refresher := buildPathAService(repo, cache, invalidator)
 
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.ErrorIs(t, err, errRefreshSkipped)
-	require.Equal(t, 0, repo.updateCalls)  // 不应更新 DB
-	require.Equal(t, 0, invalidator.calls) // 不应触发缓存失效
+	require.Equal(t, 0, repo.updateCalls)  // should not update DB
+	require.Equal(t, 0, invalidator.calls) // should not trigger cache invalidation
 }
 
-// TestPathA_AlreadyRefreshed 二次检查发现已被其他路径刷新 → 返回 errRefreshSkipped
+// TestPathA_AlreadyRefreshed →
 func TestPathA_AlreadyRefreshed(t *testing.T) {
-	// NeedsRefresh 返回 false → RefreshIfNeeded 返回 {Refreshed: false}
+	// NeedsRefresh → RefreshIfNeeded {Refreshed: false}
 	account := &Account{
 		ID:       102,
 		Platform: PlatformGemini,
@@ -653,11 +653,11 @@ func TestPathA_AlreadyRefreshed(t *testing.T) {
 
 	service, _ := buildPathAService(repo, cache, invalidator)
 
-	// 使用一个 NeedsRefresh 返回 false 的 stub
+	//
 	noRefreshNeeded := &tokenRefresherStub{
 		credentials: map[string]any{"access_token": "token"},
 	}
-	// 覆盖 NeedsRefresh 行为 — 我们需要一个新的 stub 类型
+	// —
 	alwaysFreshStub := &alwaysFreshRefresherStub{}
 
 	err := service.refreshWithRetry(context.Background(), account, noRefreshNeeded, alwaysFreshStub, time.Hour)
@@ -666,7 +666,7 @@ func TestPathA_AlreadyRefreshed(t *testing.T) {
 	require.Equal(t, 0, invalidator.calls)
 }
 
-// alwaysFreshRefresherStub 二次检查时认为不需要刷新（模拟已被其他路径刷新）
+// alwaysFreshRefresherStub
 type alwaysFreshRefresherStub struct{}
 
 func (r *alwaysFreshRefresherStub) CanRefresh(_ *Account) bool                    { return true }
@@ -678,7 +678,7 @@ func (r *alwaysFreshRefresherStub) CacheKey(account *Account) string {
 	return "test:fresh:" + account.Platform
 }
 
-// TestPathA_NonRetryableError 统一 API 路径返回不可重试错误 → SetError
+// TestPathA_NonRetryableError → SetError
 func TestPathA_NonRetryableError(t *testing.T) {
 	account := &Account{
 		ID:       103,
@@ -698,12 +698,12 @@ func TestPathA_NonRetryableError(t *testing.T) {
 
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.Error(t, err)
-	require.Equal(t, 1, repo.setErrorCalls) // 应标记 error 状态
-	require.Equal(t, 0, repo.updateCalls)   // 不应更新 credentials
-	require.Equal(t, 0, invalidator.calls)  // 不应触发缓存失效
+	require.Equal(t, 1, repo.setErrorCalls) // should mark error status
+	require.Equal(t, 0, repo.updateCalls)   // should not update credentials
+	require.Equal(t, 0, invalidator.calls)  // should not trigger cache invalidation
 }
 
-// TestPathA_RetryableErrorExhausted 统一 API 路径可重试错误耗尽 → 不标记 error
+// TestPathA_RetryableErrorExhausted →
 func TestPathA_RetryableErrorExhausted(t *testing.T) {
 	account := &Account{
 		ID:       104,
@@ -731,12 +731,12 @@ func TestPathA_RetryableErrorExhausted(t *testing.T) {
 
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.Error(t, err)
-	require.Equal(t, 0, repo.setErrorCalls) // 可重试错误不标记 error
-	require.Equal(t, 0, repo.updateCalls)   // 刷新失败不应更新
-	require.Equal(t, 0, invalidator.calls)  // 不应触发缓存失效
+	require.Equal(t, 0, repo.setErrorCalls) // retryable error does not mark error
+	require.Equal(t, 0, repo.updateCalls)   // should not update on refresh failure
+	require.Equal(t, 0, invalidator.calls)  // should not trigger cache invalidation
 }
 
-// TestPathA_DBUpdateFailed 统一 API 路径 DB 更新失败 → 返回 error，不执行 postRefreshActions
+// TestPathA_DBUpdateFailed →
 func TestPathA_DBUpdateFailed(t *testing.T) {
 	account := &Account{
 		ID:       105,
@@ -753,6 +753,6 @@ func TestPathA_DBUpdateFailed(t *testing.T) {
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "DB update failed")
-	require.Equal(t, 1, repo.updateCalls)  // DB 更新被尝试
-	require.Equal(t, 0, invalidator.calls) // DB 失败时不应触发缓存失效
+	require.Equal(t, 1, repo.updateCalls)  // DB update was attempted
+	require.Equal(t, 0, invalidator.calls) // should not trigger cache invalidation on DB failure
 }

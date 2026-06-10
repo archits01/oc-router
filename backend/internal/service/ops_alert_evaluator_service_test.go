@@ -41,7 +41,7 @@ func TestComputeGroupAvailableRatio(t *testing.T) {
 		require.InDelta(t, 80.0, got, 0.0001)
 	})
 
-	t.Run("边界情况: TotalAccounts = 0 应返回 0", func(t *testing.T) {
+	t.Run("边界情况: TotalAccounts = 0 应returned 0", func(t *testing.T) {
 		t.Parallel()
 
 		got := computeGroupAvailableRatio(&GroupAvailability{
@@ -51,7 +51,7 @@ func TestComputeGroupAvailableRatio(t *testing.T) {
 		require.Equal(t, 0.0, got)
 	})
 
-	t.Run("边界情况: AvailableCount = 0 应返回 0%", func(t *testing.T) {
+	t.Run("边界情况: AvailableCount = 0 应returned 0%", func(t *testing.T) {
 		t.Parallel()
 
 		got := computeGroupAvailableRatio(&GroupAvailability{
@@ -65,7 +65,7 @@ func TestComputeGroupAvailableRatio(t *testing.T) {
 func TestCountAccountsByCondition(t *testing.T) {
 	t.Parallel()
 
-	t.Run("测试限流账号统计: acc.IsRateLimited", func(t *testing.T) {
+	t.Run("test限流账号统计: acc.IsRateLimited", func(t *testing.T) {
 		t.Parallel()
 
 		accounts := map[int64]*AccountAvailability{
@@ -80,7 +80,7 @@ func TestCountAccountsByCondition(t *testing.T) {
 		require.Equal(t, int64(2), got)
 	})
 
-	t.Run("测试错误账号统计（排除临时不可调度）: acc.HasError && acc.TempUnschedulableUntil == nil", func(t *testing.T) {
+	t.Run("testerror账号统计（排除临时不可调度）: acc.HasError && acc.TempUnschedulableUntil == nil", func(t *testing.T) {
 		t.Parallel()
 
 		until := time.Now().UTC().Add(5 * time.Minute)
@@ -96,7 +96,7 @@ func TestCountAccountsByCondition(t *testing.T) {
 		require.Equal(t, int64(1), got)
 	})
 
-	t.Run("边界情况: 空 map 应返回 0", func(t *testing.T) {
+	t.Run("边界情况: 空 map 应returned 0", func(t *testing.T) {
 		t.Parallel()
 
 		got := countAccountsByCondition(map[int64]*AccountAvailability{}, func(acc *AccountAvailability) bool {

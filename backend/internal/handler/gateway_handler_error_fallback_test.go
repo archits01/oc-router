@@ -35,8 +35,8 @@ func TestGatewayEnsureForwardErrorResponse_WritesFallbackWhenNotWritten(t *testi
 	assert.Equal(t, "Upstream request failed", errorObj["message"])
 }
 
-// Writer 已写后 ensureForwardErrorResponse 必须把错误以 SSE 形式追加，
-// 而不是 silent EOF。非 /responses 路径走 legacy data:{"type":"error"} 分支。
+// Writer
+// {"type":"error"}
 func TestGatewayEnsureForwardErrorResponse_AppendsSSEAfterWritten(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
@@ -53,8 +53,8 @@ func TestGatewayEnsureForwardErrorResponse_AppendsSSEAfterWritten(t *testing.T) 
 	assert.Contains(t, w.Body.String(), `data: {"type":"error"`)
 }
 
-// case B 回归：Anthropic-backed /responses，Writer 已被写过时
-// ensureForwardErrorResponse 仍要发 response.failed。
+// case B
+// ensureForwardErrorResponse
 func TestGatewayEnsureForwardErrorResponse_ResponsesRouteAfterWrittenEmitsResponseFailed(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
@@ -118,9 +118,9 @@ func TestGatewayForwardErrorAlreadyCommunicated(t *testing.T) {
 		require.False(t, reported)
 	})
 
-	// apikey 场景核心回归：复刻 GatewayService.handleErrorResponse 的 case 400 ——
-	// 原样透传上游 JSON body 后返回 err。此时错误已经完整告知客户端，
-	// handler 不得再追加 data:{"type":"error"} 帧，否则响应被污染成「JSON + 一行 data:」。
+	// apikey ——
+	//
+	// handler {"type":"error"} 「JSON + 」。
 	t.Run("upstream 400 json passthrough via c.Data", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -134,12 +134,11 @@ func TestGatewayForwardErrorAlreadyCommunicated(t *testing.T) {
 		require.True(t, reported)
 		body := w.Body.String()
 		assert.NotContains(t, body, `data: {"type":"error"`)
-		// 客户端只应收到上游那一份错误，没有被追加第二份。
 		assert.Equal(t, 1, strings.Count(body, `"type":"error"`))
 	})
 
-	// 流式已开始（已 flush 真实 SSE 事件，不只是 ping）+ 上游中途 400：
-	// HTTP 200 已固化，仍需 handler 补协议级终止帧，故不算「已完整告知」。
+	// +
+	// HTTP 200 「」。
 	t.Run("streaming 400 mid-stream still needs fallback", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -153,7 +152,7 @@ func TestGatewayForwardErrorAlreadyCommunicated(t *testing.T) {
 		require.False(t, reported)
 	})
 
-	// 防御边界：err 为 nil 时永远不算「已告知」，避免在成功路径误吞兜底逻辑。
+	// 「」，
 	t.Run("nil error never reports communicated", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)

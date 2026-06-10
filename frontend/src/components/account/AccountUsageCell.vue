@@ -168,7 +168,7 @@
 
     <!-- Antigravity OAuth accounts: fetch usage from API -->
     <template v-else-if="account.platform === 'antigravity' && account.type === 'oauth'">
-      <!-- 账户类型徽章 -->
+      <!-- Account类型徽章 -->
       <div v-if="antigravityTierLabel" class="mb-1 flex items-center gap-1">
         <span
           :class="[
@@ -178,7 +178,7 @@
         >
           {{ antigravityTierLabel }}
         </span>
-        <!-- 不合格账户警告图标 -->
+        <!-- 不合格Account警告图标 -->
         <span
           v-if="hasIneligibleTiers"
           class="group relative cursor-help"
@@ -597,7 +597,7 @@ const shouldLazyLoadOnMobile = computed(() => {
   return shouldFetchUsage.value && !isDesktopViewport.value
 })
 
-// Antigravity quota types (用于 API 返回的数据)
+// Antigravity quota types (用于 API Back的数据)
 interface AntigravityUsageResult {
   utilization: number
   resetTime: string | null
@@ -605,7 +605,7 @@ interface AntigravityUsageResult {
 
 // ===== Antigravity quota from API (usageInfo.antigravity_quota) =====
 
-// 检查是否有从 API 获取的配额数据
+// 检查YesNo有从 API 获取的配额数据
 const hasAntigravityQuotaFromAPI = computed(() => {
   return usageInfo.value?.antigravity_quota && Object.keys(usageInfo.value.antigravity_quota).length > 0
 })
@@ -634,7 +634,6 @@ const getAntigravityUsageFromAPI = (
     }
   }
 
-  // 如果没有找到任何匹配的模型
   if (maxUtilization === 0 && earliestReset === null) {
     const hasAnyData = modelNames.some((m) => quota[m])
     if (!hasAnyData) return null
@@ -677,7 +676,7 @@ const aiCreditsDisplay = computed(() => {
   return total.toFixed(0)
 })
 
-// Antigravity 账户类型（从 load_code_assist 响应中提取）
+// Antigravity Account类型（从 load_code_assist 响应中提取）
 const antigravityTier = computed(() => {
   const extra = props.account.extra as Record<string, unknown> | undefined
   if (!extra) return null
@@ -685,7 +684,7 @@ const antigravityTier = computed(() => {
   const loadCodeAssist = extra.load_code_assist as Record<string, unknown> | undefined
   if (!loadCodeAssist) return null
 
-  // 优先取 paidTier，否则取 currentTier
+  // 优先取 paidTier，No则取 currentTier
   const paidTier = loadCodeAssist.paidTier as Record<string, unknown> | undefined
   if (paidTier && typeof paidTier.id === 'string') {
     return paidTier.id
@@ -699,7 +698,7 @@ const antigravityTier = computed(() => {
   return null
 })
 
-// Gemini 账户类型（从 credentials 中提取）
+// Gemini Account类型（从 credentials 中提取）
 const geminiTier = computed(() => {
   if (props.account.platform !== 'gemini') return null
   const creds = props.account.credentials as GeminiCredentials | undefined
@@ -712,7 +711,7 @@ const geminiOAuthType = computed(() => {
   return (creds?.oauth_type || '').trim() || null
 })
 
-// Gemini 是否为 Code Assist OAuth
+// Gemini YesNo为 Code Assist OAuth
 const isGeminiCodeAssist = computed(() => {
   if (props.account.platform !== 'gemini') return false
   const creds = props.account.credentials as GeminiCredentials | undefined
@@ -779,14 +778,14 @@ const geminiUserLevel = computed((): string | null => {
   return null
 })
 
-// Gemini 认证类型（按要求：授权方式简称 + 用户等级）
+// Gemini 认证类型（按要求：授权方式简称 + User等级）
 const geminiAuthTypeLabel = computed(() => {
   if (props.account.platform !== 'gemini') return null
   if (!geminiChannelShort.value) return null
   return geminiUserLevel.value ? `${geminiChannelShort.value} ${geminiUserLevel.value}` : geminiChannelShort.value
 })
 
-// Gemini 账户类型徽章样式（统一样式）
+// Gemini Account类型徽章样式（统一样式）
 const geminiTierClass = computed(() => {
   // Use channel+level to choose a stable color without depending on raw tier_id variants.
   const channel = geminiChannelShort.value
@@ -921,7 +920,6 @@ const geminiUsageBars = computed(() => {
   return bars
 })
 
-// 账户类型显示标签
 const antigravityTierLabel = computed(() => {
   switch (antigravityTier.value) {
     case 'free-tier':
@@ -935,7 +933,6 @@ const antigravityTierLabel = computed(() => {
   }
 })
 
-// 账户类型徽章样式
 const antigravityTierClass = computed(() => {
   switch (antigravityTier.value) {
     case 'free-tier':
@@ -949,7 +946,7 @@ const antigravityTierClass = computed(() => {
   }
 })
 
-// 检测账户是否有不合格状态（ineligibleTiers）
+// 检测AccountYesNo有不合格Status（ineligibleTiers）
 const hasIneligibleTiers = computed(() => {
   const extra = props.account.extra as Record<string, unknown> | undefined
   if (!extra) return false
@@ -961,7 +958,7 @@ const hasIneligibleTiers = computed(() => {
   return Array.isArray(ineligibleTiers) && ineligibleTiers.length > 0
 })
 
-// Antigravity 403 forbidden 状态
+// Antigravity 403 forbidden Status
 const isForbidden = computed(() => !!usageInfo.value?.is_forbidden)
 const forbiddenType = computed(() => usageInfo.value?.forbidden_type || 'forbidden')
 const validationURL = computed(() => usageInfo.value?.validation_url || '')

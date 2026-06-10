@@ -138,7 +138,7 @@ func (h *AccountHandler) ImportCodexSession(c *gin.Context) {
 		return
 	}
 	if len(entries) == 0 {
-		response.BadRequest(c, "请输入 accessToken 或 Codex session JSON")
+		response.BadRequest(c, "请输入 accessToken or Codex session JSON")
 		return
 	}
 
@@ -391,7 +391,7 @@ func parseCodexSessionImportContent(content string) ([]any, error) {
 					return lineValues, nil
 				}
 			}
-			return nil, fmt.Errorf("JSON 解析失败: %w", err)
+			return nil, fmt.Errorf("JSON parsefailed: %w", err)
 		}
 		return flattenCodexImportValues(values), nil
 	}
@@ -409,7 +409,7 @@ func parseCodexSessionImportLines(content string) ([]any, error) {
 		if looksLikeJSON(line) {
 			lineValues, err := decodeCodexJSONStream(line)
 			if err != nil {
-				return nil, fmt.Errorf("第 %d 行 JSON 解析失败: %w", len(values)+1, err)
+				return nil, fmt.Errorf("第 %d 行 JSON parsefailed: %w", len(values)+1, err)
 			}
 			values = append(values, flattenCodexImportValues(lineValues)...)
 			continue
@@ -539,7 +539,7 @@ func normalizeCodexImportEntry(entry codexImportEntry) (*codexImportAccount, err
 			[]string{"expiresAt"},
 		); ok {
 			if tokenExpiresAt.Unix() <= now.Unix()-codexImportClockSkewSeconds {
-				return nil, fmt.Errorf("access_token 已过期: %s", tokenExpiresAt.Format(time.RFC3339))
+				return nil, fmt.Errorf("access_token expired: %s", tokenExpiresAt.Format(time.RFC3339))
 			}
 			item.TokenExpiresAt = &tokenExpiresAt
 			item.Credentials["expires_at"] = tokenExpiresAt.Format(time.RFC3339)
@@ -569,7 +569,7 @@ func normalizeCodexImportEntry(entry codexImportEntry) (*codexImportAccount, err
 		return nil, err
 	}
 	if _, ok := item.Credentials["expires_at"]; !ok {
-		item.WarningTexts = append(item.WarningTexts, "无法从 accessToken 解析过期时间，导入后需自行确认令牌有效性")
+		item.WarningTexts = append(item.WarningTexts, "无法从 accessToken parseexpiry time，导入后需自行确认令牌valid性")
 	}
 	if item.RefreshToken == "" {
 		item.WarningTexts = append(item.WarningTexts, "未包含 refresh_token，accessToken 过期后无法自动续期")
@@ -593,13 +593,13 @@ func enrichCodexImportAccountFromJWT(item *codexImportAccount, token string, val
 	claims, err := decodeCodexJWTClaims(token)
 	if err != nil {
 		if validateExpiry {
-			item.WarningTexts = append(item.WarningTexts, "accessToken 不是可解析 JWT，无法校验过期时间和账号身份")
+			item.WarningTexts = append(item.WarningTexts, "accessToken 不是可parse JWT，无法校验expiry time和账号身份")
 		}
 		return nil
 	}
 	if validateExpiry && claims.Exp > 0 {
 		if now.Unix() > claims.Exp+codexImportClockSkewSeconds {
-			return fmt.Errorf("access_token 已过期: %s", time.Unix(claims.Exp, 0).UTC().Format(time.RFC3339))
+			return fmt.Errorf("access_token expired: %s", time.Unix(claims.Exp, 0).UTC().Format(time.RFC3339))
 		}
 		expiresAt := time.Unix(claims.Exp, 0).UTC()
 		item.TokenExpiresAt = &expiresAt
@@ -728,12 +728,12 @@ func resolveCodexImportExpiry(req CodexSessionImportRequest, item *codexImportAc
 			credentialExpiresAt = earlierCodexTime(credentialExpiresAt, requestExpiresAt)
 		}
 		if accountExpiresAt == nil {
-			return nil, nil, nil, nil, errors.New("未包含 refresh_token，且无法解析 accessToken 过期时间；请在第一步设置过期时间后再导入")
+			return nil, nil, nil, nil, errors.New("未包含 refresh_token，且无法parse accessToken expiry time；请在第一步设置expiry time后再导入")
 		}
 		if accountExpiresAt.Unix() <= time.Now().UTC().Unix()-codexImportClockSkewSeconds {
-			return nil, nil, nil, nil, fmt.Errorf("过期时间已过期: %s", accountExpiresAt.Format(time.RFC3339))
+			return nil, nil, nil, nil, fmt.Errorf("expiry timeexpired: %s", accountExpiresAt.Format(time.RFC3339))
 		}
-		warnings = append(warnings, "未包含 refresh_token，已按 accessToken/账号过期时间设置自动停止调度")
+		warnings = append(warnings, "未包含 refresh_token，已按 accessToken/账号expiry time设置自动停止调度")
 		if req.AutoPauseOnExpired != nil && !*req.AutoPauseOnExpired {
 			warnings = append(warnings, "未包含 refresh_token，已强制开启过期自动暂停")
 		}

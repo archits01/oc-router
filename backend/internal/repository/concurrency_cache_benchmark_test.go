@@ -10,12 +10,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// 基准测试用 TTL 配置
+//
 const benchSlotTTLMinutes = 15
 
 var benchSlotTTL = time.Duration(benchSlotTTLMinutes) * time.Minute
 
-// BenchmarkAccountConcurrency 用于对比 SCAN 与有序集合的计数性能。
+// BenchmarkAccountConcurrency
 func BenchmarkAccountConcurrency(b *testing.B) {
 	rdb := newBenchmarkRedisClient(b)
 	defer func() {
@@ -41,23 +41,23 @@ func BenchmarkAccountConcurrency(b *testing.B) {
 				})
 			}
 			if err := rdb.ZAdd(ctx, key, members...).Err(); err != nil {
-				b.Fatalf("初始化有序集合失败: %v", err)
+				b.Fatalf("failed to initialize sorted set: %v", err)
 			}
 			if err := rdb.Expire(ctx, key, benchSlotTTL).Err(); err != nil {
-				b.Fatalf("设置有序集合 TTL 失败: %v", err)
+				b.Fatalf("failed to set sorted set TTL: %v", err)
 			}
 			b.StartTimer()
 
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
 				if _, err := cache.GetAccountConcurrency(ctx, accountID); err != nil {
-					b.Fatalf("获取并发数量失败: %v", err)
+					b.Fatalf("failed to get concurrency count: %v", err)
 				}
 			}
 
 			b.StopTimer()
 			if err := rdb.Del(ctx, key).Err(); err != nil {
-				b.Fatalf("清理有序集合失败: %v", err)
+				b.Fatalf("failed to clean up sorted set: %v", err)
 			}
 		})
 
@@ -74,20 +74,20 @@ func BenchmarkAccountConcurrency(b *testing.B) {
 				pipe.Set(ctx, key, "1", benchSlotTTL)
 			}
 			if _, err := pipe.Exec(ctx); err != nil {
-				b.Fatalf("初始化扫描键失败: %v", err)
+				b.Fatalf("failed to initialize scan keys: %v", err)
 			}
 			b.StartTimer()
 
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
 				if _, err := scanSlotCount(ctx, rdb, pattern); err != nil {
-					b.Fatalf("SCAN 计数失败: %v", err)
+					b.Fatalf("SCAN count failed: %v", err)
 				}
 			}
 
 			b.StopTimer()
 			if err := rdb.Del(ctx, keys...).Err(); err != nil {
-				b.Fatalf("清理扫描键失败: %v", err)
+				b.Fatalf("failed to clean up scan keys: %v", err)
 			}
 		})
 	}
@@ -115,12 +115,12 @@ func newBenchmarkRedisClient(b *testing.B) *redis.Client {
 
 	redisURL := os.Getenv("TEST_REDIS_URL")
 	if redisURL == "" {
-		b.Skip("未设置 TEST_REDIS_URL，跳过 Redis 基准测试")
+		b.Skip("TEST_REDIS_URL not set, skipping Redis benchmark test")
 	}
 
 	opt, err := redis.ParseURL(redisURL)
 	if err != nil {
-		b.Fatalf("解析 TEST_REDIS_URL 失败: %v", err)
+		b.Fatalf("parse TEST_REDIS_URL failed: %v", err)
 	}
 
 	client := redis.NewClient(opt)
@@ -128,7 +128,7 @@ func newBenchmarkRedisClient(b *testing.B) *redis.Client {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		b.Fatalf("Redis 连接失败: %v", err)
+		b.Fatalf("Redis connection failed: %v", err)
 	}
 
 	return client

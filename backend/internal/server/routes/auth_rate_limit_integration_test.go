@@ -75,7 +75,7 @@ func ensureAuthRouteDockerAvailable(t *testing.T) {
 	if authRouteDockerAvailable() {
 		return
 	}
-	t.Skip("Docker 未启用，跳过认证限流集成测试")
+	t.Skip("Docker 未启用，跳过认证限流集成test")
 }
 
 func authRouteDockerAvailable() bool {

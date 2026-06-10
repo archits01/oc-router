@@ -341,7 +341,7 @@ func TestCalculateStatsCost_DefaultBillingMode_FallsToToken(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// tryCustomRules — 多规则顺序测试
+// tryCustomRules —
 // ---------------------------------------------------------------------------
 
 func TestTryCustomRules_FirstMatchWins(t *testing.T) {
@@ -364,7 +364,7 @@ func TestTryCustomRules_FirstMatchWins(t *testing.T) {
 	tokens := UsageTokens{InputTokens: 100, OutputTokens: 50}
 	result := tryCustomRules(channel, 999, 1, "", "claude-opus-4", tokens, 1)
 	require.NotNil(t, result)
-	// 应使用第一条规则的价格：100*0.01 + 50*0.02 = 2.0
+	// *0.01 + 50*0.02 = 2.0
 	require.InDelta(t, 2.0, *result, 1e-12)
 }
 
@@ -372,7 +372,7 @@ func TestTryCustomRules_SkipsNonMatchingRules(t *testing.T) {
 	channel := &Channel{
 		AccountStatsPricingRules: []AccountStatsPricingRule{
 			{
-				AccountIDs: []int64{888}, // 不匹配
+				AccountIDs: []int64{888}, // mismatch
 				Pricing: []ChannelModelPricing{
 					{ID: 100, Models: []string{"claude-opus-4"}, InputPrice: testPtrFloat64(0.99)},
 				},
@@ -388,7 +388,7 @@ func TestTryCustomRules_SkipsNonMatchingRules(t *testing.T) {
 	tokens := UsageTokens{InputTokens: 100}
 	result := tryCustomRules(channel, 999, 1, "", "claude-opus-4", tokens, 1)
 	require.NotNil(t, result)
-	// 跳过规则1（账号不匹配），使用规则2：100*0.05 = 5.0
+	// *0.05 = 5.0
 	require.InDelta(t, 5.0, *result, 1e-12)
 }
 
@@ -405,7 +405,7 @@ func TestTryCustomRules_NoMatch_ReturnsNil(t *testing.T) {
 	}
 	tokens := UsageTokens{InputTokens: 100}
 	result := tryCustomRules(channel, 999, 2, "", "claude-opus-4", tokens, 1)
-	require.Nil(t, result) // 账号和分组都不匹配
+	require.Nil(t, result) // 账号和分组都mismatch
 }
 
 func TestTryCustomRules_RuleMatchesButModelNot_ContinuesToNext(t *testing.T) {
@@ -414,13 +414,13 @@ func TestTryCustomRules_RuleMatchesButModelNot_ContinuesToNext(t *testing.T) {
 			{
 				GroupIDs: []int64{1},
 				Pricing: []ChannelModelPricing{
-					{ID: 100, Models: []string{"gpt-4o"}, InputPrice: testPtrFloat64(0.01)}, // 模型不匹配
+					{ID: 100, Models: []string{"gpt-4o"}, InputPrice: testPtrFloat64(0.01)}, // modelmismatch
 				},
 			},
 			{
 				GroupIDs: []int64{1},
 				Pricing: []ChannelModelPricing{
-					{ID: 200, Models: []string{"claude-opus-4"}, InputPrice: testPtrFloat64(0.05)}, // 模型匹配
+					{ID: 200, Models: []string{"claude-opus-4"}, InputPrice: testPtrFloat64(0.05)}, // model匹配
 				},
 			},
 		},

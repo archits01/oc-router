@@ -480,12 +480,12 @@ describe('EditAccountModal', () => {
     await wrapper.get('form#edit-account-form').trigger('submit.prevent')
 
     expect(updateAccountMock).toHaveBeenCalledTimes(1)
-    // 用户未输入新 key 时，payload 不应带 api_key，由后端合并保留旧值
+    // User未输入新 key 时，payload 不应带 api_key，由后端合并保留旧值
     expect(updateAccountMock.mock.calls[0]?.[1]?.credentials).not.toHaveProperty('api_key')
   })
 
   it('allows saving apikey account against legacy backend without credentials_status', async () => {
-    // 新前端 + 旧后端：credentials_status 缺失，但 credentials.api_key 仍是明文，应允许保存
+    // 新前端 + 旧后端：credentials_status 缺失，但 credentials.api_key 仍Yes明文，应允许Save
     const account = buildAccount()
     // 显式确保没有 credentials_status
     expect(account.credentials_status).toBeUndefined()
@@ -499,7 +499,7 @@ describe('EditAccountModal', () => {
     await wrapper.get('form#edit-account-form').trigger('submit.prevent')
 
     expect(updateAccountMock).toHaveBeenCalledTimes(1)
-    // 旧后端响应未脱敏，原 api_key 会随 currentCredentials 一起传回去（旧行为，等价于无操作）
+    // 旧后端响应未脱敏，原 api_key 会随 currentCredentials 一起传回去（旧行为，等价于无Actions）
     expect(updateAccountMock.mock.calls[0]?.[1]?.credentials?.api_key).toBe('sk-test')
   })
 
@@ -544,7 +544,7 @@ describe('EditAccountModal', () => {
   })
 
   it('allows saving Vertex SA account against legacy backend without credentials_status', async () => {
-    // 新前端 + 旧后端：credentials_status 缺失，但 credentials.service_account_json 仍是明文，应允许保存
+    // 新前端 + 旧后端：credentials_status 缺失，但 credentials.service_account_json 仍Yes明文，应允许Save
     const account = buildVertexAccount()
     expect(account.credentials_status).toBeUndefined()
     expect(account.credentials.service_account_json).toBeTruthy()

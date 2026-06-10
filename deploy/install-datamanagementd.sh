@@ -2,9 +2,9 @@
 
 set -euo pipefail
 
-# 用法：
+# Usage:
 #   sudo ./install-datamanagementd.sh --binary /path/to/datamanagementd
-# 或：
+# Or:
 #   sudo ./install-datamanagementd.sh --source /path/to/sub2api/repo
 
 BIN_PATH=""
@@ -15,15 +15,15 @@ SERVICE_FILE_NAME="sub2api-datamanagementd.service"
 
 function print_help() {
   cat <<'EOF'
-用法:
-  install-datamanagementd.sh [--binary <datamanagementd二进制路径>] [--source <仓库路径>]
+Usage:
+  install-datamanagementd.sh [--binary <path-to-datamanagementd-binary>] [--source <repo-path>]
 
-参数:
-  --binary  指定已构建的 datamanagementd 二进制路径
-  --source  指定 sub2api 仓库路径（脚本会执行 go build）
-  -h, --help 显示帮助
+Options:
+  --binary  Specify the path to a pre-built datamanagementd binary
+  --source  Specify the sub2api repository path (the script will run go build)
+  -h, --help Show help
 
-示例:
+Examples:
   sudo ./install-datamanagementd.sh --binary ./datamanagement/datamanagementd
   sudo ./install-datamanagementd.sh --source /opt/sub2api-src
 EOF
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      echo "未知参数: $1"
+      echo "Unknown argument: $1"
       print_help
       exit 1
       ;;
@@ -52,47 +52,47 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -n "$BIN_PATH" && -n "$SOURCE_PATH" ]]; then
-  echo "错误: --binary 与 --source 只能二选一"
+  echo "Error: --binary and --source are mutually exclusive"
   exit 1
 fi
 
 if [[ -z "$BIN_PATH" && -z "$SOURCE_PATH" ]]; then
-  echo "错误: 必须提供 --binary 或 --source"
+  echo "Error: Either --binary or --source must be provided"
   exit 1
 fi
 
 if [[ "$(id -u)" -ne 0 ]]; then
-  echo "错误: 请使用 root 权限执行（例如 sudo）"
+  echo "Error: Please run with root privileges (e.g. sudo)"
   exit 1
 fi
 
 if [[ -n "$SOURCE_PATH" ]]; then
   if [[ ! -d "$SOURCE_PATH/datamanagement" ]]; then
-    echo "错误: 无效仓库路径，未找到 $SOURCE_PATH/datamanagement"
+    echo "Error: Invalid repository path, $SOURCE_PATH/datamanagement not found"
     exit 1
   fi
-  echo "[1/6] 从源码构建 datamanagementd..."
+  echo "[1/6] Building datamanagementd from source..."
   (cd "$SOURCE_PATH/datamanagement" && go build -o datamanagementd ./cmd/datamanagementd)
   BIN_PATH="$SOURCE_PATH/datamanagement/datamanagementd"
 fi
 
 if [[ ! -f "$BIN_PATH" ]]; then
-  echo "错误: 二进制文件不存在: $BIN_PATH"
+  echo "Error: Binary file does not exist: $BIN_PATH"
   exit 1
 fi
 
 if ! id sub2api >/dev/null 2>&1; then
-  echo "[2/6] 创建系统用户 sub2api..."
+  echo "[2/6] Creating system user sub2api..."
   useradd --system --no-create-home --shell /usr/sbin/nologin sub2api
 else
-  echo "[2/6] 系统用户 sub2api 已存在，跳过创建"
+  echo "[2/6] System user sub2api already exists, skipping creation"
 fi
 
-echo "[3/6] 安装 datamanagementd 二进制..."
+echo "[3/6] Installing datamanagementd binary..."
 mkdir -p "$INSTALL_DIR"
 install -m 0755 "$BIN_PATH" "$INSTALL_DIR/datamanagementd"
 
-echo "[4/6] 准备数据目录..."
+echo "[4/6] Preparing data directory..."
 mkdir -p "$DATA_DIR"
 chown -R sub2api:sub2api /var/lib/sub2api
 chmod 0750 "$DATA_DIR"
@@ -100,24 +100,24 @@ chmod 0750 "$DATA_DIR"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_TEMPLATE="$SCRIPT_DIR/$SERVICE_FILE_NAME"
 if [[ ! -f "$SERVICE_TEMPLATE" ]]; then
-  echo "错误: 未找到服务模板 $SERVICE_TEMPLATE"
+  echo "Error: Service template not found: $SERVICE_TEMPLATE"
   exit 1
 fi
 
-echo "[5/6] 安装 systemd 服务..."
+echo "[5/6] Installing systemd service..."
 cp "$SERVICE_TEMPLATE" "/etc/systemd/system/$SERVICE_FILE_NAME"
 systemctl daemon-reload
 systemctl enable --now sub2api-datamanagementd
 
-echo "[6/6] 完成，当前状态："
+echo "[6/6] Done, current status:"
 systemctl --no-pager --full status sub2api-datamanagementd || true
 
 cat <<'EOF'
 
-下一步建议：
-1. 查看日志：sudo journalctl -u sub2api-datamanagementd -f
-2. 在 sub2api（容器部署时）挂载 socket:
+Next steps:
+1. View logs: sudo journalctl -u sub2api-datamanagementd -f
+2. When deploying sub2api in Docker, mount the socket:
    /tmp/sub2api-datamanagement.sock:/tmp/sub2api-datamanagement.sock
-3. 进入管理后台“数据管理”页面确认 agent=enabled
+3. Go to the admin panel “Data Management” page and verify agent=enabled
 
 EOF

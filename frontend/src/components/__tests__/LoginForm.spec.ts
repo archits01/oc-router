@@ -1,6 +1,6 @@
 /**
  * LoginView 组件核心逻辑测试
- * 测试登录表单提交、验证、2FA 等场景
+ * 测试Login表单Submit、验证、2FA 等场景
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -34,8 +34,8 @@ vi.mock('@/api/auth', () => ({
 }))
 
 /**
- * 创建一个简化的测试组件来封装登录逻辑
- * 避免引入 LoginView.vue 的全部依赖（AuthLayout、i18n、Icon 等）
+ * 创建一个简化的测试组件来封装Login逻辑
+ * 避免引入 LoginView.vue 的All依赖（AuthLayout、i18n、Icon 等）
  */
 const LoginFormTestComponent = defineComponent({
   setup() {
@@ -46,7 +46,7 @@ const LoginFormTestComponent = defineComponent({
 
     const handleLogin = async () => {
       if (!formData.email || !formData.password) {
-        errorMessage.value = '请输入邮箱和密码'
+        errorMessage.value = '请输入Email和密码'
         return
       }
 
@@ -67,7 +67,7 @@ const LoginFormTestComponent = defineComponent({
 
         mockPush('/dashboard')
       } catch (error: any) {
-        errorMessage.value = error.message || '登录失败'
+        errorMessage.value = error.message || 'Login失败'
       } finally {
         isLoading.value = false
       }
@@ -80,7 +80,7 @@ const LoginFormTestComponent = defineComponent({
       <input id="email" v-model="formData.email" type="email" />
       <input id="password" v-model="formData.password" type="password" />
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-      <button type="submit" :disabled="isLoading">登录</button>
+      <button type="submit" :disabled="isLoading">Login</button>
     </form>
   `,
 })
@@ -91,7 +91,7 @@ describe('LoginForm 核心逻辑', () => {
     vi.clearAllMocks()
   })
 
-  it('成功登录后跳转到 dashboard', async () => {
+  it('成功Login后跳转到 dashboard', async () => {
     mockLogin.mockResolvedValue({
       access_token: 'token',
       token_type: 'Bearer',
@@ -112,7 +112,7 @@ describe('LoginForm 核心逻辑', () => {
     expect(mockPush).toHaveBeenCalledWith('/dashboard')
   })
 
-  it('登录失败时显示错误信息', async () => {
+  it('Login失败时显示错误信息', async () => {
     mockLogin.mockRejectedValue(new Error('Invalid credentials'))
 
     const wrapper = mount(LoginFormTestComponent)
@@ -125,13 +125,13 @@ describe('LoginForm 核心逻辑', () => {
     expect(wrapper.find('.error').text()).toBe('Invalid credentials')
   })
 
-  it('空表单提交显示验证错误', async () => {
+  it('空表单Submit显示验证错误', async () => {
     const wrapper = mount(LoginFormTestComponent)
 
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.find('.error').text()).toBe('请输入邮箱和密码')
+    expect(wrapper.find('.error').text()).toBe('请输入Email和密码')
     expect(mockLogin).not.toHaveBeenCalled()
   })
 
@@ -152,7 +152,7 @@ describe('LoginForm 核心逻辑', () => {
     expect(wrapper.find('.error').text()).toBe('需要 2FA 验证')
   })
 
-  it('提交过程中按钮被禁用', async () => {
+  it('Submit过程中按钮被Disable', async () => {
     let resolveLogin: (v: any) => void
     mockLogin.mockImplementation(
       () => new Promise((resolve) => { resolveLogin = resolve })

@@ -525,7 +525,7 @@ func TestAPIKeyAuthSetsOpsFallbackKeyOnEarlyAbort(t *testing.T) {
 	req.Header.Set("x-api-key", apiKey.Key)
 	router.ServeHTTP(w, req)
 
-	// 分组停用 → 早退中断，但 ops fallback key 仍应写入，含 user/group/platform。
+	// →
 	require.Equal(t, http.StatusForbidden, w.Code)
 	require.Contains(t, w.Body.String(), "GROUP_DISABLED")
 	require.True(t, fallbackOK, "鉴权早退时也应写入 ops fallback api key")

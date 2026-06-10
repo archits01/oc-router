@@ -73,16 +73,15 @@ func TestUpdateAccount_DisableOveragesClearsAICreditsKey(t *testing.T) {
 	require.Equal(t, 1, repo.updateCalls)
 	require.False(t, updated.IsOveragesEnabled())
 
-	// 关闭 overages 后，AICredits key 应被清除
+	//
 	rawLimits, ok := repo.account.Extra[modelRateLimitsKey].(map[string]any)
 	if ok {
 		_, exists := rawLimits[creditsExhaustedKey]
-		require.False(t, exists, "关闭 overages 时应清除 AICredits 限流 key")
+		require.False(t, exists, "shutting down overages 时应清除 AICredits 限流 key")
 	}
-	// 普通模型限流应保留
 	require.True(t, ok)
 	_, exists := rawLimits["claude-sonnet-4-5"]
-	require.True(t, exists, "普通模型限流应保留")
+	require.True(t, exists, "普通model限流应保留")
 }
 
 func TestUpdateAccount_EnableOveragesClearsModelRateLimitsBeforePersist(t *testing.T) {
@@ -119,7 +118,7 @@ func TestUpdateAccount_EnableOveragesClearsModelRateLimitsBeforePersist(t *testi
 	require.True(t, updated.IsOveragesEnabled())
 
 	_, exists := repo.account.Extra[modelRateLimitsKey]
-	require.False(t, exists, "开启 overages 时应在持久化前清掉旧模型限流")
+	require.False(t, exists, "开启 overages 时应在持久化前清掉旧model限流")
 }
 
 func TestUpdateAccount_EmptyExtraPayloadCanClearQuotaLimits(t *testing.T) {
@@ -140,7 +139,7 @@ func TestUpdateAccount_EmptyExtraPayloadCanClearQuotaLimits(t *testing.T) {
 
 	svc := &adminServiceImpl{accountRepo: repo}
 	updated, err := svc.UpdateAccount(context.Background(), accountID, &UpdateAccountInput{
-		// 显式空对象：语义是“清空 extra 中的可配置键”（例如关闭配额限制）
+		// “”（
 		Extra: map[string]any{},
 	})
 

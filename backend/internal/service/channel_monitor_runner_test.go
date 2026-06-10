@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-// stubMonitorSvc 实现 monitorRunnerSvc，用于隔离 runner 与真实 service/repo。
+// stubMonitorSvc
 type stubMonitorSvc struct {
 	enabled    []*ChannelMonitor
 	runCount   atomic.Int64
 	runCalled  chan int64 // 每次 RunCheck 触发时 push 一次（缓冲足够大避免阻塞）
 	runErr     error
 	listErr    error
-	runHoldFor time.Duration // RunCheck 内额外阻塞的时长，用来测试 Stop 等待行为
+	runHoldFor time.Duration // RunCheck 内额外阻塞的时长，用来test Stop 等待行为
 }
 
 func (s *stubMonitorSvc) ListEnabledMonitors(_ context.Context) ([]*ChannelMonitor, error) {
@@ -48,7 +48,7 @@ func newRunnerForTest(svc monitorRunnerSvc) *ChannelMonitorRunner {
 	return newChannelMonitorRunner(svc, nil)
 }
 
-// 等待 condition 在 timeout 内变 true，否则 t.Fatalf。轮询 5ms 一次。
+//
 func waitFor(t *testing.T, timeout time.Duration, msg string, cond func() bool) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
@@ -75,7 +75,7 @@ func runnerTaskPtr(r *ChannelMonitorRunner, id int64) *scheduledMonitor {
 	return r.tasks[id]
 }
 
-// TestSchedule_AddsTaskAndFiresOnce 验证 Schedule 后立即触发一次首检测，并把任务记入 tasks 表。
+// TestSchedule_AddsTaskAndFiresOnce
 func TestSchedule_AddsTaskAndFiresOnce(t *testing.T) {
 	svc := &stubMonitorSvc{runCalled: make(chan int64, 4)}
 	r := newRunnerForTest(svc)
@@ -99,8 +99,8 @@ func TestSchedule_AddsTaskAndFiresOnce(t *testing.T) {
 	r.Stop()
 }
 
-// TestSchedule_ReplaceCancelsOldTask 验证对同一 id 二次 Schedule 会替换旧 task 实例。
-// （旧 goroutine 通过 ctx 取消退出；这里以 task 指针不同 + Stop 不超时作为证据。）
+// TestSchedule_ReplaceCancelsOldTask
+// （+ Stop
 func TestSchedule_ReplaceCancelsOldTask(t *testing.T) {
 	svc := &stubMonitorSvc{runCalled: make(chan int64, 8)}
 	r := newRunnerForTest(svc)
@@ -125,7 +125,7 @@ func TestSchedule_ReplaceCancelsOldTask(t *testing.T) {
 	stoppedWithin(t, r, 3*time.Second)
 }
 
-// TestUnschedule_RemovesTask 验证 Unschedule 删除 task 并使对应 goroutine 退出。
+// TestUnschedule_RemovesTask
 func TestUnschedule_RemovesTask(t *testing.T) {
 	svc := &stubMonitorSvc{runCalled: make(chan int64, 4)}
 	r := newRunnerForTest(svc)
@@ -142,7 +142,7 @@ func TestUnschedule_RemovesTask(t *testing.T) {
 	stoppedWithin(t, r, 3*time.Second)
 }
 
-// TestSchedule_DisabledRedirectsToUnschedule 验证 Enabled=false 等同于 Unschedule。
+// TestSchedule_DisabledRedirectsToUnschedule =false
 func TestSchedule_DisabledRedirectsToUnschedule(t *testing.T) {
 	svc := &stubMonitorSvc{runCalled: make(chan int64, 4)}
 	r := newRunnerForTest(svc)
@@ -159,7 +159,7 @@ func TestSchedule_DisabledRedirectsToUnschedule(t *testing.T) {
 	stoppedWithin(t, r, 3*time.Second)
 }
 
-// TestSchedule_InvalidIntervalSkipped 验证 IntervalSeconds<=0 不会注册任务（防御性检查）。
+// TestSchedule_InvalidIntervalSkipped <=0
 func TestSchedule_InvalidIntervalSkipped(t *testing.T) {
 	svc := &stubMonitorSvc{}
 	r := newRunnerForTest(svc)
@@ -172,11 +172,11 @@ func TestSchedule_InvalidIntervalSkipped(t *testing.T) {
 	r.Stop()
 }
 
-// TestSchedule_BeforeStartIsNoOp 验证 Start 之前调用 Schedule 不会注册任务。
+// TestSchedule_BeforeStartIsNoOp
 func TestSchedule_BeforeStartIsNoOp(t *testing.T) {
 	svc := &stubMonitorSvc{}
 	r := newRunnerForTest(svc)
-	// 故意不调用 Start
+	//
 
 	r.Schedule(&ChannelMonitor{ID: 1, Enabled: true, IntervalSeconds: 60})
 	if got := runnerTaskCount(r); got != 0 {
@@ -185,7 +185,7 @@ func TestSchedule_BeforeStartIsNoOp(t *testing.T) {
 	r.Stop()
 }
 
-// TestStart_LoadsAllEnabledMonitors 验证 Start 会为 ListEnabledMonitors 返回的每条记录建立任务。
+// TestStart_LoadsAllEnabledMonitors
 func TestStart_LoadsAllEnabledMonitors(t *testing.T) {
 	svc := &stubMonitorSvc{
 		enabled: []*ChannelMonitor{
@@ -201,7 +201,7 @@ func TestStart_LoadsAllEnabledMonitors(t *testing.T) {
 	stoppedWithin(t, r, 3*time.Second)
 }
 
-// TestStop_DrainsAllGoroutines 验证 Stop 会等待所有调度 goroutine 退出（无游离）。
+// TestStop_DrainsAllGoroutines
 func TestStop_DrainsAllGoroutines(t *testing.T) {
 	svc := &stubMonitorSvc{}
 	r := newRunnerForTest(svc)
@@ -215,7 +215,7 @@ func TestStop_DrainsAllGoroutines(t *testing.T) {
 	stoppedWithin(t, r, 3*time.Second)
 }
 
-// TestStop_WaitsForInFlightCheck 验证 Stop 会等待正在执行的 RunCheck 退出（pool.StopAndWait）。
+// TestStop_WaitsForInFlightCheck
 func TestStop_WaitsForInFlightCheck(t *testing.T) {
 	svc := &stubMonitorSvc{
 		runCalled:  make(chan int64, 1),
@@ -234,15 +234,15 @@ func TestStop_WaitsForInFlightCheck(t *testing.T) {
 	start := time.Now()
 	stoppedWithin(t, r, 3*time.Second)
 	elapsed := time.Since(start)
-	// Stop 必须等待 in-flight check 跑完（runHoldFor=200ms），耗时下界约 100ms。
+	// Stop =200ms），
 	if elapsed < 100*time.Millisecond {
 		t.Fatalf("Stop returned too fast (%v); did not wait for in-flight check", elapsed)
 	}
 }
 
-// TestInFlight_PoolFullReleasesSlot 直接驱动 fire 路径，模拟 pool.TrySubmit 失败时 inFlight 必须释放。
-// 用一个小型 stub pool 替换 r.pool 不便（pond.Pool 是接口但 mock 麻烦），
-// 改为：占满 inFlight 后直接 fire，验证不会在 inFlight 空槽时永久卡住。
+// TestInFlight_PoolFullReleasesSlot
+//
+//
 func TestInFlight_AcquireReleaseSymmetric(t *testing.T) {
 	svc := &stubMonitorSvc{}
 	r := newRunnerForTest(svc)
@@ -260,7 +260,7 @@ func TestInFlight_AcquireReleaseSymmetric(t *testing.T) {
 	r.releaseInFlight(42)
 }
 
-// stoppedWithin 在 timeout 内并行调用 Stop，超时则 Fatal。验证 Stop 不会阻塞。
+// stoppedWithin
 func stoppedWithin(t *testing.T, r *ChannelMonitorRunner, timeout time.Duration) {
 	t.Helper()
 	done := make(chan struct{})

@@ -102,7 +102,7 @@ func (s *OpsSystemLogSink) shouldIndex(event *logger.LogEvent) bool {
 	}
 
 	component := strings.ToLower(strings.TrimSpace(event.Component))
-	// zap 的 LoggerName 往往为空或不等于业务组件名；业务组件名通常以字段 component 透传。
+	// zap
 	if event.Fields != nil {
 		if fc := strings.ToLower(strings.TrimSpace(asString(event.Fields["component"]))); fc != "" {
 			component = fc
@@ -208,7 +208,6 @@ func (s *OpsSystemLogSink) flushBatch(baseCtx context.Context, batch []*logger.L
 		userID := asInt64Ptr(fields["user_id"])
 		accountID := asInt64Ptr(fields["account_id"])
 
-		// 统一脱敏后写入索引。
 		message := logredact.RedactText(strings.TrimSpace(event.Message))
 		redactedExtra := logredact.RedactMap(fields)
 		extraJSONBytes, _ := json.Marshal(redactedExtra)

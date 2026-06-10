@@ -81,26 +81,24 @@ func TestRateLimiterDifferentIPsIndependent(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
 	})
 
-	// 第一个 IP 的请求应通过
 	req1 := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req1.RemoteAddr = "10.0.0.1:1234"
 	rec1 := httptest.NewRecorder()
 	router.ServeHTTP(rec1, req1)
-	require.Equal(t, http.StatusOK, rec1.Code, "第一个 IP 的第一次请求应通过")
+	require.Equal(t, http.StatusOK, rec1.Code, "first request from first IP should pass")
 
-	// 第二个 IP 的请求应独立通过（不受第一个 IP 的计数影响）
+	//
 	req2 := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req2.RemoteAddr = "10.0.0.2:5678"
 	rec2 := httptest.NewRecorder()
 	router.ServeHTTP(rec2, req2)
-	require.Equal(t, http.StatusOK, rec2.Code, "第二个 IP 的第一次请求应独立通过")
+	require.Equal(t, http.StatusOK, rec2.Code, "first request from second IP should pass independently")
 
-	// 第一个 IP 的第二次请求应被限流
 	req3 := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req3.RemoteAddr = "10.0.0.1:1234"
 	rec3 := httptest.NewRecorder()
 	router.ServeHTTP(rec3, req3)
-	require.Equal(t, http.StatusTooManyRequests, rec3.Code, "第一个 IP 的第二次请求应被限流")
+	require.Equal(t, http.StatusTooManyRequests, rec3.Code, "second request from first IP should be rate limited")
 }
 
 func TestRateLimiterSuccessAndLimit(t *testing.T) {

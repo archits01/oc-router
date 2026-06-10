@@ -519,7 +519,7 @@ func (s *stubAdminService) CheckProxyQuality(ctx context.Context, id int64) (*se
 		ProxyID:        id,
 		Score:          95,
 		Grade:          "A",
-		Summary:        "通过 5 项，告警 0 项，失败 0 项，挑战 0 项",
+		Summary:        "通过 5 项，告警 0 项，failed 0 项，挑战 0 项",
 		PassedCount:    5,
 		WarnCount:      0,
 		FailedCount:    0,

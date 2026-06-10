@@ -977,8 +977,8 @@ func isAffiliateUniqueViolation(err error) bool {
 	return false
 }
 
-// UpdateUserAffCode 改写用户的邀请码（自定义专属邀请码）。
-// 唯一性冲突返回 ErrAffiliateCodeTaken。
+// UpdateUserAffCode
+//
 func (r *affiliateRepository) UpdateUserAffCode(ctx context.Context, userID int64, newCode string) error {
 	if userID <= 0 {
 		return service.ErrUserNotFound
@@ -1012,7 +1012,7 @@ WHERE user_id = $2`, code, userID)
 	})
 }
 
-// ResetUserAffCode 把 aff_code 还原为系统随机码，并清除 aff_code_custom 标记。
+// ResetUserAffCode
 func (r *affiliateRepository) ResetUserAffCode(ctx context.Context, userID int64) (string, error) {
 	if userID <= 0 {
 		return "", service.ErrUserNotFound
@@ -1054,7 +1054,7 @@ WHERE user_id = $2`, candidate, userID)
 	return newCode, nil
 }
 
-// SetUserRebateRate 设置或清除用户专属返利比例。ratePercent==nil 表示清除（沿用全局）。
+// SetUserRebateRate ==nil
 func (r *affiliateRepository) SetUserRebateRate(ctx context.Context, userID int64, ratePercent *float64) error {
 	if userID <= 0 {
 		return service.ErrUserNotFound
@@ -1081,7 +1081,7 @@ WHERE user_id = $2`, nullableArg(ratePercent), userID)
 	})
 }
 
-// BatchSetUserRebateRate 批量为多个用户设置专属比例（nil 清除）。
+// BatchSetUserRebateRate
 func (r *affiliateRepository) BatchSetUserRebateRate(ctx context.Context, userIDs []int64, ratePercent *float64) error {
 	if len(userIDs) == 0 {
 		return nil
@@ -1123,11 +1123,11 @@ func nullableInt64Arg(v *int64) any {
 	return *v
 }
 
-// ListUsersWithCustomSettings 列出有专属配置（自定义码或专属比例）的用户。
+// ListUsersWithCustomSettings
 //
-// 单一查询同时处理"无搜索"与"按邮箱/用户名模糊搜索"：
-// 空 search 时拼接出的 LIKE 模式为 "%%"，匹配所有行；非空时按 ILIKE 子串匹配。
-// 这避免了为两种情况维护两份 SQL 模板。
+// """"：
+// "%%"，
+//
 func (r *affiliateRepository) ListUsersWithCustomSettings(ctx context.Context, filter service.AffiliateAdminFilter) ([]service.AffiliateAdminEntry, int64, error) {
 	page := filter.Page
 	if page < 1 {

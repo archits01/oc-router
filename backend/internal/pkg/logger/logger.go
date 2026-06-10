@@ -142,8 +142,8 @@ func loadSink() Sink {
 	return state.sink
 }
 
-// WriteSinkEvent 直接写入日志 sink，不经过全局日志级别门控。
-// 用于需要“可观测性入库”与“业务输出级别”解耦的场景（例如 ops 系统日志索引）。
+// WriteSinkEvent
+// “”“”
 func WriteSinkEvent(level, component, message string, fields map[string]any) {
 	sink := loadSink()
 	if sink == nil {
@@ -280,7 +280,7 @@ func buildLogger(options InitOptions) (*zap.Logger, zap.AtomicLevel, error) {
 	if options.Output.ToFile {
 		fileCore, filePath, fileErr := buildFileCore(enc, atomic, options)
 		if fileErr != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "time=%s level=WARN msg=\"日志文件输出初始化失败，降级为仅标准输出\" path=%s err=%v\n",
+			_, _ = fmt.Fprintf(os.Stderr, "time=%s level=WARN msg=\"log file output initialization failed，degrading to stdout only\" path=%s err=%v\n",
 				time.Now().Format(time.RFC3339Nano),
 				filePath,
 				fileErr,
@@ -473,7 +473,7 @@ func inferStdLogLevel(msg string) Level {
 	return LevelInfo
 }
 
-// LegacyPrintf 用于平滑迁移历史的 printf 风格日志到结构化 logger。
+// LegacyPrintf
 func LegacyPrintf(component, format string, args ...any) {
 	msg := normalizeStdLogMessage(fmt.Sprintf(format, args...))
 	if msg == "" {
@@ -482,7 +482,7 @@ func LegacyPrintf(component, format string, args ...any) {
 
 	initialized := global.Load() != nil
 	if !initialized {
-		// 在日志系统未初始化前，回退到标准库 log，避免测试/工具链丢日志。
+		//
 		log.Print(msg)
 		return
 	}

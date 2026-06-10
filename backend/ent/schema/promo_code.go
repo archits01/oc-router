@@ -16,10 +16,8 @@ import (
 
 // PromoCode holds the schema definition for the PromoCode entity.
 //
-// 注册优惠码：用户注册时使用，可获得赠送余额
-// 与 RedeemCode 不同，PromoCode 支持多次使用（有使用次数限制）
 //
-// 删除策略：硬删除
+//
 type PromoCode struct {
 	ent.Schema
 }
@@ -36,31 +34,31 @@ func (PromoCode) Fields() []ent.Field {
 			MaxLen(32).
 			NotEmpty().
 			Unique().
-			Comment("优惠码"),
+			Comment("promo code"),
 		field.Float("bonus_amount").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
 			Default(0).
-			Comment("赠送余额金额"),
+			Comment("bonus balance amount"),
 		field.Int("max_uses").
 			Default(0).
-			Comment("最大使用次数，0表示无限制"),
+			Comment("max usage count, 0 means unlimited"),
 		field.Int("used_count").
 			Default(0).
-			Comment("已使用次数"),
+			Comment("current usage count"),
 		field.String("status").
 			MaxLen(20).
 			Default(domain.PromoCodeStatusActive).
-			Comment("状态: active, disabled"),
+			Comment("status: active, disabled"),
 		field.Time("expires_at").
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}).
-			Comment("过期时间，null表示永不过期"),
+			Comment("expiry time, null means never expires"),
 		field.String("notes").
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "text"}).
-			Comment("备注"),
+			Comment("notes"),
 		field.Time("created_at").
 			Immutable().
 			Default(time.Now).
@@ -80,7 +78,7 @@ func (PromoCode) Edges() []ent.Edge {
 
 func (PromoCode) Indexes() []ent.Index {
 	return []ent.Index{
-		// code 字段已在 Fields() 中声明 Unique()，无需重复索引
+		// code () ()，
 		index.Fields("status"),
 		index.Fields("expires_at"),
 	}

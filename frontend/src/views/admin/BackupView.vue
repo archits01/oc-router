@@ -354,7 +354,6 @@ function startPolling(backupId: string) {
         await loadBackups()
       }
     } catch {
-      // 轮询失败时不中断
     }
   }, 2000)
 }
@@ -390,7 +389,6 @@ function startRestorePolling(backupId: string) {
         await loadBackups()
       }
     } catch {
-      // 轮询失败时不中断
     }
   }, 2000)
 }
@@ -407,7 +405,6 @@ function handleVisibilityChange() {
     stopPolling()
     stopRestorePolling()
   } else {
-    // 标签页恢复时刷新列表，检查是否仍有活跃操作
     loadBackups().then(() => {
       const running = backups.value.find(r => r.status === 'running')
       if (running) {
@@ -524,7 +521,6 @@ async function createBackup() {
   creatingBackup.value = true
   try {
     const record = await adminAPI.backup.createBackup({ expire_days: manualExpireDays.value })
-    // 插入到列表顶部
     backups.value.unshift(record)
     startPolling(record.id)
   } catch (error: any) {

@@ -20,13 +20,13 @@ const (
 	CloudflareInsightsDomain = "https://static.cloudflareinsights.com"
 	// StripeDomain is the domain for Stripe.js SDK
 	StripeDomain = "https://*.stripe.com"
-	// AirwallexStaticDomain 是 Airwallex 生产环境 SDK 脚本域名。
+	// AirwallexStaticDomain
 	AirwallexStaticDomain = "https://static.airwallex.com"
-	// AirwallexCheckoutDomain 是 Airwallex 生产环境收银台元素和 iframe 域名。
+	// AirwallexCheckoutDomain
 	AirwallexCheckoutDomain = "https://checkout.airwallex.com"
-	// AirwallexDemoStaticDomain 是 Airwallex 沙箱环境 SDK 脚本域名。
+	// AirwallexDemoStaticDomain
 	AirwallexDemoStaticDomain = "https://static-demo.airwallex.com"
-	// AirwallexDemoCheckoutDomain 是 Airwallex 沙箱环境收银台元素和 iframe 域名。
+	// AirwallexDemoCheckoutDomain
 	AirwallexDemoCheckoutDomain = "https://checkout-demo.airwallex.com"
 )
 
@@ -50,7 +50,7 @@ var requiredCSPDirectiveValues = []struct {
 }
 
 // GenerateNonce generates a cryptographically secure random nonce.
-// 返回 error 以确保调用方在 crypto/rand 失败时能正确降级。
+//
 func GenerateNonce() (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
@@ -103,7 +103,7 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 			// Generate nonce for this request
 			nonce, err := GenerateNonce()
 			if err != nil {
-				// crypto/rand 失败时降级为无 nonce 的 CSP 策略
+				// crypto/rand
 				log.Printf("[SecurityHeaders] %v — 降级为无 nonce 的 CSP", err)
 				c.Header("Content-Security-Policy", strings.ReplaceAll(finalPolicy, NonceTemplate, "'unsafe-inline'"))
 			} else {
@@ -127,8 +127,7 @@ func isAPIRoutePath(c *gin.Context) bool {
 		strings.HasPrefix(path, "/images")
 }
 
-// enhanceCSPPolicy 确保 CSP 策略包含 nonce 支持和支付 SDK 必需域名。
-// 这样旧配置文件没有及时补域名时，前端支付组件仍能正常加载。
+// enhanceCSPPolicy
 func enhanceCSPPolicy(policy string) string {
 	// Add nonce placeholder to script-src if not present
 	if !strings.Contains(policy, NonceTemplate) && !strings.Contains(policy, "'nonce-") {

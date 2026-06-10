@@ -853,7 +853,7 @@
           </div>
         </div>
 
-        <!-- 支持的模型系列（仅 antigravity 平台） -->
+        <!-- Supported Models系列（仅 antigravity 平台） -->
         <div v-if="createForm.platform === 'antigravity'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1044,7 +1044,7 @@
               }}
             </span>
           </div>
-          <!-- 降级分组选择（仅当启用 claude_code_only 时显示） -->
+          <!-- 降级分组选择（仅当Enable claude_code_only 时显示） -->
           <div v-if="createForm.claude_code_only" class="mt-3">
             <label class="input-label">{{
               t("admin.groups.claudeCode.fallbackGroup")
@@ -1309,8 +1309,8 @@
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {{
                   createForm.require_oauth_only
-                    ? "已启用 — 排除 API Key 类型账号"
-                    : "未启用"
+                    ? "Enabled — 排除 API Key 类型账号"
+                    : "未Enable"
                 }}
               </p>
             </div>
@@ -1341,13 +1341,13 @@
           <div class="flex items-center justify-between">
             <div>
               <label class="text-sm text-gray-600 dark:text-gray-400"
-                >仅允许隐私保护已设置的账号</label
+                >仅允许隐私保护已Settings的账号</label
               >
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {{
                   createForm.require_privacy_set
-                    ? "已启用 — Privacy 未设置的账号将被排除"
-                    : "未启用"
+                    ? "Enabled — Privacy 未Settings的账号将被排除"
+                    : "未Enable"
                 }}
               </p>
             </div>
@@ -1426,7 +1426,7 @@
               </div>
             </div>
           </div>
-          <!-- 启用开关 -->
+          <!-- Enable开关 -->
           <div class="flex items-center gap-3 mb-3">
             <button
               type="button"
@@ -1467,7 +1467,7 @@
           <p v-else class="text-xs text-gray-500 dark:text-gray-400 mb-3">
             {{ t("admin.groups.modelRouting.noRulesHint") }}
           </p>
-          <!-- 路由规则列表（仅在启用时显示） -->
+          <!-- 路由规则列表（仅在Enable时显示） -->
           <div v-if="createForm.model_routing_enabled" class="space-y-3">
             <div
               v-for="rule in createModelRoutingRules"
@@ -1513,7 +1513,7 @@
                         </button>
                       </span>
                     </div>
-                    <!-- 账号搜索输入框 -->
+                    <!-- 账号Search输入框 -->
                     <div class="relative account-search-container">
                       <input
                         v-model="
@@ -1529,7 +1529,7 @@
                         @input="searchAccountsByRule(rule)"
                         @focus="onAccountSearchFocus(rule)"
                       />
-                      <!-- 搜索结果下拉框 -->
+                      <!-- Search结果下拉框 -->
                       <div
                         v-if="
                           showAccountDropdown[getCreateRuleSearchKey(rule)] &&
@@ -1578,7 +1578,7 @@
               </div>
             </div>
           </div>
-          <!-- 添加规则按钮（仅在启用时显示） -->
+          <!-- Add规则按钮（仅在Enable时显示） -->
           <button
             v-if="createForm.model_routing_enabled"
             type="button"
@@ -1678,7 +1678,7 @@
           />
           <p class="input-hint">{{ t("admin.groups.platformNotEditable") }}</p>
         </div>
-        <!-- 从分组复制账号（编辑时） -->
+        <!-- 从分组复制账号（Edit时） -->
         <div v-if="copyAccountsGroupOptionsForEdit.length > 0">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2141,7 +2141,7 @@
           </div>
         </div>
 
-        <!-- 支持的模型系列（仅 antigravity 平台） -->
+        <!-- Supported Models系列（仅 antigravity 平台） -->
         <div v-if="editForm.platform === 'antigravity'" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2328,7 +2328,7 @@
               }}
             </span>
           </div>
-          <!-- 降级分组选择（仅当启用 claude_code_only 时显示） -->
+          <!-- 降级分组选择（仅当Enable claude_code_only 时显示） -->
           <div v-if="editForm.claude_code_only" class="mt-3">
             <label class="input-label">{{
               t("admin.groups.claudeCode.fallbackGroup")
@@ -2593,8 +2593,8 @@
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {{
                   editForm.require_oauth_only
-                    ? "已启用 — 排除 API Key 类型账号"
-                    : "未启用"
+                    ? "Enabled — 排除 API Key 类型账号"
+                    : "未Enable"
                 }}
               </p>
             </div>
@@ -2625,13 +2625,13 @@
           <div class="flex items-center justify-between">
             <div>
               <label class="text-sm text-gray-600 dark:text-gray-400"
-                >仅允许隐私保护已设置的账号</label
+                >仅允许隐私保护已Settings的账号</label
               >
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {{
                   editForm.require_privacy_set
-                    ? "已启用 — Privacy 未设置的账号将被排除"
-                    : "未启用"
+                    ? "Enabled — Privacy 未Settings的账号将被排除"
+                    : "未Enable"
                 }}
               </p>
             </div>
@@ -2710,7 +2710,7 @@
               </div>
             </div>
           </div>
-          <!-- 启用开关 -->
+          <!-- Enable开关 -->
           <div class="flex items-center gap-3 mb-3">
             <button
               type="button"
@@ -2750,7 +2750,7 @@
           <p v-else class="text-xs text-gray-500 dark:text-gray-400 mb-3">
             {{ t("admin.groups.modelRouting.noRulesHint") }}
           </p>
-          <!-- 路由规则列表（仅在启用时显示） -->
+          <!-- 路由规则列表（仅在Enable时显示） -->
           <div v-if="editForm.model_routing_enabled" class="space-y-3">
             <div
               v-for="rule in editModelRoutingRules"
@@ -2796,7 +2796,7 @@
                         </button>
                       </span>
                     </div>
-                    <!-- 账号搜索输入框 -->
+                    <!-- 账号Search输入框 -->
                     <div class="relative account-search-container">
                       <input
                         v-model="
@@ -2812,7 +2812,7 @@
                         @input="searchAccountsByRule(rule, true)"
                         @focus="onAccountSearchFocus(rule, true)"
                       />
-                      <!-- 搜索结果下拉框 -->
+                      <!-- Search结果下拉框 -->
                       <div
                         v-if="
                           showAccountDropdown[getEditRuleSearchKey(rule)] &&
@@ -2861,7 +2861,7 @@
               </div>
             </div>
           </div>
-          <!-- 添加规则按钮（仅在启用时显示） -->
+          <!-- Add规则按钮（仅在Enable时显示） -->
           <button
             v-if="editForm.model_routing_enabled"
             type="button"
@@ -3158,7 +3158,7 @@ const subscriptionTypeOptions = computed(() => [
   { value: "subscription", label: t("admin.groups.subscription.subscription") },
 ]);
 
-// 降级分组选项（创建时）- 仅包含 anthropic 平台且未启用 claude_code_only 的分组
+// 降级分组选项（创建时）- 仅包含 anthropic 平台且未Enable claude_code_only 的分组
 const fallbackGroupOptions = computed(() => {
   const options: { value: number | null; label: string }[] = [
     { value: null, label: t("admin.groups.claudeCode.noFallback") },
@@ -3175,7 +3175,6 @@ const fallbackGroupOptions = computed(() => {
   return options;
 });
 
-// 降级分组选项（编辑时）- 排除自身
 const fallbackGroupOptionsForEdit = computed(() => {
   const options: { value: number | null; label: string }[] = [
     { value: null, label: t("admin.groups.claudeCode.noFallback") },
@@ -3212,7 +3211,6 @@ const invalidRequestFallbackOptions = computed(() => {
   return options;
 });
 
-// 无效请求兜底分组选项（编辑时）- 排除自身
 const invalidRequestFallbackOptionsForEdit = computed(() => {
   const options: { value: number | null; label: string }[] = [
     { value: null, label: t("admin.groups.invalidRequestFallback.noFallback") },
@@ -3232,7 +3230,6 @@ const invalidRequestFallbackOptionsForEdit = computed(() => {
   return options;
 });
 
-// 复制账号的源分组选项（创建时）- 仅包含相同平台且有账号的分组
 const copyAccountsGroupOptions = computed(() => {
   const eligibleGroups = groups.value.filter(
     (g) => g.platform === createForm.platform && (g.account_count || 0) > 0,
@@ -3243,7 +3240,6 @@ const copyAccountsGroupOptions = computed(() => {
   }));
 });
 
-// 复制账号的源分组选项（编辑时）- 仅包含相同平台且有账号的分组，排除自身
 const copyAccountsGroupOptionsForEdit = computed(() => {
   const currentId = editingGroup.value?.id;
   const eligibleGroups = groups.value.filter(
@@ -3333,7 +3329,6 @@ const createForm = reactive({
   daily_limit_usd: null as number | null,
   weekly_limit_usd: null as number | null,
   monthly_limit_usd: null as number | null,
-  // 图片生成计费配置
   allow_image_generation: false,
   image_rate_independent: false,
   image_rate_multiplier: 1,
@@ -3353,37 +3348,31 @@ const createForm = reactive({
   // 账号过滤控制（OpenAI/Antigravity 平台）
   require_oauth_only: false,
   require_privacy_set: false,
-  // 模型路由开关
   model_routing_enabled: false,
-  // 支持的模型系列（仅 antigravity 平台）
+  // Supported Models系列（仅 antigravity 平台）
   supported_model_scopes: ["claude", "gemini_text", "gemini_image"] as string[],
   // MCP XML 协议注入开关（仅 antigravity 平台）
   mcp_xml_inject: true,
-  // 从分组复制账号
   copy_accounts_from_group_ids: [] as number[],
-  // 分组级 RPM 限制（每用户每分钟最大请求数；0 = 不限制）
+  // 分组级 RPM 限制（每User每分钟最大请求数；0 = 不限制）
   rpm_limit: 0 as number,
 });
 
-// 简单账号类型（用于模型路由选择）
 interface SimpleAccount {
   id: number;
   name: string;
 }
 
-// 模型路由规则类型
 interface ModelRoutingRule {
   pattern: string;
   accounts: SimpleAccount[]; // 选中的账号对象数组
 }
 
-// 创建表单的模型路由规则
 const createModelRoutingRules = ref<ModelRoutingRule[]>([]);
 
-// 编辑表单的模型路由规则
 const editModelRoutingRules = ref<ModelRoutingRule[]>([]);
 
-// 规则对象稳定 key（避免使用 index 导致状态错位）
+// 规则对象稳定 key（避免使用 index 导致Status错位）
 const resolveCreateRuleKey =
   createStableObjectKeyResolver<ModelRoutingRule>("create-rule");
 const resolveEditRuleKey =
@@ -3415,7 +3404,6 @@ const getRuleSearchKey = (rule: ModelRoutingRule, isEdit: boolean = false) => {
   return isEdit ? getEditRuleSearchKey(rule) : getCreateRuleSearchKey(rule);
 };
 
-// 账号搜索相关状态
 const accountSearchKeyword = ref<Record<string, string>>({});
 const accountSearchResults = ref<Record<string, SimpleAccount[]>>({});
 const showAccountDropdown = ref<Record<string, boolean>>({});
@@ -3454,7 +3442,7 @@ const accountSearchRunner = useKeyedDebouncedSearch<SimpleAccount[]>({
   },
 });
 
-// 搜索账号（仅限 anthropic 平台）
+// Search账号（仅限 anthropic 平台）
 const searchAccounts = (key: string) => {
   accountSearchRunner.trigger(key, accountSearchKeyword.value[key] || "");
 };
@@ -3466,7 +3454,6 @@ const searchAccountsByRule = (
   searchAccounts(getRuleSearchKey(rule, isEdit));
 };
 
-// 选择账号
 const selectAccount = (
   rule: ModelRoutingRule,
   account: SimpleAccount,
@@ -3474,18 +3461,15 @@ const selectAccount = (
 ) => {
   if (!rule) return;
 
-  // 检查是否已选择
   if (!rule.accounts.some((a) => a.id === account.id)) {
     rule.accounts.push(account);
   }
 
-  // 清空搜索
   const key = getRuleSearchKey(rule, isEdit);
   accountSearchKeyword.value[key] = "";
   showAccountDropdown.value[key] = false;
 };
 
-// 移除已选账号
 const removeSelectedAccount = (
   rule: ModelRoutingRule,
   accountId: number,
@@ -3496,7 +3480,6 @@ const removeSelectedAccount = (
   rule.accounts = rule.accounts.filter((a) => a.id !== accountId);
 };
 
-// 切换创建表单的模型系列选择
 const toggleCreateScope = (scope: string) => {
   const idx = createForm.supported_model_scopes.indexOf(scope);
   if (idx === -1) {
@@ -3506,7 +3489,6 @@ const toggleCreateScope = (scope: string) => {
   }
 };
 
-// 切换编辑表单的模型系列选择
 const toggleEditScope = (scope: string) => {
   const idx = editForm.supported_model_scopes.indexOf(scope);
   if (idx === -1) {
@@ -3516,25 +3498,21 @@ const toggleEditScope = (scope: string) => {
   }
 };
 
-// 处理账号搜索输入框聚焦
 const onAccountSearchFocus = (
   rule: ModelRoutingRule,
   isEdit: boolean = false,
 ) => {
   const key = getRuleSearchKey(rule, isEdit);
   showAccountDropdown.value[key] = true;
-  // 如果没有搜索结果，触发一次搜索
   if (!accountSearchResults.value[key]?.length) {
     searchAccounts(key);
   }
 };
 
-// 添加创建表单的路由规则
 const addCreateRoutingRule = () => {
   createModelRoutingRules.value.push({ pattern: "", accounts: [] });
 };
 
-// 删除创建表单的路由规则
 const removeCreateRoutingRule = (rule: ModelRoutingRule) => {
   const index = createModelRoutingRules.value.indexOf(rule);
   if (index === -1) return;
@@ -3545,12 +3523,10 @@ const removeCreateRoutingRule = (rule: ModelRoutingRule) => {
   createModelRoutingRules.value.splice(index, 1);
 };
 
-// 添加编辑表单的路由规则
 const addEditRoutingRule = () => {
   editModelRoutingRules.value.push({ pattern: "", accounts: [] });
 };
 
-// 删除编辑表单的路由规则
 const removeEditRoutingRule = (rule: ModelRoutingRule) => {
   const index = editModelRoutingRules.value.indexOf(rule);
   if (index === -1) return;
@@ -3637,14 +3613,12 @@ const convertApiFormatToRoutingRules = async (
 
   const rules: ModelRoutingRule[] = [];
   for (const [pattern, accountIds] of Object.entries(apiFormat)) {
-    // 加载账号信息
     const accounts: SimpleAccount[] = [];
     for (const id of accountIds) {
       try {
         const account = await adminAPI.accounts.getById(id);
         accounts.push({ id: account.id, name: account.name });
       } catch {
-        // 如果账号不存在，仍然显示 ID
         accounts.push({ id, name: `#${id}` });
       }
     }
@@ -3664,7 +3638,6 @@ const editForm = reactive({
   daily_limit_usd: null as number | null,
   weekly_limit_usd: null as number | null,
   monthly_limit_usd: null as number | null,
-  // 图片生成计费配置
   allow_image_generation: false,
   image_rate_independent: false,
   image_rate_multiplier: 1,
@@ -3685,15 +3658,13 @@ const editForm = reactive({
   // 账号过滤控制（OpenAI/Antigravity 平台）
   require_oauth_only: false,
   require_privacy_set: false,
-  // 模型路由开关
   model_routing_enabled: false,
-  // 支持的模型系列（仅 antigravity 平台）
+  // Supported Models系列（仅 antigravity 平台）
   supported_model_scopes: ["claude", "gemini_text", "gemini_image"] as string[],
   // MCP XML 协议注入开关（仅 antigravity 平台）
   mcp_xml_inject: true,
-  // 从分组复制账号
   copy_accounts_from_group_ids: [] as number[],
-  // 分组级 RPM 限制（每用户每分钟最大请求数；0 = 不限制）
+  // 分组级 RPM 限制（每User每分钟最大请求数；0 = 不限制）
   rpm_limit: 0 as number,
 });
 
@@ -3753,7 +3724,6 @@ const editImageFinalPricePreview = computed(() =>
   buildImageFinalPricePreview(editForm),
 );
 
-// 根据分组类型返回不同的删除确认消息
 const deleteConfirmMessage = computed(() => {
   if (!deletingGroup.value) {
     return "";
@@ -3972,7 +3942,6 @@ const handleCreateGroup = async () => {
   }
   submitting.value = true;
   try {
-    // 构建请求数据，包含模型路由配置
     const requestData = {
       ...createForm,
       daily_limit_usd: normalizeOptionalLimit(
@@ -4072,10 +4041,9 @@ const handleEdit = async (group: AdminGroup) => {
     "gemini_image",
   ];
   editForm.mcp_xml_inject = group.mcp_xml_inject ?? true;
-  editForm.copy_accounts_from_group_ids = []; // 复制账号字段每次编辑时重置为空
+  editForm.copy_accounts_from_group_ids = []; // 复制账号字段每次Edit时Reset为空
   editForm.rpm_limit = group.rpm_limit ?? 0;
   resetModelsListState(editModelsListState, group.models_list_config);
-  // 加载模型路由规则（异步加载账号名称）
   editModelRoutingRules.value = await convertApiFormatToRoutingRules(
     group.model_routing,
   );
@@ -4282,10 +4250,8 @@ watch(
   }
 )
 
-// 点击外部关闭账号搜索下拉框
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement;
-  // 检查是否点击在下拉框或输入框内
   if (!target.closest(".account-search-container")) {
     Object.keys(showAccountDropdown.value).forEach((key) => {
       showAccountDropdown.value[key] = false;
@@ -4293,10 +4259,8 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 };
 
-// 打开排序弹窗
 const openSortModal = async () => {
   try {
-    // 获取所有分组（不分页）
     const allGroups = await adminAPI.groups.getAll();
     // 按 sort_order 排序
     sortableGroups.value = [...allGroups].sort(
@@ -4309,13 +4273,11 @@ const openSortModal = async () => {
   }
 };
 
-// 关闭排序弹窗
 const closeSortModal = () => {
   showSortModal.value = false;
   sortableGroups.value = [];
 };
 
-// 保存排序
 const saveSortOrder = async () => {
   sortSubmitting.value = true;
   try {

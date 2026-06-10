@@ -69,28 +69,26 @@ describe('useSubscriptionStore', () => {
       expect(store.loading).toBe(false)
     })
 
-    it('缓存有效时返回缓存数据', async () => {
+    it('缓存Valid时Back缓存数据', async () => {
       mockGetActiveSubscriptions.mockResolvedValue(fakeSubscriptions)
       const store = useSubscriptionStore()
 
-      // 第一次请求
       await store.fetchActiveSubscriptions()
       expect(mockGetActiveSubscriptions).toHaveBeenCalledTimes(1)
 
-      // 第二次请求（60秒内）- 应返回缓存
+      // 第二次请求（60秒内）- 应Back缓存
       const result = await store.fetchActiveSubscriptions()
       expect(mockGetActiveSubscriptions).toHaveBeenCalledTimes(1) // 没有新请求
       expect(result).toEqual(fakeSubscriptions)
     })
 
-    it('缓存过期后重新请求', async () => {
+    it('缓存Expired后重新请求', async () => {
       mockGetActiveSubscriptions.mockResolvedValue(fakeSubscriptions)
       const store = useSubscriptionStore()
 
       await store.fetchActiveSubscriptions()
       expect(mockGetActiveSubscriptions).toHaveBeenCalledTimes(1)
 
-      // 推进 61 秒让缓存过期
       vi.advanceTimersByTime(61_000)
 
       const updatedSubs = [fakeSubscriptions[0]]
@@ -122,7 +120,6 @@ describe('useSubscriptionStore', () => {
       )
       const store = useSubscriptionStore()
 
-      // 并发发起两个请求
       const p1 = store.fetchActiveSubscriptions()
       const p2 = store.fetchActiveSubscriptions()
 
@@ -137,7 +134,7 @@ describe('useSubscriptionStore', () => {
       expect(r2).toEqual(fakeSubscriptions)
     })
 
-    it('API 错误时抛出异常', async () => {
+    it('API 错误时抛出Error', async () => {
       mockGetActiveSubscriptions.mockRejectedValue(new Error('Network error'))
       const store = useSubscriptionStore()
 
@@ -148,7 +145,7 @@ describe('useSubscriptionStore', () => {
   // --- hasActiveSubscriptions ---
 
   describe('hasActiveSubscriptions', () => {
-    it('有订阅时返回 true', async () => {
+    it('有订阅时Back true', async () => {
       mockGetActiveSubscriptions.mockResolvedValue(fakeSubscriptions)
       const store = useSubscriptionStore()
 
@@ -157,12 +154,12 @@ describe('useSubscriptionStore', () => {
       expect(store.hasActiveSubscriptions).toBe(true)
     })
 
-    it('无订阅时返回 false', () => {
+    it('无订阅时Back false', () => {
       const store = useSubscriptionStore()
       expect(store.hasActiveSubscriptions).toBe(false)
     })
 
-    it('清除后返回 false', async () => {
+    it('清除后Back false', async () => {
       mockGetActiveSubscriptions.mockResolvedValue(fakeSubscriptions)
       const store = useSubscriptionStore()
 
@@ -218,14 +215,13 @@ describe('useSubscriptionStore', () => {
       store.startPolling()
       store.startPolling() // 重复调用
 
-      // 推进5分钟只触发一次
       vi.advanceTimersByTime(5 * 60 * 1000)
       expect(mockGetActiveSubscriptions).toHaveBeenCalledTimes(1)
 
       store.stopPolling()
     })
 
-    it('stopPolling 停止定期刷新', () => {
+    it('stopPolling 停止定期Refresh', () => {
       const store = useSubscriptionStore()
       mockGetActiveSubscriptions.mockResolvedValue([])
 

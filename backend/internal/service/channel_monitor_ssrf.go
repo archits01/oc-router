@@ -6,11 +6,11 @@ import (
 	"strings"
 )
 
-// SSRF 防护 helper：
-//   - validateEndpoint 在 admin 提交时阻止 http/loopback/私网/云元数据 URL
-//   - safeDialContext 在 socket 层再次校验真实 IP，防止 DNS rebinding
+// SSRF
+//   - validateEndpoint
+//   - safeDialContext
 //
-// 已知 cloud metadata hostname 拒绝列表（小写比较）。
+//
 var monitorBlockedHostnames = map[string]struct{}{
 	"localhost":                  {},
 	"localhost.localdomain":      {},
@@ -21,8 +21,8 @@ var monitorBlockedHostnames = map[string]struct{}{
 	"instance-data.ec2.internal": {},
 }
 
-// CIDR 列表：包含所有需要拒绝的 IPv4/IPv6 段。
-// 解析时只 panic 一次（启动时确认），生产路径只做 Contains。
+// CIDR
+//
 var monitorBlockedCIDRs = mustParseCIDRs([]string{
 	"127.0.0.0/8",    // IPv4 loopback
 	"10.0.0.0/8",     // RFC1918
@@ -37,13 +37,13 @@ var monitorBlockedCIDRs = mustParseCIDRs([]string{
 	"::/128",         // IPv6 unspecified
 })
 
-// monitorDialer 共享 Dialer，与 net/http 默认值对齐。
+// monitorDialer
 var monitorDialer = &net.Dialer{
 	Timeout:   monitorDialTimeout,
 	KeepAlive: monitorDialKeepAlive,
 }
 
-// mustParseCIDRs 在包初始化时解析 CIDR 字符串，失败 panic。
+// mustParseCIDRs
 func mustParseCIDRs(cidrs []string) []*net.IPNet {
 	out := make([]*net.IPNet, 0, len(cidrs))
 	for _, c := range cidrs {
@@ -56,7 +56,7 @@ func mustParseCIDRs(cidrs []string) []*net.IPNet {
 	return out
 }
 
-// isBlockedHostname 判断 hostname 是否命中黑名单。
+// isBlockedHostname
 func isBlockedHostname(hostname string) bool {
 	if hostname == "" {
 		return true
@@ -65,7 +65,7 @@ func isBlockedHostname(hostname string) bool {
 	return blocked
 }
 
-// isPrivateIP 判断 IP 是否落在禁止段（loopback/RFC1918/link-local/ULA 等）。
+// isPrivateIP
 func isPrivateIP(ip net.IP) bool {
 	if ip == nil {
 		return true
@@ -81,15 +81,14 @@ func isPrivateIP(ip net.IP) bool {
 	return false
 }
 
-// isPrivateOrLoopbackHost 解析 hostname 的所有 A/AAAA 记录，
-// 任一 IP 落在私网/loopback 段即认为不安全。
+// isPrivateOrLoopbackHost
 //
-// hostname 是 IP 字面量时也走同一路径。
+//
+// hostname
 func isPrivateOrLoopbackHost(ctx context.Context, hostname string) (bool, error) {
 	if isBlockedHostname(hostname) {
 		return true, nil
 	}
-	// IP 字面量直接判断。
 	if ip := net.ParseIP(hostname); ip != nil {
 		return isPrivateIP(ip), nil
 	}
@@ -109,14 +108,13 @@ func isPrivateOrLoopbackHost(ctx context.Context, hostname string) (bool, error)
 	return false, nil
 }
 
-// safeDialContext 在真实 dial 前再次校验目标 IP，防止 DNS rebinding。
-// 解析 hostname 后逐个 IP 尝试连接，命中私网即拒绝（即便 validateEndpoint 时返回的是公网 IP）。
+// safeDialContext
+//
 func safeDialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
 	}
-	// 字面量 IP 走快速路径。
 	if ip := net.ParseIP(host); ip != nil {
 		if isPrivateIP(ip) {
 			return nil, &net.AddrError{Err: "blocked by SSRF policy", Addr: address}

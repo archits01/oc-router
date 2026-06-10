@@ -68,7 +68,7 @@ var openAIWSLogValueReplacer = strings.NewReplacer(
 
 var openAIWSIngressPreflightPingIdle = 20 * time.Second
 
-// openAIWSFallbackError 表示可安全回退到 HTTP 的 WS 错误（尚未写下游）。
+// openAIWSFallbackError
 type openAIWSFallbackError struct {
 	Reason string
 	Err    error
@@ -95,7 +95,7 @@ func wrapOpenAIWSFallback(reason string, err error) error {
 	return &openAIWSFallbackError{Reason: strings.TrimSpace(reason), Err: err}
 }
 
-// OpenAIWSClientCloseError 表示应以指定 WebSocket close code 主动关闭客户端连接的错误。
+// OpenAIWSClientCloseError
 type OpenAIWSClientCloseError struct {
 	statusCode coderws.StatusCode
 	reason     string
@@ -177,7 +177,7 @@ func isOpenAIWSIngressPreviousResponseNotFound(err error) bool {
 	return !turnErr.wroteDownstream
 }
 
-// NewOpenAIWSClientCloseError 创建一个客户端 WS 关闭错误。
+// NewOpenAIWSClientCloseError
 func NewOpenAIWSClientCloseError(statusCode coderws.StatusCode, reason string, err error) error {
 	return &OpenAIWSClientCloseError{
 		statusCode: statusCode,
@@ -217,10 +217,10 @@ func (e *OpenAIWSClientCloseError) Reason() string {
 	return strings.TrimSpace(e.reason)
 }
 
-// OpenAIWSIngressHooks 定义入站 WS 每个 turn 的生命周期回调。
+// OpenAIWSIngressHooks
 type OpenAIWSIngressHooks struct {
-	// InitialRequestModel 是首帧渠道映射前的请求模型，只用于 usage metadata
-	// 的 reasoning effort 后缀推导，禁止用于上游请求或计费模型。
+	// InitialRequestModel
+	//
 	InitialRequestModel string
 	BeforeTurn          func(turn int) error
 	BeforeRequest       func(turn int, payload []byte, originalModel string) error
@@ -683,9 +683,8 @@ func dropOpenAIWSPayloadKey(payload map[string]any, key string, removed *[]strin
 	*removed = append(*removed, key)
 }
 
-// applyOpenAIWSRetryPayloadStrategy 在 WS 连续失败时仅移除无语义字段，
-// 避免重试成功却改变原始请求语义。
-// 注意：prompt_cache_key 不应在重试中移除；它常用于会话稳定标识（session_id 兜底）。
+// applyOpenAIWSRetryPayloadStrategy
+//
 func applyOpenAIWSRetryPayloadStrategy(payload map[string]any, attempt int) (strategy string, removedKeys []string) {
 	if len(payload) == 0 {
 		return "empty", nil
@@ -1030,7 +1029,7 @@ func (s *OpenAIGatewayService) openAIWSPayloadLogSampleRate() float64 {
 }
 
 func (s *OpenAIGatewayService) shouldLogOpenAIWSPayloadSchema(attempt int) bool {
-	// 首次尝试保留一条完整 payload_schema 便于排障。
+	//
 	if attempt <= 1 {
 		return true
 	}
@@ -1059,8 +1058,8 @@ func (s *OpenAIGatewayService) openAIWSDialTimeout() time.Duration {
 }
 
 func (s *OpenAIGatewayService) openAIWSAcquireTimeout() time.Duration {
-	// Acquire 覆盖“连接复用命中/排队/新建连接”三个阶段。
-	// 这里不再叠加 write_timeout，避免高并发排队时把 TTFT 长尾拉到分钟级。
+	// Acquire “”
+	//
 	dial := s.openAIWSDialTimeout()
 	if dial <= 0 {
 		dial = 10 * time.Second
@@ -1101,7 +1100,6 @@ func (s *OpenAIGatewayService) buildOpenAIResponsesWSURL(account *Account) (stri
 	case "http":
 		parsed.Scheme = "ws"
 	case "wss", "ws":
-		// 保持不变
 	default:
 		return "", fmt.Errorf("unsupported scheme for ws: %s", parsed.Scheme)
 	}
@@ -1127,7 +1125,7 @@ func (s *OpenAIGatewayService) buildOpenAIWSHeaders(
 			headers.Set("accept-language", v)
 		}
 	}
-	// OAuth 账号：将 apiKeyID 混入 session 标识符，防止跨用户会话碰撞。
+	// OAuth
 	if account != nil && account.Type == AccountTypeOAuth {
 		apiKeyID := getAPIKeyIDFromContext(c)
 		if sessionResolution.SessionID != "" {
@@ -1186,8 +1184,8 @@ func (s *OpenAIGatewayService) buildOpenAIWSHeaders(
 }
 
 func (s *OpenAIGatewayService) buildOpenAIWSCreatePayload(reqBody map[string]any, account *Account) map[string]any {
-	// OpenAI WS Mode 协议：response.create 字段与 HTTP /responses 基本一致。
-	// 保留 stream 字段（与 Codex CLI 一致），仅移除 background。
+	// OpenAI WS Mode
+	//
 	payload := make(map[string]any, len(reqBody)+1)
 	for k, v := range reqBody {
 		payload[k] = v
@@ -1199,7 +1197,7 @@ func (s *OpenAIGatewayService) buildOpenAIWSCreatePayload(reqBody map[string]any
 	}
 	payload["type"] = "response.create"
 
-	// OAuth 默认保持 store=false，避免误依赖服务端历史。
+	// OAuth =false，
 	if account != nil && account.Type == AccountTypeOAuth && !s.isOpenAIWSStoreRecoveryAllowed(account) {
 		payload["store"] = false
 	}
@@ -1287,7 +1285,6 @@ func (s *OpenAIGatewayService) openAIWSStoreDisabledConnMode() string {
 	case openAIWSStoreDisabledConnModeStrict, openAIWSStoreDisabledConnModeAdaptive, openAIWSStoreDisabledConnModeOff:
 		return mode
 	case "":
-		// 兼容旧配置：仅配置了布尔开关时按旧语义推导。
 		if s.cfg.Gateway.OpenAIWS.StoreDisabledForceNewConn {
 			return openAIWSStoreDisabledConnModeStrict
 		}
@@ -1947,9 +1944,9 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 		}
 		return nil, wrapOpenAIWSFallback(classifyOpenAIWSAcquireError(err), err)
 	}
-	// cleanExit 标记正常终端事件退出，此时上游不会再发送帧，连接可安全归还复用。
-	// 所有异常路径（读写错误、error 事件等）已在各自分支中提前调用 MarkBroken，
-	// 因此 defer 中只需处理正常退出时不 MarkBroken 即可。
+	// cleanExit
+	//
+	//
 	cleanExit := false
 	defer func() {
 		if !cleanExit {
@@ -2283,7 +2280,7 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 					errMessage,
 				)
 			}
-			// error 事件后连接不再可复用，避免回池后污染下一请求。
+			// error
 			lease.MarkBroken()
 			if !wroteDownstream && canFallback {
 				return nil, wrapOpenAIWSFallback(fallbackReason, errors.New(errMsg))
@@ -2306,8 +2303,8 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 		}
 
 		if reqStream {
-			// 在首个 token 前先缓冲事件（如 response.created），
-			// 以便上游早期断连时仍可安全回退到 HTTP，不给下游发送半截流。
+			//
+			//
 			shouldBuffer := firstTokenMs == nil && !isTokenEvent && !isTerminalEvent
 			if shouldBuffer {
 				buffered := make([]byte, len(message))
@@ -2420,8 +2417,8 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 	}, nil
 }
 
-// ProxyResponsesWebSocketFromClient 处理客户端入站 WebSocket（OpenAI Responses WS Mode）并转发到上游。
-// 当前实现按“单请求 -> 终止事件 -> 下一请求”的顺序代理，适配 Codex CLI 的 turn 模式。
+// ProxyResponsesWebSocketFromClient
+// “> > ”
 func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 	ctx context.Context,
 	c *gin.Context,
@@ -2447,9 +2444,9 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		return errors.New("token is empty")
 	}
 
-	// 预取一次 OpenAI Fast Policy settings，绑定到 ctx，让该 WS session
-	// 内所有帧的 evaluateOpenAIFastPolicy 调用复用同一份快照，避免每帧
-	// 进入 DB / settingRepo。Trade-off 见 withOpenAIFastPolicyContext 注释。
+	//
+	//
+	//
 	if s.settingService != nil {
 		if settings, err := s.settingService.GetOpenAIFastPolicySettings(ctx); err == nil && settings != nil {
 			ctx = withOpenAIFastPolicyContext(ctx, settings)
@@ -2530,7 +2527,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			return next, nil
 		}
 
-		// 仅在确实需要修改 payload 且 sjson 失败时，退回 map 路径确保兼容性。
+		//
 		payload := make(map[string]any)
 		if unmarshalErr := json.Unmarshal(current, &payload); unmarshalErr != nil {
 			return nil, err
@@ -2588,11 +2585,10 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		originalModel := strings.TrimSpace(values[1].String())
 		modelMissing := originalModel == ""
 		if originalModel == "" {
-			// 入站 WS 长会话里，部分客户端只在第一轮 response.create 上声明
-			// model，后续 turn 复用同一 session-level model。为避免因省略
-			// model 直接断开用户连接，这里回落到上一轮已通过校验的客户端模型，
-			// 并在下方写回上游 payload，保证账号模型映射/fast policy/图片权限
-			// 仍按同一模型执行。
+			//
+			// model，
+			// model
+			//
 			originalModel = ingressSessionOriginalModel
 			if originalModel == "" {
 				return openAIWSClientPayload{}, NewOpenAIWSClientCloseError(
@@ -2975,7 +2971,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		req := cloneOpenAIWSAcquireRequest(baseAcquireReq)
 		req.PreferredConnID = strings.TrimSpace(preferred)
 		req.ForcePreferredConn = forcePreferredConn
-		// dedicated 模式下每次获取均新建连接，避免跨会话复用残留上下文。
+		// dedicated
 		req.ForceNewConn = dedicatedMode
 		acquireCtx, acquireCancel := context.WithTimeout(ctx, acquireTimeout)
 		lease, acquireErr := pool.Acquire(acquireCtx, req)
@@ -3135,7 +3131,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 					s.openAIWSIngressPreviousResponseRecoveryEnabled() &&
 					!wroteDownstream
 				if recoverablePrevNotFound {
-					// 可恢复场景使用非 error 关键字日志，避免被 LegacyPrintf 误判为 ERROR 级别。
+					//
 					logOpenAIWSModeInfo(
 						"ingress_ws_prev_response_recoverable account_id=%d turn=%d conn_id=%s idx=%d reason=%s code=%s type=%s message=%s previous_response_id=%s previous_response_id_kind=%s response_id=%s store_disabled=%v has_prompt_cache_key=%v",
 						account.ID,
@@ -3170,8 +3166,8 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 						turnPromptCacheKey != "",
 					)
 				}
-				// previous_response_not_found 在 ingress 模式支持单次恢复重试：
-				// 不把该 error 直接下发客户端，而是由上层去掉 previous_response_id 后重放当前 turn。
+				// previous_response_not_found
+				//
 				if recoverablePrevNotFound {
 					lease.MarkBroken()
 					errMsg := strings.TrimSpace(errMsgRaw)
@@ -3244,7 +3240,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 				}
 			}
 			if isTerminalEvent {
-				// 客户端已断连时，上游连接的 session 状态不可信，标记 broken 避免回池复用。
+				//
 				if clientDisconnected {
 					lease.MarkBroken()
 				}
@@ -3338,9 +3334,9 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			pinnedSessionConnID = connID
 		}
 	}
-	// lastTurnClean 标记最后一轮 sendAndRelay 是否正常完成（收到终端事件且客户端未断连）。
-	// 所有异常路径（读写错误、error 事件、客户端断连）已在各自分支或上层（L3403）中 MarkBroken，
-	// 因此 releaseSessionLease 中只需在非正常结束时 MarkBroken。
+	// lastTurnClean
+	//
+	//
 	lastTurnClean := false
 	releaseSessionLease := func() {
 		if sessionLease == nil {
@@ -3398,15 +3394,15 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		if turnPrevRecoveryTried || !s.openAIWSIngressPreviousResponseRecoveryEnabled() {
 			return false
 		}
-		// 携带 function_call_output 的请求不能丢弃 previous_response_id：
-		// 上游 API 需要 response chain 来匹配 tool_result 与之前的 tool_use，
-		// 丢弃后会导致 "No tool call found for function call output" 400 错误。
+		//
+		//
+		// "No tool call found for function call output" 400
 		if hasCurrentOrReplayFunctionCallOutput(currentPayload) {
 			return false
 		}
 		if isStrictAffinityTurn(currentPayload) {
-			// Layer 2：严格亲和链路命中 previous_response_not_found 时，降级为“去掉 previous_response_id 后重放一次”。
-			// 该错误说明续链锚点已失效，继续 strict fail-close 只会直接中断本轮请求。
+			// Layer 2：“”。
+			//
 			logOpenAIWSModeInfo(
 				"ingress_ws_prev_response_recovery_layer2 account_id=%d turn=%d conn_id=%s store_disabled_conn_mode=%s action=drop_previous_response_id_retry",
 				account.ID,
@@ -3508,8 +3504,8 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			}
 		}
 		hasFunctionCallOutput := toolSignals.HasFunctionCallOutput
-		// store=false + function_call_output 场景必须有续链锚点。
-		// 若客户端未传 previous_response_id，优先回填上一轮响应 ID，避免上游报 call_id 无法关联。
+		// store=false + function_call_output
+		//
 		if shouldInferIngressFunctionCallOutputPreviousResponseID(
 			storeDisabled,
 			turn,
@@ -3678,9 +3674,9 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 					truncateOpenAIWSLogValue(pingErr.Error(), openAIWSLogValueMaxLen),
 				)
 				if forcePreferredConn {
-					// 携带 function_call_output 的请求不能丢弃 previous_response_id：
-					// 上游 API 需要 response chain 来匹配 tool_result 与之前的 tool_use，
-					// 除非 replay input 已经包含与每个 tool_result 匹配的 tool_use 上下文。
+					//
+					//
+					//
 					hasFCOutput := hasFunctionCallOutput
 					hasReplayToolContext := hasFCOutput &&
 						currentTurnReplayInputExists &&
@@ -3877,8 +3873,8 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			return parseErr
 		}
 		if nextPayload.promptCacheKey != "" {
-			// ingress 会话在整个客户端 WS 生命周期内复用同一上游连接；
-			// prompt_cache_key 对握手头的更新仅在未来需要重新建连时生效。
+			// ingress
+			// prompt_cache_key
 			updatedHeaders, _ := s.buildOpenAIWSHeaders(c, account, token, wsDecision, isCodexCLI, turnState, strings.TrimSpace(c.GetHeader(openAIWSTurnMetadataHeader)), nextPayload.promptCacheKey)
 			baseAcquireReq.Headers = updatedHeaders
 		}
@@ -3934,8 +3930,8 @@ func (s *OpenAIGatewayService) isOpenAIWSGeneratePrewarmEnabled() bool {
 	return s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIWS.PrewarmGenerateEnabled
 }
 
-// performOpenAIWSGeneratePrewarm 在 WSv2 下执行可选的 generate=false 预热。
-// 预热默认关闭，仅在配置开启后生效；失败时按可恢复错误回退到 HTTP。
+// performOpenAIWSGeneratePrewarm =false
+//
 func (s *OpenAIGatewayService) performOpenAIWSGeneratePrewarm(
 	ctx context.Context,
 	lease *openAIWSConnLease,
@@ -4138,9 +4134,9 @@ func isOpenAIWSTokenEvent(eventType string) bool {
 	if strings.HasPrefix(eventType, "response.output") {
 		return true
 	}
-	// 终止事件（response.completed/done/failed/...）由 isOpenAIWSTerminalEvent 单独处理。
-	// 不能把它们当作 token event，否则当上游没有可识别的 delta 时，
-	// firstTokenMs 会被填到终止时刻，等于把"总耗时"误报为"首 token 延迟"。
+	//
+	//
+	// firstTokenMs """"。
 	return false
 }
 
@@ -4204,8 +4200,8 @@ func getOpenAIGroupIDFromContext(c *gin.Context) int64 {
 	return *apiKey.GroupID
 }
 
-// SelectAccountByPreviousResponseID 按 previous_response_id 命中账号粘连。
-// 未命中或账号不可用时返回 (nil, nil)，由调用方继续走常规调度。
+// SelectAccountByPreviousResponseID
+// (nil, nil)，
 func (s *OpenAIGatewayService) SelectAccountByPreviousResponseID(
 	ctx context.Context,
 	groupID *int64,
@@ -4253,8 +4249,8 @@ func (s *OpenAIGatewayService) selectAccountByPreviousResponseIDForCapability(
 		_ = store.DeleteResponseAccount(ctx, derefGroupID(groupID), responseID)
 		return nil, nil
 	}
-	// 非 WSv2 场景（如 force_http/全局关闭）不应使用 previous_response_id 粘连，
-	// 以保持“回滚到 HTTP”后的历史行为一致性。
+	//
+	// “”
 	if s.getOpenAIWSProtocolResolver().Resolve(account).Transport != OpenAIUpstreamTransportResponsesWebsocketV2 {
 		return nil, nil
 	}

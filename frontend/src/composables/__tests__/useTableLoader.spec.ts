@@ -123,7 +123,7 @@ describe('useTableLoader', () => {
       expect(fetchFn).toHaveBeenCalledWith(3, 20, expect.anything(), expect.anything())
     })
 
-    it('handlePageSizeChange 重置到第1页并加载', async () => {
+    it('handlePageSizeChange Reset到第1页并加载', async () => {
       const fetchFn = createMockFetchFn([], 100, 5)
       const { handlePageSizeChange, pagination, load } = useTableLoader({ fetchFn })
 
@@ -143,7 +143,6 @@ describe('useTableLoader', () => {
 
       await load()
 
-      // 超出范围的页码被限制
       handlePageChange(999)
       expect(pagination.page).toBe(5) // 限制在 pages=5
 
@@ -152,14 +151,13 @@ describe('useTableLoader', () => {
     })
   })
 
-  // --- 搜索防抖 ---
+  // --- Search防抖 ---
 
-  describe('搜索防抖', () => {
+  describe('Search防抖', () => {
     it('debouncedReload 在 300ms 内多次调用只执行一次', async () => {
       const fetchFn = createMockFetchFn()
       const { debouncedReload } = useTableLoader({ fetchFn })
 
-      // 快速连续调用
       debouncedReload()
       debouncedReload()
       debouncedReload()
@@ -170,13 +168,12 @@ describe('useTableLoader', () => {
       // 推进 300ms
       vi.advanceTimersByTime(300)
 
-      // 等待异步完成
       await vi.runAllTimersAsync()
 
       expect(fetchFn).toHaveBeenCalledTimes(1)
     })
 
-    it('reload 重置到第 1 页', async () => {
+    it('reload Reset到第 1 页', async () => {
       const fetchFn = createMockFetchFn([], 100, 5)
       const { reload, pagination, load } = useTableLoader({ fetchFn })
 
@@ -189,10 +186,10 @@ describe('useTableLoader', () => {
     })
   })
 
-  // --- 请求取消 ---
+  // --- 请求Cancel ---
 
-  describe('请求取消', () => {
-    it('新请求取消前一个未完成的请求', async () => {
+  describe('请求Cancel', () => {
+    it('新请求Cancel前一个未完成的请求', async () => {
       let callCount = 0
       const fetchFn = vi.fn((_page, _size, _params, options) => {
         callCount++
@@ -204,7 +201,6 @@ describe('useTableLoader', () => {
               reject({ name: 'CanceledError', code: 'ERR_CANCELED' })
             })
           }
-          // 异步解决
           setTimeout(() => {
             resolve({ items: [{ id: currentCall }], total: 1, pages: 1 })
           }, 1000)
@@ -213,19 +209,15 @@ describe('useTableLoader', () => {
 
       const { load } = useTableLoader({ fetchFn })
 
-      // 第一次加载
       const p1 = load()
-      // 第二次加载（应取消第一次）
       const p2 = load()
 
-      // 推进时间让第二次完成
       vi.advanceTimersByTime(1000)
       await vi.runAllTimersAsync()
 
       // 等待两个 Promise settle
       await Promise.allSettled([p1, p2])
 
-      // 第二次请求的结果生效
       expect(fetchFn).toHaveBeenCalledTimes(2)
     })
   })
@@ -233,18 +225,17 @@ describe('useTableLoader', () => {
   // --- 错误处理 ---
 
   describe('错误处理', () => {
-    it('非取消错误会被抛出', async () => {
+    it('非Cancel错误会被抛出', async () => {
       const fetchFn = vi.fn().mockRejectedValue(new Error('Server error'))
       const { load } = useTableLoader({ fetchFn })
 
       await expect(load()).rejects.toThrow('Server error')
     })
 
-    it('取消错误被静默处理', async () => {
+    it('Cancel错误被静默处理', async () => {
       const fetchFn = vi.fn().mockRejectedValue({ name: 'CanceledError', code: 'ERR_CANCELED' })
       const { load } = useTableLoader({ fetchFn })
 
-      // 不应抛出
       await load()
     })
   })

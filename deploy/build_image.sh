@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 本地构建镜像的快速脚本，避免在命令行反复输入构建参数。
+# Quick script for local image building, avoiding repetitive build parameter input on the command line.
 
 set -euo pipefail
 

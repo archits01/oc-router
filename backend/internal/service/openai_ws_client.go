@@ -31,7 +31,7 @@ type OpenAIWSTransportMetricsSnapshot struct {
 	TransportReuseRatio    float64 `json:"transport_reuse_ratio"`
 }
 
-// openAIWSClientConn 抽象 WS 客户端连接，便于替换底层实现。
+// openAIWSClientConn
 type openAIWSClientConn interface {
 	WriteJSON(ctx context.Context, value any) error
 	ReadMessage(ctx context.Context) ([]byte, error)
@@ -39,7 +39,7 @@ type openAIWSClientConn interface {
 	Close() error
 }
 
-// openAIWSClientDialer 抽象 WS 建连器。
+// openAIWSClientDialer
 type openAIWSClientDialer interface {
 	Dial(ctx context.Context, wsURL string, headers http.Header, proxyURL string) (openAIWSClientConn, int, http.Header, error)
 }
@@ -99,8 +99,8 @@ func (d *coderOpenAIWSClientDialer) Dial(
 		}
 		return nil, status, respHeaders, err
 	}
-	// coder/websocket 默认单消息读取上限为 32KB，Codex WS 事件（如 rate_limits/大 delta）
-	// 可能超过该阈值，需显式提高上限，避免本地 read_fail(message too big)。
+	// coder/websocket
+	// (message too big)。
 	conn.SetReadLimit(openAIWSMessageReadLimitBytes)
 	respHeaders := http.Header(nil)
 	if resp != nil {
@@ -305,7 +305,7 @@ func (c *coderOpenAIWSClientConn) Close() error {
 	if c == nil || c.conn == nil {
 		return nil
 	}
-	// Close 为幂等，忽略重复关闭错误。
+	// Close
 	_ = c.conn.Close(coderws.StatusNormalClosure, "")
 	_ = c.conn.CloseNow()
 	return nil

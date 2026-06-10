@@ -16,7 +16,7 @@ func TestSessionStore_Stop_Idempotent(t *testing.T) {
 	case <-store.stopCh:
 		// ok
 	case <-time.After(time.Second):
-		t.Fatal("stopCh 未关闭")
+		t.Fatal("stopCh not closed")
 	}
 }
 
@@ -38,6 +38,6 @@ func TestSessionStore_Stop_Concurrent(t *testing.T) {
 	case <-store.stopCh:
 		// ok
 	case <-time.After(time.Second):
-		t.Fatal("stopCh 未关闭")
+		t.Fatal("stopCh not closed")
 	}
 }

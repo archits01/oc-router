@@ -42,7 +42,7 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 			return
 		}
 
-		// 同 api_key_auth.go：早退中断前也写入 Ops 回退 key，便于错误日志展示
+		//
 		// user/group/platform。
 		SetOpsFallbackAPIKey(c, apiKey)
 
@@ -64,7 +64,6 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 			return
 		}
 
-		// 简易模式：跳过余额和订阅检查
 		if cfg.RunMode == config.RunModeSimple {
 			c.Set(string(ContextKeyAPIKey), apiKey)
 			c.Set(string(ContextKeyUser), AuthSubject{

@@ -42,7 +42,7 @@ func TestResolveAccountUpstreamModel_Antigravity(t *testing.T) {
 	account := &Account{
 		Platform: PlatformAntigravity,
 	}
-	// Antigravity 平台使用 DefaultAntigravityModelMapping
+	// Antigravity
 	got := resolveAccountUpstreamModel(account, "claude-sonnet-4-6")
 	require.Equal(t, "claude-sonnet-4-6", got)
 }
@@ -89,7 +89,7 @@ func TestCheckChannelPricingRestriction_EmptyModel(t *testing.T) {
 
 func TestCheckChannelPricingRestriction_ChannelMapped_Restricted(t *testing.T) {
 	t.Parallel()
-	// 渠道映射 claude-sonnet-4-5 → claude-sonnet-4-6，但定价列表只有 claude-opus-4-6
+	// → claude-sonnet-4-6，
 	ch := Channel{
 		ID:                 1,
 		Status:             StatusActive,
@@ -113,7 +113,7 @@ func TestCheckChannelPricingRestriction_ChannelMapped_Restricted(t *testing.T) {
 
 func TestCheckChannelPricingRestriction_ChannelMapped_Allowed(t *testing.T) {
 	t.Parallel()
-	// 渠道映射 claude-sonnet-4-5 → claude-sonnet-4-6，定价列表包含 claude-sonnet-4-6
+	// → claude-sonnet-4-6，
 	ch := Channel{
 		ID:                 1,
 		Status:             StatusActive,
@@ -137,7 +137,7 @@ func TestCheckChannelPricingRestriction_ChannelMapped_Allowed(t *testing.T) {
 
 func TestCheckChannelPricingRestriction_Requested_Restricted(t *testing.T) {
 	t.Parallel()
-	// billing_model_source=requested，定价列表有 claude-sonnet-4-6 但请求的是 claude-sonnet-4-5
+	// billing_model_source=requested，
 	ch := Channel{
 		ID:                 1,
 		Status:             StatusActive,
@@ -178,7 +178,7 @@ func TestCheckChannelPricingRestriction_Requested_Allowed(t *testing.T) {
 
 func TestCheckChannelPricingRestriction_Upstream_SkipsPreCheck(t *testing.T) {
 	t.Parallel()
-	// upstream 模式：预检查始终跳过（返回 false），需逐账号检查
+	// upstream
 	ch := Channel{
 		ID:                 1,
 		Status:             StatusActive,
@@ -203,7 +203,7 @@ func TestCheckChannelPricingRestriction_RestrictModelsDisabled(t *testing.T) {
 		ID:             1,
 		Status:         StatusActive,
 		GroupIDs:       []int64{10},
-		RestrictModels: false, // 未开启模型限制
+		RestrictModels: false, // 未开启model限制
 		ModelPricing: []ChannelModelPricing{
 			{Platform: "anthropic", Models: []string{"claude-opus-4-6"}},
 		},
@@ -218,7 +218,6 @@ func TestCheckChannelPricingRestriction_RestrictModelsDisabled(t *testing.T) {
 
 func TestCheckChannelPricingRestriction_NoChannel(t *testing.T) {
 	t.Parallel()
-	// 分组没有关联渠道
 	repo := &mockChannelRepository{
 		listAllFn: func(_ context.Context) ([]Channel, error) { return nil, nil },
 	}
@@ -247,8 +246,8 @@ func TestIsUpstreamModelRestrictedByChannel_Restricted(t *testing.T) {
 	svc := &GatewayService{channelService: channelSvc}
 
 	account := &Account{Platform: PlatformAntigravity}
-	// claude-sonnet-4-6 在 DefaultAntigravityModelMapping 中，映射后仍为 claude-sonnet-4-6
-	// 但定价列表只有 claude-opus-4-6
+	// claude-sonnet-4-6
+	//
 	require.True(t, svc.isUpstreamModelRestrictedByChannel(context.Background(), 10, account, "claude-sonnet-4-6"),
 		"upstream model claude-sonnet-4-6 NOT in pricing → restricted")
 }
@@ -287,7 +286,7 @@ func TestIsUpstreamModelRestrictedByChannel_UnsupportedModel(t *testing.T) {
 	svc := &GatewayService{channelService: channelSvc}
 
 	account := &Account{Platform: PlatformAntigravity}
-	// totally-unknown-model 不在 DefaultAntigravityModelMapping 中 → 映射结果为空
+	// totally-unknown-model →
 	require.False(t, svc.isUpstreamModelRestrictedByChannel(context.Background(), 10, account, "totally-unknown-model"),
 		"unmappable model → upstream model empty → not restricted (account filter handles this)")
 }

@@ -87,9 +87,9 @@ type AffiliateDetail struct {
 	AffQuota        float64 `json:"aff_quota"`
 	AffFrozenQuota  float64 `json:"aff_frozen_quota"`
 	AffHistoryQuota float64 `json:"aff_history_quota"`
-	// EffectiveRebateRatePercent 是当前用户作为邀请人时实际生效的返利比例：
-	// 优先用户自己的专属比例（aff_rebate_rate_percent），否则回退到全局比例。
-	// 用于在用户的 /affiliate 页面直观展示「分享后能拿到多少」。
+	// EffectiveRebateRatePercent
+	//
+	// 「」。
 	EffectiveRebateRatePercent float64            `json:"effective_rebate_rate_percent"`
 	Invitees                   []AffiliateInvitee `json:"invitees"`
 }
@@ -104,7 +104,6 @@ type AffiliateRepository interface {
 	TransferQuotaToBalance(ctx context.Context, userID int64) (float64, float64, error)
 	ListInvitees(ctx context.Context, inviterID int64, limit int) ([]AffiliateInvitee, error)
 
-	// 管理端：用户级专属配置
 	UpdateUserAffCode(ctx context.Context, userID int64, newCode string) error
 	ResetUserAffCode(ctx context.Context, userID int64) (string, error)
 	SetUserRebateRate(ctx context.Context, userID int64, ratePercent *float64) error
@@ -116,14 +115,14 @@ type AffiliateRepository interface {
 	GetAffiliateUserOverview(ctx context.Context, userID int64) (*AffiliateUserOverview, error)
 }
 
-// AffiliateAdminFilter 列表筛选条件
+// AffiliateAdminFilter
 type AffiliateAdminFilter struct {
 	Search   string
 	Page     int
 	PageSize int
 }
 
-// AffiliateAdminEntry 专属用户列表条目
+// AffiliateAdminEntry
 type AffiliateAdminEntry struct {
 	UserID               int64    `json:"user_id"`
 	Email                string   `json:"email"`
@@ -220,7 +219,7 @@ func NewAffiliateService(repo AffiliateRepository, settingService *SettingServic
 	}
 }
 
-// IsEnabled reports whether the affiliate (邀请返利) feature is turned on.
+// IsEnabled reports whether the affiliate () feature is turned on.
 func (s *AffiliateService) IsEnabled(ctx context.Context) bool {
 	if s == nil || s.settingService == nil {
 		return AffiliateEnabledDefault
@@ -274,7 +273,7 @@ func (s *AffiliateService) BindInviterByCode(ctx context.Context, userID int64, 
 	if s == nil || s.repo == nil {
 		return infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
 	}
-	// 总开关关闭时，注册阶段静默忽略 aff 参数（不报错，避免阻断注册流程）
+	//
 	if !s.IsEnabled(ctx) {
 		return nil
 	}
@@ -322,7 +321,6 @@ func (s *AffiliateService) AccrueInviteRebateForOrder(ctx context.Context, invit
 	if inviteeUserID <= 0 || baseRechargeAmount <= 0 || math.IsNaN(baseRechargeAmount) || math.IsInf(baseRechargeAmount, 0) {
 		return 0, nil
 	}
-	// 总开关关闭时，新充值不再产生返利
 	if !s.IsEnabled(ctx) {
 		return 0, nil
 	}
@@ -335,12 +333,11 @@ func (s *AffiliateService) AccrueInviteRebateForOrder(ctx context.Context, invit
 		return 0, nil
 	}
 
-	// 加载邀请人 profile，优先使用专属比例（覆盖全局）
+	//
 	inviterSummary, err := s.repo.EnsureUserAffiliate(ctx, *inviteeSummary.InviterID)
 	if err != nil {
 		return 0, err
 	}
-	// 有效期检查：超过返利有效期后不再产生返利
 	if s.settingService != nil {
 		if durationDays := s.settingService.GetAffiliateRebateDurationDays(ctx); durationDays > 0 {
 			if time.Now().After(inviteeSummary.CreatedAt.AddDate(0, 0, durationDays)) {
@@ -355,7 +352,6 @@ func (s *AffiliateService) AccrueInviteRebateForOrder(ctx context.Context, invit
 		return 0, nil
 	}
 
-	// 单人上限检查：精确截断到剩余额度
 	if s.settingService != nil {
 		if perInviteeCap := s.settingService.GetAffiliateRebatePerInviteeCap(ctx); perInviteeCap > 0 {
 			existing, err := s.repo.GetAccruedRebateFromInvitee(ctx, *inviteeSummary.InviterID, inviteeUserID)
@@ -489,7 +485,7 @@ func (s *AffiliateService) invalidateAffiliateCaches(ctx context.Context, userID
 }
 
 // =========================
-// Admin: 专属配置管理
+// Admin:
 // =========================
 
 // validateExclusiveRate ensures a per-user override is finite and within
@@ -508,7 +504,7 @@ func validateExclusiveRate(ratePercent *float64) error {
 	return nil
 }
 
-// AdminUpdateUserAffCode 管理员改写用户的邀请码（专属邀请码）。
+// AdminUpdateUserAffCode
 func (s *AffiliateService) AdminUpdateUserAffCode(ctx context.Context, userID int64, rawCode string) error {
 	if s == nil || s.repo == nil {
 		return infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
@@ -520,7 +516,7 @@ func (s *AffiliateService) AdminUpdateUserAffCode(ctx context.Context, userID in
 	return s.repo.UpdateUserAffCode(ctx, userID, code)
 }
 
-// AdminResetUserAffCode 重置用户邀请码为系统随机码。
+// AdminResetUserAffCode
 func (s *AffiliateService) AdminResetUserAffCode(ctx context.Context, userID int64) (string, error) {
 	if s == nil || s.repo == nil {
 		return "", infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
@@ -528,7 +524,7 @@ func (s *AffiliateService) AdminResetUserAffCode(ctx context.Context, userID int
 	return s.repo.ResetUserAffCode(ctx, userID)
 }
 
-// AdminSetUserRebateRate 设置/清除用户专属返利比例。ratePercent==nil 表示清除。
+// AdminSetUserRebateRate ==nil
 func (s *AffiliateService) AdminSetUserRebateRate(ctx context.Context, userID int64, ratePercent *float64) error {
 	if s == nil || s.repo == nil {
 		return infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
@@ -539,7 +535,7 @@ func (s *AffiliateService) AdminSetUserRebateRate(ctx context.Context, userID in
 	return s.repo.SetUserRebateRate(ctx, userID, ratePercent)
 }
 
-// AdminBatchSetUserRebateRate 批量设置/清除用户专属返利比例。
+// AdminBatchSetUserRebateRate
 func (s *AffiliateService) AdminBatchSetUserRebateRate(ctx context.Context, userIDs []int64, ratePercent *float64) error {
 	if s == nil || s.repo == nil {
 		return infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
@@ -559,7 +555,7 @@ func (s *AffiliateService) AdminBatchSetUserRebateRate(ctx context.Context, user
 	return s.repo.BatchSetUserRebateRate(ctx, cleaned, ratePercent)
 }
 
-// AdminListCustomUsers 列出有专属配置的用户。
+// AdminListCustomUsers
 func (s *AffiliateService) AdminListCustomUsers(ctx context.Context, filter AffiliateAdminFilter) ([]AffiliateAdminEntry, int64, error) {
 	if s == nil || s.repo == nil {
 		return nil, 0, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")

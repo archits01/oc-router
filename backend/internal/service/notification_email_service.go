@@ -874,14 +874,14 @@ func notificationEmailSampleVariables(locale string) map[string]string {
 			"moderation_score":    "0.982",
 			"violation_count":     "2",
 			"ban_threshold":       "3",
-			"rule_name":           "错误率过高",
+			"rule_name":           "error率过高",
 			"severity":            "critical",
 			"alert_status":        "firing",
 			"metric_type":         "error_rate",
 			"operator":            ">=",
 			"metric_value":        "12.50",
 			"threshold_value":     "10.00",
-			"alert_description":   "最近 10 分钟错误率超过阈值",
+			"alert_description":   "最近 10 minuteserror率超过阈值",
 			"report_name":         "日报",
 			"report_type":         "daily_summary",
 			"report_start_time":   "2026-05-19 12:00",
@@ -1067,12 +1067,12 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 <p>If you did not request this code, please ignore this email.</p>`),
 		},
 		notificationEmailLocaleChinese: {
-			Subject: "[{{site_name}}] 邮箱验证码",
-			HTML: notificationEmailCard("#4f46e5", "邮箱验证码", `
+			Subject: "[{{site_name}}] 邮箱validation码",
+			HTML: notificationEmailCard("#4f46e5", "邮箱validation码", `
 <p>{{recipient_name}}，您好：</p>
-<p>您的验证码是：</p>
+<p>您的validation码是：</p>
 <p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center;">{{verification_code}}</p>
-<p>验证码将在 <strong>{{expires_in_minutes}}</strong> 分钟后失效。</p>
+<p>validation码将在 <strong>{{expires_in_minutes}}</strong> minutes后失效。</p>
 <p>如果不是您本人操作，请忽略此邮件。</p>`),
 		},
 	},
@@ -1091,9 +1091,9 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 			Subject: "[{{site_name}}] 密码重置请求",
 			HTML: notificationEmailCard("#7c3aed", "密码重置", `
 <p>{{recipient_name}}，您好：</p>
-<p>我们收到了您的密码重置请求，请点击下方按钮设置新密码。</p>
+<p>我们received了您的密码重置请求，请点击下方按钮设置新密码。</p>
 <p><a class="button" href="{{reset_url}}">重置密码</a></p>
-<p>此链接将在 <strong>{{expires_in_minutes}}</strong> 分钟后失效。</p>
+<p>此链接将在 <strong>{{expires_in_minutes}}</strong> minutes后失效。</p>
 <p class="muted">如果按钮无法点击，请复制以下链接到浏览器中打开：<br>{{reset_url}}</p>
 <p>如果不是您本人操作，请忽略此邮件。</p>`),
 		},
@@ -1110,12 +1110,12 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 <p>If you did not request this code, please ignore this email.</p>`),
 		},
 		notificationEmailLocaleChinese: {
-			Subject: "[{{site_name}}] 通知邮箱验证码",
-			HTML: notificationEmailCard("#0ea5e9", "通知邮箱验证", `
+			Subject: "[{{site_name}}] 通知邮箱validation码",
+			HTML: notificationEmailCard("#0ea5e9", "通知邮箱validation", `
 <p>{{recipient_name}}，您好：</p>
-<p>您正在添加额外的通知邮箱，请输入以下验证码完成验证。</p>
+<p>您正在添加额外的通知邮箱，请输入以下validation码完成validation。</p>
 <p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center;">{{verification_code}}</p>
-<p>验证码将在 <strong>{{expires_in_minutes}}</strong> 分钟后失效。</p>
+<p>validation码将在 <strong>{{expires_in_minutes}}</strong> minutes后失效。</p>
 <p>如果不是您本人操作，请忽略此邮件。</p>`),
 		},
 	},
@@ -1129,10 +1129,10 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 <p>Order ID: {{order_id}}</p>`),
 		},
 		notificationEmailLocaleChinese: {
-			Subject: "[{{site_name}}] 订阅购买成功",
+			Subject: "[{{site_name}}] 订阅购买success",
 			HTML: notificationEmailCard("#2563eb", "订阅已开通", `
 <p>{{recipient_name}}，您好：</p>
-<p>您的 <strong>{{subscription_group}}</strong> 订阅已成功开通，有效期 <strong>{{subscription_days}}</strong> 天。</p>
+<p>您的 <strong>{{subscription_group}}</strong> 订阅已success开通，valid期 <strong>{{subscription_days}}</strong> 天。</p>
 <p>到期时间：<strong>{{expiry_time}}</strong></p>
 <p>订单号：{{order_id}}</p>`),
 		},
@@ -1185,8 +1185,8 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 <p>Order ID: {{order_id}}</p>`),
 		},
 		notificationEmailLocaleChinese: {
-			Subject: "[{{site_name}}] 余额充值成功",
-			HTML: notificationEmailCard("#16a34a", "余额充值成功", `
+			Subject: "[{{site_name}}] 余额充值success",
+			HTML: notificationEmailCard("#16a34a", "余额充值success", `
 <p>{{recipient_name}}，您好：</p>
 <p>您的余额充值 <strong>${{recharge_amount}}</strong> 已完成。</p>
 <p>当前余额：<strong>${{current_balance}}</strong></p>
@@ -1210,7 +1210,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		notificationEmailLocaleChinese: {
 			Subject: "[{{site_name}}] 账号限额告警 - {{account_name}}",
 			HTML: notificationEmailCard("#dc2626", "账号限额告警", `
-<p>上游账号 <strong>{{account_name}}</strong> 已触发配置的额度告警阈值。</p>
+<p>上游账号 <strong>{{account_name}}</strong> 已触发configuration的额度告警阈值。</p>
 <table style="width:100%;border-collapse:collapse;">
   <tr><td>账号 ID</td><td>{{account_id}}</td></tr>
   <tr><td>平台</td><td>{{platform}}</td></tr>
@@ -1274,7 +1274,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
   <tr><td>命中类别 / 分数</td><td>{{moderation_category}} / {{moderation_score}}</td></tr>
   <tr><td>累计触发次数</td><td>{{violation_count}} / {{ban_threshold}}</td></tr>
 </table>
-<p>如需申诉或恢复账号，请联系平台管理员处理。</p>`),
+<p>如需申诉or恢复账号，请联系平台admin处理。</p>`),
 		},
 	},
 	NotificationEmailEventOpsAlert: {

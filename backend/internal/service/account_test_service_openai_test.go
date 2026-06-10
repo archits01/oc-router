@@ -384,9 +384,9 @@ func TestAccountTestService_OpenAIAPIKeyResponsesUnsupportedUsesChatCompletionsP
 	require.False(t, gjson.GetBytes(upstream.lastBody, "input").Exists())
 	body := recorder.Body.String()
 	require.Contains(t, body, "pong")
-	require.Contains(t, body, "已通过 /v1/chat/completions 验证")
+	require.Contains(t, body, "已通过 /v1/chat/completions validation")
 	require.Contains(t, body, `"success":true`)
-	require.NotContains(t, body, "当前测试接口仅支持 Responses API 路径")
+	require.NotContains(t, body, "当前test接口仅支持 Responses API 路径")
 }
 
 func TestAccountTestService_OpenAIChatCompletionsPathReturns4xx(t *testing.T) {

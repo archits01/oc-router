@@ -87,7 +87,7 @@ func TestGolden_ParallelToolCalls(t *testing.T) {
 	require.Equal(t, 2, toolMsgs)
 }
 
-// Golden sample: an unknown item type (web_search_call from a 联网查询) sitting
+// Golden sample: an unknown item type (web_search_call from a ) sitting
 // between a function_call and its output must not break tool↔reply adjacency.
 func TestGolden_UnknownItemBetweenToolCallAndOutput(t *testing.T) {
 	msgs := convertGolden(t, `[

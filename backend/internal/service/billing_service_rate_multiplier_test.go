@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCalculateCost_RateMultiplier_NegativeClampedToZero 锁定负数倍率被
-// 钳制为 0（而非历史上的 1.0），避免配置异常导致静默按标准价扣费。
+// TestCalculateCost_RateMultiplier_NegativeClampedToZero
+//
 func TestCalculateCost_RateMultiplier_NegativeClampedToZero(t *testing.T) {
 	svc := newTestBillingService()
 	tokens := UsageTokens{InputTokens: 1000, OutputTokens: 500}
@@ -35,8 +35,8 @@ func TestCalculateCost_RateMultiplier_NegativeClampedToZero(t *testing.T) {
 	}
 }
 
-// TestCalculateImageCost_RateMultiplier_NegativeClampedToZero 图片按次计费路径
-// 同样遵循"负数 → 0"语义。
+// TestCalculateImageCost_RateMultiplier_NegativeClampedToZero
+// "→ 0"
 func TestCalculateImageCost_RateMultiplier_NegativeClampedToZero(t *testing.T) {
 	svc := newTestBillingService()
 	price := 0.04

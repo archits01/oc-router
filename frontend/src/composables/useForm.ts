@@ -9,8 +9,8 @@ interface UseFormOptions<T> {
 }
 
 /**
- * 统一表单提交逻辑
- * 管理加载状态、错误捕获及通知
+ * 统一表单Submit逻辑
+ * 管理加载Status、错误捕获及通知
  */
 export function useForm<T>(options: UseFormOptions<T>) {
   const { form, submitFn, successMsg, errorMsg } = options
@@ -29,7 +29,6 @@ export function useForm<T>(options: UseFormOptions<T>) {
     } catch (error: any) {
       const detail = error.response?.data?.detail || error.response?.data?.message || error.message
       appStore.showError(errorMsg || detail)
-      // 继续抛出错误，让组件有机会进行局部处理（如验证错误显示）
       throw error
     } finally {
       loading.value = false

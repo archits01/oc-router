@@ -94,7 +94,7 @@ func (m *mockSettingRepo) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-// plainEncryptor 仅做 base64-like 包装，用于测试
+// plainEncryptor
 type plainEncryptor struct{}
 
 func (e *plainEncryptor) Encrypt(plaintext string) (string, error) {
@@ -134,7 +134,7 @@ func (m *mockDumper) Restore(_ context.Context, data io.Reader) error {
 	return nil
 }
 
-// blockingDumper 可控延迟的 dumper，用于测试异步行为
+// blockingDumper
 type blockingDumper struct {
 	blockCh chan struct{}
 	data    []byte
@@ -236,7 +236,7 @@ func TestBackupService_S3ConfigEncryption(t *testing.T) {
 	repo := newMockSettingRepo()
 	svc := newTestBackupService(repo, &mockDumper{}, newMockObjectStore())
 
-	// 保存配置 -> SecretAccessKey 应被加密
+	// > SecretAccessKey
 	_, err := svc.UpdateS3Config(context.Background(), BackupS3Config{
 		Bucket:          "my-bucket",
 		AccessKeyID:     "AKID",
@@ -245,19 +245,18 @@ func TestBackupService_S3ConfigEncryption(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// 直接读取数据库中存储的值，应该是加密后的
 	raw, _ := repo.GetValue(context.Background(), settingKeyBackupS3Config)
 	var stored BackupS3Config
 	require.NoError(t, json.Unmarshal([]byte(raw), &stored))
 	require.Equal(t, "ENC:my-secret", stored.SecretAccessKey)
 
-	// 通过 GetS3Config 获取应该脱敏
+	//
 	cfg, err := svc.GetS3Config(context.Background())
 	require.NoError(t, err)
 	require.Empty(t, cfg.SecretAccessKey)
 	require.Equal(t, "my-bucket", cfg.Bucket)
 
-	// loadS3Config 内部应解密
+	// loadS3Config
 	internal, err := svc.loadS3Config(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, "my-secret", internal.SecretAccessKey)
@@ -267,7 +266,7 @@ func TestBackupService_S3ConfigKeepExistingSecret(t *testing.T) {
 	repo := newMockSettingRepo()
 	svc := newTestBackupService(repo, &mockDumper{}, newMockObjectStore())
 
-	// 先保存一个有 secret 的配置
+	//
 	_, err := svc.UpdateS3Config(context.Background(), BackupS3Config{
 		Bucket:          "my-bucket",
 		AccessKeyID:     "AKID",
@@ -275,7 +274,7 @@ func TestBackupService_S3ConfigKeepExistingSecret(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// 再更新时不提供 secret，应保留原值
+	//
 	_, err = svc.UpdateS3Config(context.Background(), BackupS3Config{
 		Bucket:      "my-bucket",
 		AccessKeyID: "AKID-NEW",
@@ -319,7 +318,7 @@ func TestBackupService_LoadRecords_Empty(t *testing.T) {
 
 	records, err := svc.loadRecords(context.Background())
 	require.NoError(t, err)
-	require.Nil(t, records) // 无数据时返回 nil
+	require.Nil(t, records) // 无数据时returned nil
 }
 
 func TestBackupService_LoadRecords_Corrupted(t *testing.T) {
@@ -328,7 +327,7 @@ func TestBackupService_LoadRecords_Corrupted(t *testing.T) {
 	svc := newTestBackupService(repo, &mockDumper{}, newMockObjectStore())
 
 	records, err := svc.loadRecords(context.Background())
-	require.Error(t, err) // 损坏数据应返回错误
+	require.Error(t, err) // 损坏数据应returnederror
 	require.Nil(t, records)
 }
 
@@ -347,7 +346,6 @@ func TestBackupService_CreateBackup_Streaming(t *testing.T) {
 	require.Greater(t, record.SizeBytes, int64(0))
 	require.NotEmpty(t, record.S3Key)
 
-	// 验证 S3 上确实有文件
 	store.mu.Lock()
 	require.Len(t, store.objects, 1)
 	store.mu.Unlock()
@@ -379,12 +377,12 @@ func TestBackupService_CreateBackup_ConcurrentBlocked(t *testing.T) {
 	repo := newMockSettingRepo()
 	seedS3Config(t, repo)
 
-	// 使用一个慢速 dumper 来模拟正在进行的备份
+	//
 	dumper := &mockDumper{dumpData: []byte("data")}
 	store := newMockObjectStore()
 	svc := newTestBackupService(repo, dumper, store)
 
-	// 手动设置 backingUp 标志
+	//
 	svc.opMu.Lock()
 	svc.backingUp = true
 	svc.opMu.Unlock()
@@ -402,15 +400,13 @@ func TestBackupService_RestoreBackup_Streaming(t *testing.T) {
 	store := newMockObjectStore()
 	svc := newTestBackupService(repo, dumper, store)
 
-	// 先创建一个备份
 	record, err := svc.CreateBackup(context.Background(), "manual", 14)
 	require.NoError(t, err)
 
-	// 恢复
 	err = svc.RestoreBackup(context.Background(), record.ID)
 	require.NoError(t, err)
 
-	// 验证 psql 收到的数据是否与原始 dump 内容一致
+	//
 	require.Equal(t, dumpContent, string(dumper.restored))
 }
 
@@ -419,7 +415,7 @@ func TestBackupService_RestoreBackup_NotCompleted(t *testing.T) {
 	seedS3Config(t, repo)
 	svc := newTestBackupService(repo, &mockDumper{}, newMockObjectStore())
 
-	// 手动插入一条 failed 记录
+	//
 	_ = svc.saveRecord(context.Background(), &BackupRecord{
 		ID:     "fail-1",
 		Status: "failed",
@@ -441,21 +437,17 @@ func TestBackupService_DeleteBackup(t *testing.T) {
 	record, err := svc.CreateBackup(context.Background(), "manual", 14)
 	require.NoError(t, err)
 
-	// S3 中应有文件
 	store.mu.Lock()
 	require.Len(t, store.objects, 1)
 	store.mu.Unlock()
 
-	// 删除
 	err = svc.DeleteBackup(context.Background(), record.ID)
 	require.NoError(t, err)
 
-	// S3 中文件应被删除
 	store.mu.Lock()
 	require.Len(t, store.objects, 0)
 	store.mu.Unlock()
 
-	// 记录应不存在
 	_, err = svc.GetBackupRecord(context.Background(), record.ID)
 	require.ErrorIs(t, err, ErrBackupNotFound)
 }
@@ -492,7 +484,6 @@ func TestBackupService_ListBackups_Sorted(t *testing.T) {
 	records, err := svc.ListBackups(context.Background())
 	require.NoError(t, err)
 	require.Len(t, records, 3)
-	// 最新在前
 	require.Equal(t, "rec-2", records[0].ID)
 	require.Equal(t, "rec-0", records[2].ID)
 }
@@ -524,16 +515,16 @@ func TestBackupService_TestS3Connection_Incomplete(t *testing.T) {
 func TestBackupService_Schedule_CronValidation(t *testing.T) {
 	repo := newMockSettingRepo()
 	svc := newTestBackupService(repo, &mockDumper{}, newMockObjectStore())
-	svc.cronSched = nil // 未初始化 cron
+	svc.cronSched = nil // 未initialization cron
 
-	// 启用但 cron 为空
+	//
 	_, err := svc.UpdateSchedule(context.Background(), BackupScheduleConfig{
 		Enabled:  true,
 		CronExpr: "",
 	})
 	require.Error(t, err)
 
-	// 无效的 cron 表达式
+	//
 	_, err = svc.UpdateSchedule(context.Background(), BackupScheduleConfig{
 		Enabled:  true,
 		CronExpr: "invalid",
@@ -566,11 +557,10 @@ func TestStartBackup_ReturnsImmediately(t *testing.T) {
 	require.Equal(t, "running", record.Status)
 	require.NotEmpty(t, record.ID)
 
-	// 释放 dumper 让后台完成
+	//
 	close(dumper.blockCh)
 	svc.wg.Wait()
 
-	// 验证最终状态
 	final, err := svc.GetBackupRecord(context.Background(), record.ID)
 	require.NoError(t, err)
 	require.Equal(t, "completed", final.Status)
@@ -585,11 +575,9 @@ func TestStartBackup_ConcurrentBlocked(t *testing.T) {
 	store := newMockObjectStore()
 	svc := newTestBackupService(repo, dumper, store)
 
-	// 第一次启动
 	_, err := svc.StartBackup(context.Background(), "manual", 14)
 	require.NoError(t, err)
 
-	// 第二次应被阻塞
 	_, err = svc.StartBackup(context.Background(), "manual", 14)
 	require.ErrorIs(t, err, ErrBackupInProgress)
 
@@ -613,13 +601,12 @@ func TestRecoverStaleRecords(t *testing.T) {
 	repo := newMockSettingRepo()
 	svc := newTestBackupService(repo, &mockDumper{}, newMockObjectStore())
 
-	// 模拟一条孤立的 running 记录
+	//
 	_ = svc.saveRecord(context.Background(), &BackupRecord{
 		ID:        "stale-1",
 		Status:    "running",
 		StartedAt: time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
 	})
-	// 模拟一条孤立的恢复中记录
 	_ = svc.saveRecord(context.Background(), &BackupRecord{
 		ID:            "stale-2",
 		Status:        "completed",
@@ -649,28 +636,26 @@ func TestGracefulShutdown(t *testing.T) {
 	_, err := svc.StartBackup(context.Background(), "manual", 14)
 	require.NoError(t, err)
 
-	// Stop 应该等待备份完成
+	// Stop
 	done := make(chan struct{})
 	go func() {
 		svc.Stop()
 		close(done)
 	}()
 
-	// 短暂等待确认 Stop 还在等待
+	//
 	select {
 	case <-done:
 		t.Fatal("Stop returned before backup finished")
 	case <-time.After(100 * time.Millisecond):
-		// 预期：Stop 还在等待
+		//
 	}
 
-	// 释放备份
 	close(dumper.blockCh)
 
-	// 现在 Stop 应该完成
+	//
 	select {
 	case <-done:
-		// 预期
 	case <-time.After(5 * time.Second):
 		t.Fatal("Stop did not return after backup finished")
 	}
@@ -685,18 +670,15 @@ func TestStartRestore_Async(t *testing.T) {
 	store := newMockObjectStore()
 	svc := newTestBackupService(repo, dumper, store)
 
-	// 先创建一个备份（同步方式）
 	record, err := svc.CreateBackup(context.Background(), "manual", 14)
 	require.NoError(t, err)
 
-	// 异步恢复
 	restored, err := svc.StartRestore(context.Background(), record.ID)
 	require.NoError(t, err)
 	require.Equal(t, "running", restored.RestoreStatus)
 
 	svc.wg.Wait()
 
-	// 验证最终状态
 	final, err := svc.GetBackupRecord(context.Background(), record.ID)
 	require.NoError(t, err)
 	require.Equal(t, "completed", final.RestoreStatus)

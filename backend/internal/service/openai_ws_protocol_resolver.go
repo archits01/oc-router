@@ -2,7 +2,7 @@ package service
 
 import "github.com/Wei-Shaw/sub2api/internal/config"
 
-// OpenAIUpstreamTransport 表示 OpenAI 上游传输协议。
+// OpenAIUpstreamTransport
 type OpenAIUpstreamTransport string
 
 const (
@@ -12,13 +12,13 @@ const (
 	OpenAIUpstreamTransportResponsesWebsocketV2 OpenAIUpstreamTransport = "responses_websockets_v2"
 )
 
-// OpenAIWSProtocolDecision 表示协议决策结果。
+// OpenAIWSProtocolDecision
 type OpenAIWSProtocolDecision struct {
 	Transport OpenAIUpstreamTransport
 	Reason    string
 }
 
-// OpenAIWSProtocolResolver 定义 OpenAI 上游协议决策。
+// OpenAIWSProtocolResolver
 type OpenAIWSProtocolResolver interface {
 	Resolve(account *Account) OpenAIWSProtocolDecision
 }
@@ -27,7 +27,7 @@ type defaultOpenAIWSProtocolResolver struct {
 	cfg *config.Config
 }
 
-// NewOpenAIWSProtocolResolver 创建默认协议决策器。
+// NewOpenAIWSProtocolResolver
 func NewOpenAIWSProtocolResolver(cfg *config.Config) OpenAIWSProtocolResolver {
 	return &defaultOpenAIWSProtocolResolver{cfg: cfg}
 }
@@ -72,7 +72,7 @@ func (r *defaultOpenAIWSProtocolResolver) Resolve(account *Account) OpenAIWSProt
 		case OpenAIWSIngressModeCtxPool, OpenAIWSIngressModePassthrough:
 			// continue
 		case OpenAIWSIngressModeShared, OpenAIWSIngressModeDedicated:
-			// 历史值兼容：按 ctx_pool 处理。
+			//
 			mode = OpenAIWSIngressModeCtxPool
 		default:
 			return openAIWSHTTPDecision("account_mode_off")

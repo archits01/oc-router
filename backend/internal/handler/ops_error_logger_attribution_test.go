@@ -92,7 +92,7 @@ func TestExtractAttemptedKey(t *testing.T) {
 			want:    "sk-trimmed0123456789",
 		},
 		{
-			// 非 Bearer Authorization 应被忽略,继续 fall-through 到 x-api-key(与认证中间件一致)
+			// ()
 			name:    "non-Bearer Authorization falls through to x-api-key",
 			headers: map[string]string{"Authorization": "junk-not-bearer", "x-api-key": "sk-realkey1234567"},
 			want:    "sk-realkey1234567",

@@ -10,7 +10,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 )
 
-// makeOverlayService 构造一个没有 cron / db 的 cleanup service，仅用来测试 effective overlay。
+// makeOverlayService
 func makeOverlayService(repo SettingRepository, base config.OpsCleanupConfig) *OpsCleanupService {
 	cfg := &config.Config{}
 	cfg.Ops.Cleanup = base
@@ -161,7 +161,7 @@ func TestComputeEffective_BadJSONFallsBackToCfg(t *testing.T) {
 	}
 }
 
-// 验证 OpsService.UpdateOpsAdvancedSettings 写入后会调用 cleanupReloader.Reload。
+//
 type fakeCleanupReloader struct {
 	calls int
 	last  context.Context

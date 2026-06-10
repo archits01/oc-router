@@ -38,23 +38,22 @@ type OpsService struct {
 	antigravityGatewayService *AntigravityGatewayService
 	systemLogSink             *OpsSystemLogSink
 
-	// cleanupReloader 由 wire 在 OpsCleanupService 构造完成后通过 SetCleanupReloader 注入。
-	// 解耦避免 OpsService -> OpsCleanupService 的硬依赖（cleanup 也读 settings，会循环）。
+	// cleanupReloader
+	// > OpsCleanupService
 	cleanupReloader CleanupReloader
 
-	// quotaAutoPauseSink 由 wire 注入（通常是 SettingService.SetOpenAIQuotaAutoPauseSettings）。
-	// UpdateOpsAdvancedSettings 写入新配置后调用，把最新的 quota auto-pause 全局默认阈值
-	// 立即同步到调度热路径读取的内存缓存，避免下次请求才能感知新值。
+	// quotaAutoPauseSink
+	// UpdateOpsAdvancedSettings
 	quotaAutoPauseSink func(OpsOpenAIAccountQuotaAutoPauseSettings)
 }
 
-// CleanupReloader 由 OpsCleanupService 实现。
-// UpdateOpsAdvancedSettings 写入新配置后调用 Reload，让 schedule/enabled 改动立刻生效。
+// CleanupReloader
+// UpdateOpsAdvancedSettings
 type CleanupReloader interface {
 	Reload(ctx context.Context) error
 }
 
-// SetCleanupReloader 由 wire 注入 cleanup hook（构造期循环依赖的解耦点）。
+// SetCleanupReloader
 func (s *OpsService) SetCleanupReloader(r CleanupReloader) {
 	if s == nil {
 		return
@@ -62,9 +61,9 @@ func (s *OpsService) SetCleanupReloader(r CleanupReloader) {
 	s.cleanupReloader = r
 }
 
-// SetOpenAIQuotaAutoPauseSettingsSink 由 wire 注入，把最新的 quota auto-pause 全局默认
-// 阈值 push 到调度热路径读取的内存缓存。同 SetCleanupReloader 的解耦目的：避免 OpsService
-// 持有 *SettingService 引入循环依赖。
+// SetOpenAIQuotaAutoPauseSettingsSink
+//
+// *SettingService
 func (s *OpsService) SetOpenAIQuotaAutoPauseSettingsSink(sink func(OpsOpenAIAccountQuotaAutoPauseSettings)) {
 	if s == nil {
 		return
@@ -338,30 +337,30 @@ func (s *OpsService) GetErrorLogs(ctx context.Context, filter *OpsErrorLogFilter
 	return result, nil
 }
 
-// ListUserErrorRequests 返回某个用户自己的错误请求（精简脱敏）。
-// 强制：仅当前用户、View=all（含业务限流/余额类）、排除 count_tokens 噪声。
+// ListUserErrorRequests
+// =all（
 func (s *OpsService) ListUserErrorRequests(ctx context.Context, userID int64, filter *OpsErrorLogFilter) (*UserErrorRequestList, error) {
 	if filter == nil {
 		filter = &OpsErrorLogFilter{}
 	}
-	f := *filter // 拷贝快照，避免原地篡改调用方的 filter（slice 字段只读，浅拷贝足够）
+	f := *filter // snapshot copy to avoid mutating caller filter (slice fields read-only, shallow copy sufficient)
 	filter = &f
 	uid := userID
 	filter.UserID = &uid
-	// 用户侧放宽归属:纳入「删 key 后认证失败」(user_id=NULL,靠 deleted_key_owner 归因)的记录。
+	// 「」(user_id=NULL,)
 	filter.MatchDeletedKeyOwner = true
-	// APIKeyID 透传：保留 handler 传入的值。安全由 buildOpsErrorLogsWhere 的
-	// "user_id = 自己 AND api_key_id = X" 双重约束保证——传入他人 key 只会得到空集，无泄露。
+	// APIKeyID
+	// "user_id = = X" ——
 	filter.View = "all"
 	filter.ExcludeCountTokens = true
-	filter.ModelFuzzy = true // 用户端模型过滤走 ILIKE 模糊；管理端不设此字段，保持精确
-	// 防御：用户端不接受这些 admin-only / 特殊维度
+	filter.ModelFuzzy = true // user-facing model filter uses ILIKE fuzzy matching; admin side does not set this, keeping exact
+	//
 	filter.UserQuery = ""
 	filter.Owner = ""
 	filter.Source = ""
-	// 清空 Phase 是防御:Phase 是单值特殊字段,仅当其 == "upstream" 时 buildOpsErrorLogsWhere 才跳过 status>=400 子句。
-	// 用户端一律改走 category→ErrorPhasesAny/ErrorTypesAny(纯 ANY 过滤,不影响 status>=400 子句),
-	// 因此 recovered upstream(error_phase='upstream' 但 status<400,最终成功返回)记录对用户不可见——符合预期。
+	// == "upstream" >=400
+	// →ErrorPhasesAny/ErrorTypesAny(>=400 ),
+	// (error_phase='upstream' <400,)——
 	filter.Phase = ""
 
 	list, err := s.opsRepo.ListErrorLogs(ctx, filter)
@@ -399,8 +398,8 @@ func (s *OpsService) GetErrorLogByID(ctx context.Context, id int64) (*OpsErrorLo
 	return detail, nil
 }
 
-// GetUserErrorRequestDetail 返回某用户自己某条错误请求的脱敏详情(含 error_body)。
-// 安全:强制按用户归属校验;非本人记录一律返回 NotFound(不泄露存在性)。
+// GetUserErrorRequestDetail ()。
+// ()。
 func (s *OpsService) GetUserErrorRequestDetail(ctx context.Context, userID, id int64) (*UserErrorRequestDetail, error) {
 	if s.opsRepo == nil {
 		return nil, infraerrors.NotFound("OPS_ERROR_NOT_FOUND", "ops error log not found")
@@ -415,7 +414,7 @@ func (s *OpsService) GetUserErrorRequestDetail(ctx context.Context, userID, id i
 		}
 		return nil, infraerrors.InternalServer("OPS_ERROR_LOAD_FAILED", "Failed to load ops error log").WithCause(err)
 	}
-	// 归属:直接归属(user_id)或经「已删除 key 归因」(deleted_key_owner_user_id)二者之一即可。
+	// (user_id)「」(deleted_key_owner_user_id)
 	ownedDirectly := detail.UserID != nil && *detail.UserID == userID
 	ownedViaDeletedKey := detail.DeletedKeyOwnerUserID != nil && *detail.DeletedKeyOwnerUserID == userID
 	if !ownedDirectly && !ownedViaDeletedKey {
@@ -424,7 +423,7 @@ func (s *OpsService) GetUserErrorRequestDetail(ctx context.Context, userID, id i
 	return ToUserErrorRequestDetail(detail), nil
 }
 
-// LookupDeletedKeyAudit 按明文 key 反查已删除 key 的原所有者;未命中或未启用返回 (nil, nil)。
+// LookupDeletedKeyAudit (nil, nil)。
 func (s *OpsService) LookupDeletedKeyAudit(ctx context.Context, key string) (*DeletedKeyAuditResult, error) {
 	if s.opsRepo == nil {
 		return nil, nil
@@ -555,8 +554,7 @@ func isSensitiveKey(key string) bool {
 		return false
 	}
 
-	// Token 计数 / 预算字段不是凭据，应保留用于排错。
-	// 白名单保持尽量窄，避免误把真实敏感信息"反脱敏"。
+	// Token
 	switch k {
 	case "max_tokens",
 		"max_output_tokens",

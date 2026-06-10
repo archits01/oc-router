@@ -36,7 +36,7 @@ func (s *allowClaudeCodeSettingRepoStub) Delete(ctx context.Context, key string)
 }
 
 func TestSettingService_IsOpenAIAllowClaudeCodeCodexPluginEnabled(t *testing.T) {
-	t.Run("默认关闭（设置缺失）", func(t *testing.T) {
+	t.Run("默认shutting down（设置缺失）", func(t *testing.T) {
 		svc := NewSettingService(&allowClaudeCodeSettingRepoStub{values: map[string]string{}}, &config.Config{})
 		require.False(t, svc.IsOpenAIAllowClaudeCodeCodexPluginEnabled(context.Background()))
 	})
@@ -46,7 +46,7 @@ func TestSettingService_IsOpenAIAllowClaudeCodeCodexPluginEnabled(t *testing.T) 
 		}}, &config.Config{})
 		require.True(t, svc.IsOpenAIAllowClaudeCodeCodexPluginEnabled(context.Background()))
 	})
-	t.Run("值非 true 时关闭", func(t *testing.T) {
+	t.Run("值非 true 时shutting down", func(t *testing.T) {
 		svc := NewSettingService(&allowClaudeCodeSettingRepoStub{values: map[string]string{
 			SettingKeyOpenAIAllowClaudeCodeCodexPlugin: "false",
 		}}, &config.Config{})

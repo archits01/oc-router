@@ -59,10 +59,10 @@ func TestBuildOAuthMetadataUserID_UsesAccountUUIDWhenPresent(t *testing.T) {
 	require.True(t, re.MatchString(got), "unexpected user_id format: %s", got)
 }
 
-// TestBuildOAuthMetadataUserID_SessionIDStableAcrossTurns 验证伪装路径合成的
-// metadata.user_id 在同一会话多轮请求间保持不变（session_id 稳定），贴近真实 Claude Code
-// 进程级稳定的 session。账号 / 指纹 / UA 版本均相同，唯一可能变化的就是 session_id，
-// 因此直接比较完整 user_id 字符串即可判定 session_id 是否稳定。
+// TestBuildOAuthMetadataUserID_SessionIDStableAcrossTurns
+// metadata.user_id
+//
+//
 func TestBuildOAuthMetadataUserID_SessionIDStableAcrossTurns(t *testing.T) {
 	svc := &GatewayService{}
 	account := &Account{ID: 777, Type: AccountTypeOAuth, Extra: map[string]any{"account_uuid": "acc-uuid"}}
@@ -95,7 +95,7 @@ func TestBuildOAuthMetadataUserID_SessionIDStableAcrossTurns(t *testing.T) {
 	require.Equal(t, id1, id2, "session_id 应随对话增长保持不变")
 	require.Equal(t, id2, id3, "session_id 应跨所有轮次保持不变")
 
-	// 不同的首条 user 消息应派生出不同的 session_id（不同会话）。
+	//
 	other := mustParse(`{"model":"claude-sonnet-4-5","system":"sys","messages":[` +
 		`{"role":"user","content":"a completely different opener"}]}`)
 	idOther := svc.buildOAuthMetadataUserID(other, account, fp)

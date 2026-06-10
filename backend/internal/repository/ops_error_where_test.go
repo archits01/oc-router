@@ -39,7 +39,7 @@ func TestBuildOpsErrorLogsWhere_UserScopedFilters(t *testing.T) {
 }
 
 func TestBuildOpsErrorLogsWhere_ModelFuzzy(t *testing.T) {
-	// 默认（ModelFuzzy=false）保持精确匹配
+	// =false）
 	exact := &service.OpsErrorLogFilter{Model: "claude"}
 	whereExact, _ := buildOpsErrorLogsWhere(exact)
 	if !strings.Contains(whereExact, "COALESCE(e.requested_model, e.model, '') = $") {
@@ -56,7 +56,6 @@ func TestBuildOpsErrorLogsWhere_ModelFuzzy(t *testing.T) {
 		t.Fatalf("expected arg \"%%claude%%\", got %v", args)
 	}
 
-	// 通配符转义：输入含 % 应被转义为字面量
 	esc := &service.OpsErrorLogFilter{Model: "50%off", ModelFuzzy: true}
 	_, escArgs := buildOpsErrorLogsWhere(esc)
 	if len(escArgs) != 1 || escArgs[0] != `%50\%off%` {
@@ -73,7 +72,7 @@ func TestBuildOpsErrorLogsWhere_ModelFuzzy(t *testing.T) {
 func TestBuildOpsErrorLogsWhere_MatchDeletedKeyOwner(t *testing.T) {
 	uid := int64(42)
 
-	// 开关开启 → 归属放宽为 OR(user_id 或 deleted_key_owner_user_id),且共用同一占位符
+	// → (user_id ),
 	on := &service.OpsErrorLogFilter{UserID: &uid, MatchDeletedKeyOwner: true}
 	whereOn, argsOn := buildOpsErrorLogsWhere(on)
 	if !strings.Contains(whereOn, "(e.user_id = $1 OR e.deleted_key_owner_user_id = $1)") {
@@ -83,7 +82,7 @@ func TestBuildOpsErrorLogsWhere_MatchDeletedKeyOwner(t *testing.T) {
 		t.Fatalf("expected single reused arg %d, got %v", uid, argsOn)
 	}
 
-	// 开关关闭(默认)→ 仅精确 user_id,绝不出现 deleted_key_owner_user_id(admin 回归)
+	// ()→ (admin )
 	off := &service.OpsErrorLogFilter{UserID: &uid}
 	whereOff, _ := buildOpsErrorLogsWhere(off)
 	if !strings.Contains(whereOff, "e.user_id = $1") {

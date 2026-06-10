@@ -54,7 +54,6 @@ func TestExtractGeminiCLISessionHash(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// 创建测试上下文
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 			c.Request = httptest.NewRequest("POST", "/test", nil)
@@ -62,10 +61,8 @@ func TestExtractGeminiCLISessionHash(t *testing.T) {
 				c.Request.Header.Set("x-gemini-api-privileged-user-id", tt.privilegedUserID)
 			}
 
-			// 调用函数
 			result := extractGeminiCLISessionHash(c, []byte(tt.body))
 
-			// 验证结果
 			if tt.wantEmpty {
 				require.Empty(t, result, "expected empty session hash")
 			} else {
@@ -128,10 +125,10 @@ func TestSafeShortPrefix(t *testing.T) {
 		n     int
 		want  string
 	}{
-		{name: "空字符串", input: "", n: 8, want: ""},
-		{name: "长度小于截断值", input: "abc", n: 8, want: "abc"},
-		{name: "长度等于截断值", input: "12345678", n: 8, want: "12345678"},
-		{name: "长度大于截断值", input: "1234567890", n: 8, want: "12345678"},
+		{name: "empty string", input: "", n: 8, want: ""},
+		{name: "length小于截断值", input: "abc", n: 8, want: "abc"},
+		{name: "length等于截断值", input: "12345678", n: 8, want: "12345678"},
+		{name: "length大于截断值", input: "1234567890", n: 8, want: "12345678"},
 		{name: "截断值为0", input: "123456", n: 0, want: "123456"},
 	}
 

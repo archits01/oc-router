@@ -175,7 +175,7 @@ describe('OpsOpenAITokenStatsCard', () => {
     )
   })
 
-  it('接口返回空数据时显示空态', async () => {
+  it('接口Back空数据时显示空态', async () => {
     mockGetOpenAITokenStats.mockResolvedValue({
       ...sampleResponse,
       items: [],
@@ -213,7 +213,7 @@ describe('OpsOpenAITokenStatsCard', () => {
     expect(wrapper.find('.max-h-\\[420px\\]').exists()).toBe(true)
   })
 
-  it('接口异常时显示错误提示', async () => {
+  it('接口Error时显示错误提示', async () => {
     mockGetOpenAITokenStats.mockRejectedValue(new Error('加载失败'))
 
     const wrapper = mount(OpsOpenAITokenStatsCard, {

@@ -195,7 +195,6 @@ func TestOpenAIWSConnPool_EnsureTargetIdleAsyncCooldown(t *testing.T) {
 	firstDialCount := dialer.DialCount()
 	require.GreaterOrEqual(t, firstDialCount, 2)
 
-	// 人工制造缺口触发新一轮预热需求。
 	ap, ok := pool.getAccountPool(accountID)
 	require.True(t, ok)
 	require.NotNil(t, ap)
@@ -262,7 +261,6 @@ func TestOpenAIWSConnPool_EnsureTargetIdleAsyncFailureSuppress(t *testing.T) {
 	}, 2*time.Second, 20*time.Millisecond)
 	require.Equal(t, 2, dialer.DialCount())
 
-	// 连续失败达到阈值后，新的预热触发应被抑制，不再继续拨号。
 	pool.ensureTargetIdleAsync(accountID)
 	time.Sleep(120 * time.Millisecond)
 	require.Equal(t, 2, dialer.DialCount())
@@ -449,7 +447,7 @@ func TestOpenAIWSConnPool_AcquireForcePreferredConnDirectAndQueueFull(t *testing
 		PreferredConnID:    preferredConn.id,
 		ForcePreferredConn: true,
 	})
-	require.ErrorIs(t, err, errOpenAIWSConnQueueFull, "严格模式下队列满应直接失败，不得漂移")
+	require.ErrorIs(t, err, errOpenAIWSConnQueueFull, "严格模式下队列满应直接failed，不得漂移")
 	preferredConn.waiters.Store(0)
 	preferredConn.release()
 }
@@ -557,9 +555,9 @@ func TestOpenAIWSConnPool_EffectiveMaxConnsByAccount(t *testing.T) {
 	require.Equal(t, 1, pool.effectiveMaxConnsByAccount(apiKeyLow), "最小值应保持为 1")
 
 	unlimited := &Account{Platform: PlatformOpenAI, Type: AccountTypeOAuth, Concurrency: 0}
-	require.Equal(t, 8, pool.effectiveMaxConnsByAccount(unlimited), "无限并发应回退到全局硬上限")
+	require.Equal(t, 8, pool.effectiveMaxConnsByAccount(unlimited), "无限并发应fallback到全局硬上限")
 
-	require.Equal(t, 8, pool.effectiveMaxConnsByAccount(nil), "缺少账号上下文应回退到全局硬上限")
+	require.Equal(t, 8, pool.effectiveMaxConnsByAccount(nil), "缺少账号上下文应fallback到全局硬上限")
 }
 
 func TestOpenAIWSConnPool_EffectiveMaxConnsDisabledFallbackHardCap(t *testing.T) {
@@ -571,7 +569,7 @@ func TestOpenAIWSConnPool_EffectiveMaxConnsDisabledFallbackHardCap(t *testing.T)
 
 	pool := newOpenAIWSConnPool(cfg)
 	account := &Account{Platform: PlatformOpenAI, Type: AccountTypeOAuth, Concurrency: 2}
-	require.Equal(t, 8, pool.effectiveMaxConnsByAccount(account), "关闭动态模式后应保持旧行为")
+	require.Equal(t, 8, pool.effectiveMaxConnsByAccount(account), "shutting down动态模式后应保持旧行为")
 }
 
 func TestOpenAIWSConnPool_EffectiveMaxConnsByAccount_ModeRouterV2UsesAccountConcurrency(t *testing.T) {
@@ -662,7 +660,7 @@ func TestOpenAIWSConn_ReadAndWriteCanProceedConcurrently(t *testing.T) {
 		readDone <- err
 	}()
 
-	// 让读取先占用 readMu。
+	//
 	time.Sleep(20 * time.Millisecond)
 
 	start := time.Now()
@@ -691,7 +689,7 @@ func TestOpenAIWSConnPool_BackgroundPingSweep_EvictsDeadIdleConn(t *testing.T) {
 	ap.mu.Lock()
 	_, exists := ap.conns[conn.id]
 	ap.mu.Unlock()
-	require.False(t, exists, "后台 ping 失败的空闲连接应被回收")
+	require.False(t, exists, "后台 ping failed的空闲连接应被回收")
 }
 
 func TestOpenAIWSConnPool_BackgroundCleanupSweep_WithoutAcquire(t *testing.T) {
@@ -714,7 +712,7 @@ func TestOpenAIWSConnPool_BackgroundCleanupSweep_WithoutAcquire(t *testing.T) {
 	ap.mu.Lock()
 	_, exists := ap.conns[stale.id]
 	ap.mu.Unlock()
-	require.False(t, exists, "后台清理应在无新 acquire 时也回收过期连接")
+	require.False(t, exists, "后台cleanup应在无新 acquire 时也回收过期连接")
 }
 
 func TestOpenAIWSConnPool_BackgroundWorkerGuardBranches(t *testing.T) {
@@ -826,8 +824,8 @@ func TestOpenAIWSConnPool_RunBackgroundCleanupSweep_SkipsInvalidAndUsesAccountCa
 	lastCleanupAt := ap.lastCleanupAt
 	ap.mu.Unlock()
 
-	require.False(t, nilConnExists, "后台清理应移除无效 nil 连接条目")
-	require.False(t, exists, "后台清理应清理过期连接")
+	require.False(t, nilConnExists, "后台cleanup应移除无效 nil 连接条目")
+	require.False(t, exists, "后台cleanup应cleanup过期连接")
 	require.Equal(t, now, lastCleanupAt)
 }
 
@@ -846,21 +844,21 @@ func TestOpenAIWSConnPool_Close(t *testing.T) {
 	cfg := &config.Config{}
 	pool := newOpenAIWSConnPool(cfg)
 
-	// Close 应该可以安全调用
+	// Close
 	pool.Close()
 
-	// workerStopCh 应已关闭
+	// workerStopCh
 	select {
 	case <-pool.workerStopCh:
-		// 预期：channel 已关闭
+		//
 	default:
-		t.Fatal("Close 后 workerStopCh 应已关闭")
+		t.Fatal("Close 后 workerStopCh 应已shutting down")
 	}
 
-	// 多次调用 Close 不应 panic
+	//
 	pool.Close()
 
-	// nil pool 调用 Close 不应 panic
+	// nil pool
 	var nilPool *openAIWSConnPool
 	nilPool.Close()
 }
@@ -905,11 +903,10 @@ func TestOpenAIWSConnLease_ReadWriteHelpersAndConnStats(t *testing.T) {
 	require.GreaterOrEqual(t, conn.idleDuration(time.Now()), time.Duration(0))
 	require.False(t, conn.isLeased())
 
-	// 覆盖空上下文路径
 	_, err = conn.readMessage(context.Background())
 	require.NoError(t, err)
 
-	// 覆盖 nil 保护分支
+	//
 	var nilConn *openAIWSConn
 	require.ErrorIs(t, nilConn.writeJSONWithTimeout(context.Background(), map[string]any{}, time.Second), errOpenAIWSConnClosed)
 	_, err = nilConn.readMessageWithTimeout(10 * time.Millisecond)
@@ -972,7 +969,7 @@ func TestOpenAIWSConnPool_Close_WaitsWorkerGroupAndNilStopChannel(t *testing.T) 
 
 	select {
 	case <-closed:
-		t.Fatal("Close 不应在 WaitGroup 未完成时提前返回")
+		t.Fatal("Close 不应在 WaitGroup 未完成时提前returned")
 	case <-time.After(30 * time.Millisecond):
 	}
 
@@ -1008,12 +1005,12 @@ func TestOpenAIWSConnPool_Close_ClosesOnlyIdleConnections(t *testing.T) {
 	case <-idle.closedCh:
 		// idle should be closed
 	default:
-		t.Fatal("空闲连接应在 Close 时被关闭")
+		t.Fatal("空闲连接应在 Close 时被shutting down")
 	}
 
 	select {
 	case <-leased.closedCh:
-		t.Fatal("已租赁连接不应在 Close 时被关闭")
+		t.Fatal("已租赁连接不应在 Close 时被shutting down")
 	default:
 	}
 
@@ -1102,7 +1099,7 @@ func TestOpenAIWSConnPool_UtilityBranches(t *testing.T) {
 	require.Equal(t, int64(7), metrics.AcquireTotal)
 	require.Equal(t, int64(3), metrics.AcquireReuseTotal)
 
-	// 非 transport metrics dialer 路径
+	//
 	pool.clientDialer = &openAIWSFakeDialer{}
 	require.Equal(t, OpenAIWSTransportMetricsSnapshot{}, pool.SnapshotTransportMetrics())
 	pool.setClientDialerForTest(nil)
@@ -1118,7 +1115,7 @@ func TestOpenAIWSConnPool_UtilityBranches(t *testing.T) {
 	require.Equal(t, time.Duration(0), nilPool.prewarmCooldown())
 	require.Equal(t, 10*time.Second, nilPool.dialTimeout())
 
-	// shouldSuppressPrewarmLocked 覆盖 3 条分支
+	// shouldSuppressPrewarmLocked
 	now := time.Now()
 	apNilFail := &openAIWSAccountPool{prewarmFails: 1}
 	require.False(t, pool.shouldSuppressPrewarmLocked(apNilFail, now))
@@ -1130,12 +1127,12 @@ func TestOpenAIWSConnPool_UtilityBranches(t *testing.T) {
 	apRecentFail := &openAIWSAccountPool{prewarmFails: openAIWSPrewarmFailureSuppress, prewarmFailAt: now}
 	require.True(t, pool.shouldSuppressPrewarmLocked(apRecentFail, now))
 
-	// recordConnPickDuration 的保护分支
+	// recordConnPickDuration
 	nilPool.recordConnPickDuration(10 * time.Millisecond)
 	pool.recordConnPickDuration(-10 * time.Millisecond)
 	require.Equal(t, int64(1), pool.metrics.connPickTotal.Load())
 
-	// account pool 读写分支
+	// account pool
 	require.Nil(t, nilPool.getOrCreateAccountPool(1))
 	require.Nil(t, pool.getOrCreateAccountPool(0))
 	pool.accounts.Store(int64(7), "invalid")
@@ -1149,7 +1146,7 @@ func TestOpenAIWSConnPool_UtilityBranches(t *testing.T) {
 	_, ok = pool.getAccountPool(8)
 	require.False(t, ok)
 
-	// health check 条件
+	// health check
 	require.False(t, pool.shouldHealthCheckConn(nil))
 	conn := newOpenAIWSConn("health", 1, &openAIWSFakeConn{}, nil)
 	conn.lastUsedNano.Store(time.Now().Add(-openAIWSConnHealthCheckIdle - time.Second).UnixNano())
@@ -1320,7 +1317,7 @@ func TestOpenAIWSConnLease_MarkBrokenEvictsConn(t *testing.T) {
 	_, exists := ap.conns[conn.id]
 	ap.mu.Unlock()
 	require.False(t, exists)
-	require.False(t, conn.tryAcquire(), "被标记为 broken 的连接应被关闭")
+	require.False(t, conn.tryAcquire(), "被标记为 broken 的连接应被shutting down")
 }
 
 func TestOpenAIWSConnPool_TargetConnCountAndPrewarmBranches(t *testing.T) {
@@ -1335,7 +1332,7 @@ func TestOpenAIWSConnPool_TargetConnCountAndPrewarmBranches(t *testing.T) {
 	cfg.Gateway.OpenAIWS.MinIdlePerAccount = 3
 	require.Equal(t, 1, pool.targetConnCountLocked(ap, 1), "minIdle 应被 maxConns 截断")
 
-	// 覆盖 waiters>0 且 target 需要至少 len(conns)+1 的分支
+	// >0 (conns)+1
 	cfg.Gateway.OpenAIWS.MinIdlePerAccount = 0
 	cfg.Gateway.OpenAIWS.PoolTargetUtilization = 0.9
 	busy := newOpenAIWSConn("busy_target", 2, &openAIWSFakeConn{}, nil)
@@ -1345,14 +1342,14 @@ func TestOpenAIWSConnPool_TargetConnCountAndPrewarmBranches(t *testing.T) {
 	target := pool.targetConnCountLocked(ap, 4)
 	require.GreaterOrEqual(t, target, len(ap.conns)+1)
 
-	// prewarm: account pool 缺失时，拨号后的连接应被关闭并提前返回
+	// prewarm: account pool
 	req := openAIWSAcquireRequest{
 		Account: &Account{ID: 999, Platform: PlatformOpenAI, Type: AccountTypeAPIKey},
 		WSURL:   "wss://example.com/v1/responses",
 	}
 	pool.prewarmConns(999, req, 1)
 
-	// prewarm: 拨号失败分支（prewarmFails 累加）
+	// prewarm:
 	accountID := int64(1000)
 	failPool := newOpenAIWSConnPool(cfg)
 	failPool.setClientDialerForTest(&openAIWSAlwaysFailDialer{})
@@ -1380,7 +1377,7 @@ func TestOpenAIWSConnPool_Acquire_ErrorBranches(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "ws url is empty")
 
-	// target=nil 分支：池满且仅有 nil 连接
+	// target=nil
 	cfg := &config.Config{}
 	cfg.Gateway.OpenAIWS.MaxConnsPerAccount = 1
 	cfg.Gateway.OpenAIWS.QueueLimitPerConn = 1
@@ -1397,7 +1394,7 @@ func TestOpenAIWSConnPool_Acquire_ErrorBranches(t *testing.T) {
 	})
 	require.ErrorIs(t, err, errOpenAIWSConnClosed)
 
-	// queue full 分支：waiters 达上限
+	// queue full
 	account2 := &Account{ID: 2002, Platform: PlatformOpenAI, Type: AccountTypeAPIKey}
 	ap2 := fullPool.getOrCreateAccountPool(account2.ID)
 	conn := newOpenAIWSConn("queue_full", account2.ID, &openAIWSFakeConn{}, nil)

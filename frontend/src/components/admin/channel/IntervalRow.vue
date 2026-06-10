@@ -86,7 +86,6 @@ const emit = defineEmits<{
   remove: []
 }>()
 
-// 检测所有价格字段是否都为空
 const isEmpty = computed(() => {
   const iv = props.interval
   return (iv.input_price == null || iv.input_price === '') &&

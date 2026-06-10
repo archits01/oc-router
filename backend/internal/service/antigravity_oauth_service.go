@@ -29,21 +29,21 @@ type AntigravityAuthURLResult struct {
 	State     string `json:"state"`
 }
 
-// GenerateAuthURL 生成 Google OAuth 授权链接
+// GenerateAuthURL
 func (s *AntigravityOAuthService) GenerateAuthURL(ctx context.Context, proxyID *int64) (*AntigravityAuthURLResult, error) {
 	state, err := antigravity.GenerateState()
 	if err != nil {
-		return nil, fmt.Errorf("生成 state 失败: %w", err)
+		return nil, fmt.Errorf("生成 state failed: %w", err)
 	}
 
 	codeVerifier, err := antigravity.GenerateCodeVerifier()
 	if err != nil {
-		return nil, fmt.Errorf("生成 code_verifier 失败: %w", err)
+		return nil, fmt.Errorf("生成 code_verifier failed: %w", err)
 	}
 
 	sessionID, err := antigravity.GenerateSessionID()
 	if err != nil {
-		return nil, fmt.Errorf("生成 session_id 失败: %w", err)
+		return nil, fmt.Errorf("生成 session_id failed: %w", err)
 	}
 
 	var proxyURL string
@@ -72,7 +72,7 @@ func (s *AntigravityOAuthService) GenerateAuthURL(ctx context.Context, proxyID *
 	}, nil
 }
 
-// AntigravityExchangeCodeInput 交换 code 的输入
+// AntigravityExchangeCodeInput
 type AntigravityExchangeCodeInput struct {
 	SessionID string
 	State     string
@@ -80,7 +80,7 @@ type AntigravityExchangeCodeInput struct {
 	ProxyID   *int64
 }
 
-// AntigravityTokenInfo token 信息
+// AntigravityTokenInfo token
 type AntigravityTokenInfo struct {
 	AccessToken      string `json:"access_token"`
 	RefreshToken     string `json:"refresh_token"`
@@ -94,18 +94,18 @@ type AntigravityTokenInfo struct {
 	PrivacyMode      string `json:"-"`
 }
 
-// ExchangeCode 用 authorization code 交换 token
+// ExchangeCode
 func (s *AntigravityOAuthService) ExchangeCode(ctx context.Context, input *AntigravityExchangeCodeInput) (*AntigravityTokenInfo, error) {
 	session, ok := s.sessionStore.Get(input.SessionID)
 	if !ok {
-		return nil, fmt.Errorf("session 不存在或已过期")
+		return nil, fmt.Errorf("session does not existorexpired")
 	}
 
 	if strings.TrimSpace(input.State) == "" || input.State != session.State {
 		return nil, fmt.Errorf("state 无效")
 	}
 
-	// 确定代理 URL
+	//
 	proxyURL := session.ProxyURL
 	if input.ProxyID != nil {
 		proxy, err := s.proxyRepo.GetByID(ctx, *input.ProxyID)
@@ -119,16 +119,15 @@ func (s *AntigravityOAuthService) ExchangeCode(ctx context.Context, input *Antig
 		return nil, fmt.Errorf("create antigravity client failed: %w", err)
 	}
 
-	// 交换 token
+	//
 	tokenResp, err := client.ExchangeCode(ctx, input.Code, session.CodeVerifier)
 	if err != nil {
-		return nil, fmt.Errorf("token 交换失败: %w", err)
+		return nil, fmt.Errorf("token exchange failed: %w", err)
 	}
 
-	// 删除 session
+	//
 	s.sessionStore.Delete(input.SessionID)
 
-	// 计算过期时间（减去 5 分钟安全窗口）
 	expiresAt := time.Now().Unix() + tokenResp.ExpiresIn - 300
 
 	result := &AntigravityTokenInfo{
@@ -139,18 +138,17 @@ func (s *AntigravityOAuthService) ExchangeCode(ctx context.Context, input *Antig
 		TokenType:    tokenResp.TokenType,
 	}
 
-	// 获取用户信息
 	userInfo, err := client.GetUserInfo(ctx, tokenResp.AccessToken)
 	if err != nil {
-		fmt.Printf("[AntigravityOAuth] 警告: 获取用户信息失败: %v\n", err)
+		fmt.Printf("[AntigravityOAuth] warning: get userinfo failed: %v\n", err)
 	} else {
 		result.Email = userInfo.Email
 	}
 
-	// 获取 project_id + plan_type（部分账户类型可能没有），失败时重试
+	// + plan_type（
 	loadResult, loadErr := s.loadProjectIDWithRetry(ctx, tokenResp.AccessToken, proxyURL, 3)
 	if loadErr != nil {
-		fmt.Printf("[AntigravityOAuth] 警告: 获取 project_id 失败（重试后）: %v\n", loadErr)
+		fmt.Printf("[AntigravityOAuth] warning: 获取 project_id failed（retry后）: %v\n", loadErr)
 		result.ProjectIDMissing = true
 	}
 	if loadResult != nil {
@@ -160,13 +158,12 @@ func (s *AntigravityOAuthService) ExchangeCode(ctx context.Context, input *Antig
 		}
 	}
 
-	// 令牌刚获取，立即设置隐私（不依赖后续账号创建流程）
 	result.PrivacyMode = setAntigravityPrivacy(ctx, result.AccessToken, result.ProjectID, proxyURL)
 
 	return result, nil
 }
 
-// RefreshToken 刷新 token
+// RefreshToken
 func (s *AntigravityOAuthService) RefreshToken(ctx context.Context, refreshToken, proxyURL string) (*AntigravityTokenInfo, error) {
 	var lastErr error
 
@@ -201,17 +198,17 @@ func (s *AntigravityOAuthService) RefreshToken(ctx context.Context, refreshToken
 		if isNonRetryableAntigravityOAuthError(err) {
 			return nil, err
 		}
-		// 代理连接错误（TCP 超时、连接拒绝、DNS 失败）不重试，立即返回
+		//
 		if antigravity.IsConnectionError(err) {
 			return nil, fmt.Errorf("proxy unavailable: %w", err)
 		}
 		lastErr = err
 	}
 
-	return nil, fmt.Errorf("token 刷新失败 (重试后): %w", lastErr)
+	return nil, fmt.Errorf("token refresh failed (retry后): %w", lastErr)
 }
 
-// ValidateRefreshToken 用 refresh token 验证并获取完整的 token 信息（含 email 和 project_id）
+// ValidateRefreshToken
 func (s *AntigravityOAuthService) ValidateRefreshToken(ctx context.Context, refreshToken string, proxyID *int64) (*AntigravityTokenInfo, error) {
 	var proxyURL string
 	if proxyID != nil {
@@ -221,28 +218,28 @@ func (s *AntigravityOAuthService) ValidateRefreshToken(ctx context.Context, refr
 		}
 	}
 
-	// 刷新 token
+	//
 	tokenInfo, err := s.RefreshToken(ctx, refreshToken, proxyURL)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取用户信息（email）
+	//
 	client, err := antigravity.NewClient(proxyURL)
 	if err != nil {
 		return nil, fmt.Errorf("create antigravity client failed: %w", err)
 	}
 	userInfo, err := client.GetUserInfo(ctx, tokenInfo.AccessToken)
 	if err != nil {
-		fmt.Printf("[AntigravityOAuth] 警告: 获取用户信息失败: %v\n", err)
+		fmt.Printf("[AntigravityOAuth] warning: get userinfo failed: %v\n", err)
 	} else {
 		tokenInfo.Email = userInfo.Email
 	}
 
-	// 获取 project_id + plan_type（容错，失败不阻塞）
+	// + plan_type（
 	loadResult, loadErr := s.loadProjectIDWithRetry(ctx, tokenInfo.AccessToken, proxyURL, 3)
 	if loadErr != nil {
-		fmt.Printf("[AntigravityOAuth] 警告: 获取 project_id 失败（重试后）: %v\n", loadErr)
+		fmt.Printf("[AntigravityOAuth] warning: 获取 project_id failed（retry后）: %v\n", loadErr)
 		tokenInfo.ProjectIDMissing = true
 	}
 	if loadResult != nil {
@@ -252,7 +249,6 @@ func (s *AntigravityOAuthService) ValidateRefreshToken(ctx context.Context, refr
 		}
 	}
 
-	// 令牌刚获取，立即设置隐私
 	tokenInfo.PrivacyMode = setAntigravityPrivacy(ctx, tokenInfo.AccessToken, tokenInfo.ProjectID, proxyURL)
 
 	return tokenInfo, nil
@@ -274,7 +270,7 @@ func isNonRetryableAntigravityOAuthError(err error) bool {
 	return false
 }
 
-// RefreshAccountToken 刷新账户的 token
+// RefreshAccountToken
 func (s *AntigravityOAuthService) RefreshAccountToken(ctx context.Context, account *Account) (*AntigravityTokenInfo, error) {
 	if account.Platform != PlatformAntigravity || account.Type != AccountTypeOAuth {
 		return nil, fmt.Errorf("非 Antigravity OAuth 账户")
@@ -298,13 +294,13 @@ func (s *AntigravityOAuthService) RefreshAccountToken(ctx context.Context, accou
 		return nil, err
 	}
 
-	// 保留原有的 email
+	//
 	existingEmail := strings.TrimSpace(account.GetCredential("email"))
 	if existingEmail != "" {
 		tokenInfo.Email = existingEmail
 	}
 
-	// 每次刷新都调用 LoadCodeAssist 获取 project_id + plan_type，失败时重试
+	// + plan_type，
 	existingProjectID := strings.TrimSpace(account.GetCredential("project_id"))
 	loadResult, loadErr := s.loadProjectIDWithRetry(ctx, tokenInfo.AccessToken, proxyURL, 3)
 
@@ -326,14 +322,14 @@ func (s *AntigravityOAuthService) RefreshAccountToken(ctx context.Context, accou
 	return tokenInfo, nil
 }
 
-// loadCodeAssistResult 封装 loadProjectIDWithRetry 的返回结果，
-// 同时携带从 LoadCodeAssist 响应中提取的 plan_type 信息。
+// loadCodeAssistResult
+//
 type loadCodeAssistResult struct {
 	ProjectID    string
 	Subscription *AntigravitySubscriptionResult
 }
 
-// loadProjectIDWithRetry 带重试机制获取 project_id，同时从响应中提取 plan_type。
+// loadProjectIDWithRetry
 func (s *AntigravityOAuthService) loadProjectIDWithRetry(ctx context.Context, accessToken, proxyURL string, maxRetries int) (*loadCodeAssistResult, error) {
 	var lastErr error
 	var lastSubscription *AntigravitySubscriptionResult
@@ -380,27 +376,27 @@ func (s *AntigravityOAuthService) loadProjectIDWithRetry(ctx context.Context, ac
 		if err != nil {
 			lastErr = err
 		} else if loadResp == nil {
-			lastErr = fmt.Errorf("LoadCodeAssist 返回空响应")
+			lastErr = fmt.Errorf("LoadCodeAssist returned空响应")
 		} else {
-			lastErr = fmt.Errorf("LoadCodeAssist 返回空 project_id")
+			lastErr = fmt.Errorf("LoadCodeAssist returned空 project_id")
 		}
 	}
 
 	if lastSubscription != nil {
-		return &loadCodeAssistResult{Subscription: lastSubscription}, fmt.Errorf("获取 project_id 失败 (重试 %d 次后): %w", maxRetries, lastErr)
+		return &loadCodeAssistResult{Subscription: lastSubscription}, fmt.Errorf("获取 project_id failed (retry %d 次后): %w", maxRetries, lastErr)
 	}
-	return nil, fmt.Errorf("获取 project_id 失败 (重试 %d 次后): %w", maxRetries, lastErr)
+	return nil, fmt.Errorf("获取 project_id failed (retry %d 次后): %w", maxRetries, lastErr)
 }
 
 func tryOnboardProjectID(ctx context.Context, client *antigravity.Client, accessToken string, loadRaw map[string]any) (string, error) {
 	tierID := resolveDefaultTierID(loadRaw)
 	if tierID == "" {
-		return "", fmt.Errorf("loadCodeAssist 未返回可用的默认 tier")
+		return "", fmt.Errorf("loadCodeAssist 未returned可用的默认 tier")
 	}
 
 	projectID, err := client.OnboardUser(ctx, accessToken, tierID)
 	if err != nil {
-		return "", fmt.Errorf("onboardUser 失败 (tier=%s): %w", tierID, err)
+		return "", fmt.Errorf("onboardUser failed (tier=%s): %w", tierID, err)
 	}
 	return projectID, nil
 }
@@ -439,7 +435,7 @@ func resolveDefaultTierID(loadRaw map[string]any) string {
 	return ""
 }
 
-// FillProjectID 仅获取 project_id，不刷新 OAuth token
+// FillProjectID
 func (s *AntigravityOAuthService) FillProjectID(ctx context.Context, account *Account, accessToken string) (string, error) {
 	var proxyURL string
 	if account.ProxyID != nil {
@@ -455,7 +451,7 @@ func (s *AntigravityOAuthService) FillProjectID(ctx context.Context, account *Ac
 	return "", err
 }
 
-// BuildAccountCredentials 构建账户凭证
+// BuildAccountCredentials
 func (s *AntigravityOAuthService) BuildAccountCredentials(tokenInfo *AntigravityTokenInfo) map[string]any {
 	creds := map[string]any{
 		"access_token": tokenInfo.AccessToken,
@@ -479,7 +475,7 @@ func (s *AntigravityOAuthService) BuildAccountCredentials(tokenInfo *Antigravity
 	return creds
 }
 
-// Stop 停止服务
+// Stop
 func (s *AntigravityOAuthService) Stop() {
 	s.sessionStore.Stop()
 }

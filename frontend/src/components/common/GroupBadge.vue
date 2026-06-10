@@ -12,7 +12,7 @@
     <!-- Right side label -->
     <span v-if="showLabel" :class="labelClass">
       <template v-if="hasCustomRate">
-        <!-- 原倍率删除线 + 专属倍率高亮 -->
+        <!-- 原倍率Delete线 + 专属倍率高亮 -->
         <span class="line-through opacity-50 mr-0.5">{{ rateMultiplier }}x</span>
         <span class="font-bold">{{ userRateMultiplier }}x</span>
       </template>
@@ -34,13 +34,13 @@ interface Props {
   platform?: GroupPlatform
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
-  userRateMultiplier?: number | null // 用户专属倍率
+  userRateMultiplier?: number | null // User专属倍率
   showRate?: boolean
-  daysRemaining?: number | null // 剩余天数（订阅类型时使用）
+  daysRemaining?: number | null // 剩余days数（订阅类型时使用）
   /**
-   * 订阅分组默认在右侧 label 展示"订阅"或剩余天数；
-   * 开启后订阅分组也改为显示倍率（保留订阅主题色 label，配合可用渠道这类
-   * 只关心费率、不关心有效期的场景）。
+   * 订阅分组默认在右侧 label 展示"订阅"或剩余days数；
+   * 开启后订阅分组也改为显示倍率（保留订阅主题色 label，配合Available Channels这类
+   * 只关心费率、不关心Valid期的场景）。
    */
   alwaysShowRate?: boolean
 }
@@ -57,7 +57,6 @@ const { t } = useI18n()
 
 const isSubscription = computed(() => props.subscriptionType === 'subscription')
 
-// 是否有专属倍率（且与默认倍率不同）
 const hasCustomRate = computed(() => {
   return (
     props.userRateMultiplier !== null &&
@@ -67,12 +66,9 @@ const hasCustomRate = computed(() => {
   )
 })
 
-// 是否显示右侧标签
 const showLabel = computed(() => {
   if (!props.showRate) return false
-  // 订阅类型：显示天数或"订阅"
   if (isSubscription.value) return true
-  // 标准类型：显示倍率（包括专属倍率）
   return props.rateMultiplier !== undefined || hasCustomRate.value
 })
 
@@ -80,14 +76,12 @@ const showLabel = computed(() => {
 const labelText = computed(() => {
   const rateLabel = props.rateMultiplier !== undefined ? `${props.rateMultiplier}x` : ''
   if (isSubscription.value && !props.alwaysShowRate) {
-    // 如果有剩余天数，显示天数
     if (props.daysRemaining !== null && props.daysRemaining !== undefined) {
       if (props.daysRemaining <= 0) {
         return t('admin.users.expired')
       }
       return t('admin.users.daysRemaining', { days: props.daysRemaining })
     }
-    // 否则显示"订阅"
     return t('groups.subscription')
   }
   return rateLabel
@@ -102,19 +96,17 @@ const labelClass = computed(() => {
     return `${base} bg-black/10 dark:bg-white/10`
   }
 
-  // 订阅类型：根据剩余天数显示不同颜色
   if (props.daysRemaining !== null && props.daysRemaining !== undefined) {
     if (props.daysRemaining <= 0 || props.daysRemaining <= 3) {
-      // 已过期或紧急（<=3天）：红色
+      // 已Expired或紧急（<=3days）：红色
       return `${base} bg-red-200/80 text-red-800 dark:bg-red-800/50 dark:text-red-300`
     }
     if (props.daysRemaining <= 7) {
-      // 警告（<=7天）：橙色
+      // 警告（<=7days）：橙色
       return `${base} bg-amber-200/80 text-amber-800 dark:bg-amber-800/50 dark:text-amber-300`
     }
   }
 
-  // 正常状态或无天数：根据平台显示主题色
   if (props.platform === 'anthropic') {
     return `${base} bg-orange-200/60 text-orange-800 dark:bg-orange-800/40 dark:text-orange-300`
   }

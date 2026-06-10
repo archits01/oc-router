@@ -352,8 +352,8 @@ func DecodeIDToken(idToken string) (*IDTokenClaims, error) {
 }
 
 // ParseIDToken parses the ID Token JWT and extracts claims.
-// 注意：当前仅解码 payload 并校验 exp，未验证 JWT 签名。
-// 生产环境如需用 ID Token 做授权决策，应通过 OpenAI 的 JWKS 端点验证签名：
+//
+//
 //
 //	https://auth.openai.com/.well-known/jwks.json
 func ParseIDToken(idToken string) (*IDTokenClaims, error) {
@@ -362,8 +362,8 @@ func ParseIDToken(idToken string) (*IDTokenClaims, error) {
 		return nil, err
 	}
 
-	// 校验 ID Token 是否已过期（允许 2 分钟时钟偏差，防止因服务器时钟略有差异误判刚颁发的令牌）
-	const clockSkewTolerance = 120 // 秒
+	//
+	const clockSkewTolerance = 120 // seconds
 	now := time.Now().Unix()
 	if claims.Exp > 0 && now > claims.Exp+clockSkewTolerance {
 		return nil, fmt.Errorf("id_token has expired (exp: %d, now: %d, skew_tolerance: %ds)", claims.Exp, now, clockSkewTolerance)

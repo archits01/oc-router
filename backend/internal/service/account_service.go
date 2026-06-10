@@ -24,12 +24,12 @@ type AccountRepository interface {
 	// GetByIDs fetches accounts by IDs in a single query.
 	// It should return all accounts found (missing IDs are ignored).
 	GetByIDs(ctx context.Context, ids []int64) ([]*Account, error)
-	// ExistsByID 检查账号是否存在，仅返回布尔值，用于删除前的轻量级存在性检查
+	// ExistsByID
 	ExistsByID(ctx context.Context, id int64) (bool, error)
 	// GetByCRSAccountID finds an account previously synced from CRS.
 	// Returns (nil, nil) if not found.
 	GetByCRSAccountID(ctx context.Context, crsAccountID string) (*Account, error)
-	// FindByExtraField 根据 extra 字段中的键值对查找账号
+	// FindByExtraField
 	FindByExtraField(ctx context.Context, key string, value any) ([]Account, error)
 	// ListCRSAccountIDs returns a map of crs_account_id -> local account ID
 	// for all accounts that have been synced from CRS.
@@ -69,17 +69,17 @@ type AccountRepository interface {
 	ClearAntigravityQuotaScopes(ctx context.Context, id int64) error
 	ClearModelRateLimits(ctx context.Context, id int64) error
 	UpdateSessionWindow(ctx context.Context, id int64, start, end *time.Time, status string) error
-	// UpdateSessionWindowEnd 仅更新 5h 窗口的结束时间，不动 start / status。
-	// 用于 active poll 拿到新 ResetsAt 后回写，避免覆盖请求路径上记录的 status。
+	// UpdateSessionWindowEnd
+	//
 	UpdateSessionWindowEnd(ctx context.Context, id int64, end time.Time) error
 	UpdateExtra(ctx context.Context, id int64, updates map[string]any) error
 	BulkUpdate(ctx context.Context, ids []int64, updates AccountBulkUpdate) (int64, error)
-	// IncrementQuotaUsed 原子递增 API Key 账号的配额用量（总/日/周）
+	// IncrementQuotaUsed
 	IncrementQuotaUsed(ctx context.Context, id int64, amount float64) error
-	// ResetQuotaUsed 重置 API Key 账号所有维度的配额用量为 0
+	// ResetQuotaUsed
 	ResetQuotaUsed(ctx context.Context, id int64) error
-	// RevertProxyFallback 将账号的 proxy_id 切回 proxy_fallback_origin_id，并清空 origin 字段。
-	// 仅当 proxy_fallback_origin_id IS NOT NULL 时更新，否则视为账号不存在（返回 ErrAccountNotFound）。
+	// RevertProxyFallback
+	//
 	RevertProxyFallback(ctx context.Context, accountID int64) error
 }
 
@@ -98,7 +98,7 @@ type AccountBulkUpdate struct {
 	Extra          map[string]any
 }
 
-// CreateAccountRequest 创建账号请求
+// CreateAccountRequest
 type CreateAccountRequest struct {
 	Name               string         `json:"name"`
 	Notes              *string        `json:"notes"`
@@ -114,7 +114,7 @@ type CreateAccountRequest struct {
 	AutoPauseOnExpired *bool          `json:"auto_pause_on_expired"`
 }
 
-// UpdateAccountRequest 更新账号请求
+// UpdateAccountRequest
 type UpdateAccountRequest struct {
 	Name               *string         `json:"name"`
 	Notes              *string         `json:"notes"`
@@ -129,7 +129,7 @@ type UpdateAccountRequest struct {
 	AutoPauseOnExpired *bool           `json:"auto_pause_on_expired"`
 }
 
-// AccountService 账号管理服务
+// AccountService
 type AccountService struct {
 	accountRepo AccountRepository
 	groupRepo   GroupRepository
@@ -139,7 +139,7 @@ type groupExistenceBatchChecker interface {
 	ExistsByIDs(ctx context.Context, ids []int64) (map[int64]bool, error)
 }
 
-// NewAccountService 创建账号服务实例
+// NewAccountService
 func NewAccountService(accountRepo AccountRepository, groupRepo GroupRepository) *AccountService {
 	return &AccountService{
 		accountRepo: accountRepo,
@@ -147,16 +147,14 @@ func NewAccountService(accountRepo AccountRepository, groupRepo GroupRepository)
 	}
 }
 
-// Create 创建账号
+// Create
 func (s *AccountService) Create(ctx context.Context, req CreateAccountRequest) (*Account, error) {
-	// 验证分组是否存在（如果指定了分组）
 	if len(req.GroupIDs) > 0 {
 		if err := s.validateGroupIDsExist(ctx, req.GroupIDs); err != nil {
 			return nil, err
 		}
 	}
 
-	// 创建账号
 	account := &Account{
 		Name:        req.Name,
 		Notes:       normalizeAccountNotes(req.Notes),
@@ -180,7 +178,7 @@ func (s *AccountService) Create(ctx context.Context, req CreateAccountRequest) (
 		return nil, fmt.Errorf("create account: %w", err)
 	}
 
-	// require_oauth_only 检查：apikey 类型账号不可加入限制分组
+	// require_oauth_only
 	if account.Type == AccountTypeAPIKey && len(req.GroupIDs) > 0 {
 		for _, gid := range req.GroupIDs {
 			g, err := s.groupRepo.GetByID(ctx, gid)
@@ -193,7 +191,6 @@ func (s *AccountService) Create(ctx context.Context, req CreateAccountRequest) (
 		}
 	}
 
-	// 绑定分组
 	if len(req.GroupIDs) > 0 {
 		if err := s.accountRepo.BindGroups(ctx, account.ID, req.GroupIDs); err != nil {
 			return nil, fmt.Errorf("bind groups: %w", err)
@@ -203,7 +200,7 @@ func (s *AccountService) Create(ctx context.Context, req CreateAccountRequest) (
 	return account, nil
 }
 
-// GetByID 根据ID获取账号
+// GetByID
 func (s *AccountService) GetByID(ctx context.Context, id int64) (*Account, error) {
 	account, err := s.accountRepo.GetByID(ctx, id)
 	if err != nil {
@@ -212,7 +209,7 @@ func (s *AccountService) GetByID(ctx context.Context, id int64) (*Account, error
 	return account, nil
 }
 
-// List 获取账号列表
+// List
 func (s *AccountService) List(ctx context.Context, params pagination.PaginationParams) ([]Account, *pagination.PaginationResult, error) {
 	accounts, pagination, err := s.accountRepo.List(ctx, params)
 	if err != nil {
@@ -221,7 +218,7 @@ func (s *AccountService) List(ctx context.Context, params pagination.PaginationP
 	return accounts, pagination, nil
 }
 
-// ListByPlatform 根据平台获取账号列表
+// ListByPlatform
 func (s *AccountService) ListByPlatform(ctx context.Context, platform string) ([]Account, error) {
 	accounts, err := s.accountRepo.ListByPlatform(ctx, platform)
 	if err != nil {
@@ -230,7 +227,7 @@ func (s *AccountService) ListByPlatform(ctx context.Context, platform string) ([
 	return accounts, nil
 }
 
-// ListByGroup 根据分组获取账号列表
+// ListByGroup
 func (s *AccountService) ListByGroup(ctx context.Context, groupID int64) ([]Account, error) {
 	accounts, err := s.accountRepo.ListByGroup(ctx, groupID)
 	if err != nil {
@@ -239,14 +236,13 @@ func (s *AccountService) ListByGroup(ctx context.Context, groupID int64) ([]Acco
 	return accounts, nil
 }
 
-// Update 更新账号
+// Update
 func (s *AccountService) Update(ctx context.Context, id int64, req UpdateAccountRequest) (*Account, error) {
 	account, err := s.accountRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get account: %w", err)
 	}
 
-	// 更新字段
 	if req.Name != nil {
 		account.Name = *req.Name
 	}
@@ -284,19 +280,17 @@ func (s *AccountService) Update(ctx context.Context, id int64, req UpdateAccount
 		account.AutoPauseOnExpired = *req.AutoPauseOnExpired
 	}
 
-	// 先验证分组是否存在（在任何写操作之前）
 	if req.GroupIDs != nil {
 		if err := s.validateGroupIDsExist(ctx, *req.GroupIDs); err != nil {
 			return nil, err
 		}
 	}
 
-	// 执行更新
 	if err := s.accountRepo.Update(ctx, account); err != nil {
 		return nil, fmt.Errorf("update account: %w", err)
 	}
 
-	// require_oauth_only 检查
+	// require_oauth_only
 	if account.Type == AccountTypeAPIKey && req.GroupIDs != nil {
 		for _, gid := range *req.GroupIDs {
 			g, err := s.groupRepo.GetByID(ctx, gid)
@@ -309,7 +303,6 @@ func (s *AccountService) Update(ctx context.Context, id int64, req UpdateAccount
 		}
 	}
 
-	// 绑定分组
 	if req.GroupIDs != nil {
 		if err := s.accountRepo.BindGroups(ctx, account.ID, *req.GroupIDs); err != nil {
 			return nil, fmt.Errorf("bind groups: %w", err)
@@ -319,16 +312,13 @@ func (s *AccountService) Update(ctx context.Context, id int64, req UpdateAccount
 	return account, nil
 }
 
-// Delete 删除账号
-// 优化：使用 ExistsByID 替代 GetByID 进行存在性检查，
-// 避免加载完整账号对象及其关联数据，提升删除操作的性能
+// Delete
+//
 func (s *AccountService) Delete(ctx context.Context, id int64) error {
-	// 使用轻量级的存在性检查，而非加载完整账号对象
 	exists, err := s.accountRepo.ExistsByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("check account: %w", err)
 	}
-	// 明确返回账号不存在错误，便于调用方区分错误类型
 	if !exists {
 		return ErrAccountNotFound
 	}
@@ -373,7 +363,7 @@ func (s *AccountService) validateGroupIDsExist(ctx context.Context, groupIDs []i
 	return nil
 }
 
-// UpdateStatus 更新账号状态
+// UpdateStatus
 func (s *AccountService) UpdateStatus(ctx context.Context, id int64, status string, errorMessage string) error {
 	account, err := s.accountRepo.GetByID(ctx, id)
 	if err != nil {
@@ -390,7 +380,7 @@ func (s *AccountService) UpdateStatus(ctx context.Context, id int64, status stri
 	return nil
 }
 
-// UpdateLastUsed 更新最后使用时间
+// UpdateLastUsed
 func (s *AccountService) UpdateLastUsed(ctx context.Context, id int64) error {
 	if err := s.accountRepo.UpdateLastUsed(ctx, id); err != nil {
 		return fmt.Errorf("update last used: %w", err)
@@ -398,7 +388,7 @@ func (s *AccountService) UpdateLastUsed(ctx context.Context, id int64) error {
 	return nil
 }
 
-// GetCredential 获取账号凭证（安全访问）
+// GetCredential
 func (s *AccountService) GetCredential(ctx context.Context, id int64, key string) (string, error) {
 	account, err := s.accountRepo.GetByID(ctx, id)
 	if err != nil {
@@ -408,23 +398,22 @@ func (s *AccountService) GetCredential(ctx context.Context, id int64, key string
 	return account.GetCredential(key), nil
 }
 
-// TestCredentials 测试账号凭证是否有效（需要实现具体平台的测试逻辑）
+// TestCredentials
 func (s *AccountService) TestCredentials(ctx context.Context, id int64) error {
 	account, err := s.accountRepo.GetByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("get account: %w", err)
 	}
 
-	// 根据平台执行不同的测试逻辑
 	switch account.Platform {
 	case PlatformAnthropic:
-		// TODO: 测试Anthropic API凭证
+		// TODO:
 		return nil
 	case PlatformOpenAI:
-		// TODO: 测试OpenAI API凭证
+		// TODO:
 		return nil
 	case PlatformGemini:
-		// TODO: 测试Gemini API凭证
+		// TODO:
 		return nil
 	default:
 		return fmt.Errorf("unsupported platform: %s", account.Platform)

@@ -593,7 +593,7 @@ async function finalizePendingAccountResponse(completion: DingTalkPendingActionR
   applyAdoptionSuggestionState(completion)
   const redirect = sanitizeRedirectPath(completion.redirect || redirectTo.value)
 
-  // step=email_completion: 用户无邮箱，需要跳到补邮箱页面
+  // step=email_completion: User无Email，需要跳到补Email页面
   if (completion.step === 'email_completion' || (completion as Record<string, unknown>)['requires_email_completion'] === true) {
     await router.replace('/auth/dingtalk/email-completion?redirect=' + encodeURIComponent(redirect))
     return
@@ -785,8 +785,8 @@ onMounted(async () => {
     redirectTo.value = completionRedirect
 
     const completionData = completion as DingTalkPendingActionResponse
-    // 用户从补邮箱页"我已有账户"按钮跳回时携带 bind=1，跳过 email_completion 自动 redirect，
-    // 直接进入 bind_login 输入密码绑定已有账户。
+    // User从补Email页"我已有Account"按钮跳回时携带 bind=1，跳过 email_completion 自动 redirect，
+    // 直接进入 bind_login 输入密码绑定已有Account。
     const wantsBindExisting = (route.query.bind as string | undefined) === '1'
     const presetEmail = ((route.query.email as string | undefined) || '').trim()
     if (completionData.step === 'email_completion' || (completionData as unknown as Record<string, unknown>)['requires_email_completion'] === true) {

@@ -86,8 +86,6 @@ func TestBuildAnthropicDigestChain_WithSystemContentBlocks(t *testing.T) {
 }
 
 func TestBuildAnthropicDigestChain_ConversationPrefixRelationship(t *testing.T) {
-	// 核心测试：验证对话增长时链的前缀关系
-	// 上一轮的完整链一定是下一轮链的前缀
 	round1 := mustParseAnthropicDigestRequest(t, `{"system":"You are a helpful assistant","messages":[{"role":"user","content":"hello"}]}`)
 	chain1 := BuildAnthropicDigestChain(round1)
 

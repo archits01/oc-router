@@ -318,18 +318,18 @@ function localText(zh: string, en: string): string {
 
 const eventDisplayMeta: Record<string, EventDisplayMeta> = {
   "auth.verify_code": {
-    label: "邮箱验证码",
-    timing: "注册、绑定邮箱、OAuth 补全邮箱或 TOTP 邮箱校验时发送。",
+    label: "Email验证码",
+    timing: "Register、绑定Email、OAuth 补全Email或 TOTP Email校验时发送。",
     categoryLabel: "认证安全",
   },
   "auth.password_reset": {
-    label: "密码重置",
-    timing: "用户请求密码重置链接时发送。",
+    label: "密码Reset",
+    timing: "User请求密码Reset链接时发送。",
     categoryLabel: "认证安全",
   },
   "notification_email.verify_code": {
-    label: "通知邮箱验证码",
-    timing: "用户添加并验证额外通知邮箱时发送。",
+    label: "通知Email验证码",
+    timing: "UserAdd并验证额外通知Email时发送。",
     categoryLabel: "认证安全",
   },
   "subscription.purchase_success": {
@@ -339,33 +339,33 @@ const eventDisplayMeta: Record<string, EventDisplayMeta> = {
   },
   "subscription.expiry_reminder": {
     label: "订阅到期提醒",
-    timing: "后台任务在订阅仍有效且距离到期剩余 7 天、3 天、1 天时各发送一次，可通过邮件设置中的开关关闭。",
+    timing: "后台任务在订阅仍Valid且距离到期剩余 7 days、3 days、1 days时各发送一次，可通过邮件Settings中的开关Close。",
     categoryLabel: "订阅",
   },
   "balance.low": {
     label: "余额不足提醒",
-    timing: "用户余额低于全局或个人配置的提醒阈值时发送。",
+    timing: "User余额低于全局或个人配置的提醒阈值时发送。",
     categoryLabel: "计费",
   },
   "balance.recharge_success": {
-    label: "余额充值成功",
-    timing: "余额充值订单支付完成并入账后发送。",
+    label: "余额Top Up成功",
+    timing: "余额Top Up订单支付完成并入账后发送。",
     categoryLabel: "计费",
   },
   "account.quota_alert": {
     label: "账号限额告警",
-    timing: "上游账号的用量达到配置的额度告警阈值时发送给管理员通知邮箱。",
+    timing: "上游账号的用量达到配置的额度告警阈值时发送给Admin通知Email。",
     categoryLabel: "管理告警",
   },
   "content_moderation.violation_notice": {
     label: "内容审计违规提醒",
-    timing: "用户请求命中内容审计或风控规则、但尚未被禁用时发送。",
-    categoryLabel: "风控",
+    timing: "User请求命中内容审计或Risk Control规则、但尚未被Disable时发送。",
+    categoryLabel: "Risk Control",
   },
   "content_moderation.account_disabled": {
-    label: "内容审计禁用账号",
-    timing: "内容审计违规次数达到封禁阈值并自动禁用用户账号时发送。",
-    categoryLabel: "风控",
+    label: "内容审计Disable账号",
+    timing: "内容审计违规次数达到封禁阈值并自动DisableUser账号时发送。",
+    categoryLabel: "Risk Control",
   },
   "ops.alert": {
     label: "运维告警",
@@ -374,7 +374,7 @@ const eventDisplayMeta: Record<string, EventDisplayMeta> = {
   },
   "ops.scheduled_report": {
     label: "运维定时报表",
-    timing: "运维日报、周报、错误摘要或账号健康报表到达配置的发送时间时发送。",
+    timing: "运维日报、weeks报、错误摘要或账号健康报表到达配置的发送时间时发送。",
     categoryLabel: "运维",
   },
 };
@@ -482,7 +482,7 @@ function formatCategory(category: string): string {
     subscription: { zh: "订阅", en: "Subscription" },
     billing: { zh: "计费", en: "Billing" },
     admin: { zh: "管理告警", en: "Admin" },
-    risk_control: { zh: "风控", en: "Risk Control" },
+    risk_control: { zh: "Risk Control", en: "Risk Control" },
     ops: { zh: "运维", en: "Ops" },
   };
   const item = labels[normalized];

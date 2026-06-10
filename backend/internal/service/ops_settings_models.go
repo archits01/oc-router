@@ -64,8 +64,8 @@ type OpsAlertSilencingSettings struct {
 type OpsMetricThresholds struct {
 	SLAPercentMin               *float64 `json:"sla_percent_min,omitempty"`                 // SLA低于此值变红
 	TTFTp99MsMax                *float64 `json:"ttft_p99_ms_max,omitempty"`                 // TTFT P99高于此值变红
-	RequestErrorRatePercentMax  *float64 `json:"request_error_rate_percent_max,omitempty"`  // 请求错误率高于此值变红
-	UpstreamErrorRatePercentMax *float64 `json:"upstream_error_rate_percent_max,omitempty"` // 上游错误率高于此值变红
+	RequestErrorRatePercentMax  *float64 `json:"request_error_rate_percent_max,omitempty"`  // 请求error率高于此值变红
+	UpstreamErrorRatePercentMax *float64 `json:"upstream_error_rate_percent_max,omitempty"` // 上游error率高于此值变红
 }
 
 type OpsRuntimeLogConfig struct {
@@ -87,7 +87,7 @@ type OpsAlertRuntimeSettings struct {
 
 	DistributedLock OpsDistributedLockSettings `json:"distributed_lock"`
 	Silencing       OpsAlertSilencingSettings  `json:"silencing"`
-	Thresholds      OpsMetricThresholds        `json:"thresholds"` // 指标阈值配置
+	Thresholds      OpsMetricThresholds        `json:"thresholds"` // 指标阈值configuration
 }
 
 // OpsAdvancedSettings stores advanced ops configuration (data retention, aggregation).

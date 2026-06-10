@@ -43,7 +43,7 @@ func TestAccount_GetCodexCLIOnlyAllowedClients(t *testing.T) {
 		require.Equal(t, []string{"claude_code"}, account.GetCodexCLIOnlyAllowedClients())
 	})
 
-	t.Run("非 OAuth 账号返回空", func(t *testing.T) {
+	t.Run("非 OAuth 账号returned空", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeAPIKey,
@@ -52,12 +52,12 @@ func TestAccount_GetCodexCLIOnlyAllowedClients(t *testing.T) {
 		require.Empty(t, account.GetCodexCLIOnlyAllowedClients())
 	})
 
-	t.Run("Extra 为空返回空", func(t *testing.T) {
+	t.Run("Extra 为空returned空", func(t *testing.T) {
 		account := &Account{Platform: PlatformOpenAI, Type: AccountTypeOAuth}
 		require.Empty(t, account.GetCodexCLIOnlyAllowedClients())
 	})
 
-	t.Run("字段缺失返回空", func(t *testing.T) {
+	t.Run("字段缺失returned空", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeOAuth,

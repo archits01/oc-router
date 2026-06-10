@@ -11,14 +11,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ChannelMonitorUserHandler 渠道监控用户只读 handler。
+// ChannelMonitorUserHandler
 type ChannelMonitorUserHandler struct {
 	monitorService *service.ChannelMonitorService
 	settingService *service.SettingService
 }
 
-// NewChannelMonitorUserHandler 创建 handler。
-// settingService 用于每次请求前读取功能开关；关闭时 List/GetStatus 直接返回空/404。
+// NewChannelMonitorUserHandler
+// settingService
 func NewChannelMonitorUserHandler(
 	monitorService *service.ChannelMonitorService,
 	settingService *service.SettingService,
@@ -29,8 +29,8 @@ func NewChannelMonitorUserHandler(
 	}
 }
 
-// featureEnabled 返回当前渠道监控功能是否开启。
-// settingService 为 nil（测试场景）视为启用。
+// featureEnabled
+// settingService
 func (h *ChannelMonitorUserHandler) featureEnabled(c *gin.Context) bool {
 	if h.settingService == nil {
 		return true
@@ -54,8 +54,8 @@ type channelMonitorUserListItem struct {
 	Timeline             []channelMonitorUserTimelinePoint    `json:"timeline"`
 }
 
-// channelMonitorUserTimelinePoint 主模型最近一次检测的 timeline 点。
-// 仅用于用户视图 list 响应，admin 视图不使用。
+// channelMonitorUserTimelinePoint
+//
 type channelMonitorUserTimelinePoint struct {
 	Status        string `json:"status"`
 	LatencyMs     *int   `json:"latency_ms"`
@@ -162,7 +162,7 @@ func (h *ChannelMonitorUserHandler) GetStatus(c *gin.Context) {
 		response.ErrorFrom(c, service.ErrChannelMonitorNotFound)
 		return
 	}
-	// 复用 admin.ParseChannelMonitorID 保持错误码与日志一致。
+	//
 	id, ok := admin.ParseChannelMonitorID(c)
 	if !ok {
 		return

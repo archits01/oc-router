@@ -415,7 +415,7 @@ func TestComplexSSEData(t *testing.T) {
 	}
 }
 
-// TestCorrectToolParameters 测试工具参数修正
+// TestCorrectToolParameters
 func TestCorrectToolParameters(t *testing.T) {
 	corrector := NewCodexToolCorrector()
 
@@ -468,13 +468,11 @@ func TestCorrectToolParameters(t *testing.T) {
 				t.Error("expected data to be corrected")
 			}
 
-			// 解析修正后的数据
 			var result map[string]any
 			if err := json.Unmarshal([]byte(corrected), &result); err != nil {
 				t.Fatalf("failed to parse corrected data: %v", err)
 			}
 
-			// 检查工具调用
 			toolCalls, ok := result["tool_calls"].([]any)
 			if !ok || len(toolCalls) == 0 {
 				t.Fatal("no tool_calls found in corrected data")
@@ -500,7 +498,6 @@ func TestCorrectToolParameters(t *testing.T) {
 				t.Fatalf("failed to parse arguments: %v", err)
 			}
 
-			// 验证期望的参数
 			for param, shouldExist := range tt.expected {
 				_, exists := args[param]
 				if shouldExist && !exists {

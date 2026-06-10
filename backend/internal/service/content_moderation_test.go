@@ -954,7 +954,7 @@ func TestBuildModerationTestInputRejectsMultipleImages(t *testing.T) {
 	})
 
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "最多上传 1 张测试图片")
+	require.Contains(t, err.Error(), "最多上传 1 张test图片")
 }
 
 func TestExtractContentModerationInput_OpenAIResponsesCodexPayloadUsesLastUserMessage(t *testing.T) {
@@ -1059,7 +1059,7 @@ func TestContentModerationCheck_PreBlockBlocksCodexResponsesLatestUserInput(t *t
 	cfg.BaseURL = server.URL
 	cfg.APIKeys = []string{"sk-test"}
 	cfg.BlockStatus = http.StatusUnavailableForLegalReasons
-	cfg.BlockMessage = "内容审计测试阻断"
+	cfg.BlockMessage = "内容审计test阻断"
 	rawCfg, err := json.Marshal(cfg)
 	require.NoError(t, err)
 
@@ -1099,7 +1099,7 @@ func TestContentModerationCheck_PreBlockBlocksCodexResponsesLatestUserInput(t *t
 	require.True(t, decision.Blocked)
 	require.Equal(t, ContentModerationActionBlock, decision.Action)
 	require.Equal(t, http.StatusUnavailableForLegalReasons, decision.StatusCode)
-	require.Equal(t, "内容审计测试阻断", decision.Message)
+	require.Equal(t, "内容审计test阻断", decision.Message)
 	logs := requireContentModerationLogCount(t, repo, 1)
 	require.True(t, logs[0].Flagged)
 	require.Equal(t, ContentModerationActionBlock, logs[0].Action)

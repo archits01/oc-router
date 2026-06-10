@@ -8,22 +8,22 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// Anthropic 会话 Fallback 相关常量
+// Anthropic
 const (
-	// anthropicSessionTTLSeconds Anthropic 会话缓存 TTL（5 分钟）
+	// anthropicSessionTTLSeconds Anthropic
 	anthropicSessionTTLSeconds = 300
 
-	// anthropicDigestSessionKeyPrefix Anthropic 摘要 fallback 会话 key 前缀
+	// anthropicDigestSessionKeyPrefix Anthropic
 	anthropicDigestSessionKeyPrefix = "anthropic:digest:"
 )
 
-// AnthropicSessionTTL 返回 Anthropic 会话缓存 TTL
+// AnthropicSessionTTL
 func AnthropicSessionTTL() time.Duration {
 	return anthropicSessionTTLSeconds * time.Second
 }
 
-// BuildAnthropicDigestChain 根据 Anthropic 请求生成摘要链
-// 格式: s:<hash>-u:<hash>-a:<hash>-u:<hash>-...
+// BuildAnthropicDigestChain
+// <hash>-u:<hash>-a:<hash>-u:<hash>-...
 // s = system, u = user, a = assistant
 func BuildAnthropicDigestChain(parsed *ParsedRequest) string {
 	if parsed == nil {
@@ -49,7 +49,7 @@ func BuildAnthropicDigestChain(parsed *ParsedRequest) string {
 	return strings.Join(parts, "-")
 }
 
-// canonicalAnthropicDigestJSON 保持 digest 对 JSON key 顺序和空白不敏感。
+// canonicalAnthropicDigestJSON
 func canonicalAnthropicDigestJSON(raw []byte) []byte {
 	if len(raw) == 0 {
 		return raw
@@ -65,7 +65,7 @@ func canonicalAnthropicDigestJSON(raw []byte) []byte {
 	return canonical
 }
 
-// rolePrefix 将 Anthropic 的 role 映射为单字符前缀
+// rolePrefix
 func rolePrefix(role string) string {
 	switch role {
 	case "assistant":
@@ -75,8 +75,8 @@ func rolePrefix(role string) string {
 	}
 }
 
-// GenerateAnthropicDigestSessionKey 生成 Anthropic 摘要 fallback 的 sessionKey
-// 组合 prefixHash 前 8 位 + uuid 前 8 位，确保不同会话产生不同的 sessionKey
+// GenerateAnthropicDigestSessionKey
+// + uuid
 func GenerateAnthropicDigestSessionKey(prefixHash, uuid string) string {
 	prefix := prefixHash
 	if len(prefixHash) >= 8 {

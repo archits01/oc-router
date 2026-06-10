@@ -1,4 +1,4 @@
-// Package model 定义服务层使用的数据模型。
+// Package model
 package model
 
 import (
@@ -7,8 +7,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/tlsfingerprint"
 )
 
-// TLSFingerprintProfile TLS 指纹配置模板
-// 包含完整的 ClientHello 参数，用于模拟特定客户端的 TLS 握手特征
+// TLSFingerprintProfile TLS
+//
 type TLSFingerprintProfile struct {
 	ID                  int64     `json:"id"`
 	Name                string    `json:"name"`
@@ -27,7 +27,7 @@ type TLSFingerprintProfile struct {
 	UpdatedAt           time.Time `json:"updated_at"`
 }
 
-// Validate 验证模板配置的有效性
+// Validate
 func (p *TLSFingerprintProfile) Validate() error {
 	if p.Name == "" {
 		return &ValidationError{Field: "name", Message: "name is required"}
@@ -35,8 +35,8 @@ func (p *TLSFingerprintProfile) Validate() error {
 	return nil
 }
 
-// ToTLSProfile 将领域模型转换为运行时使用的 tlsfingerprint.Profile
-// 空切片字段会在 dialer 中 fallback 到内置默认值
+// ToTLSProfile
+//
 func (p *TLSFingerprintProfile) ToTLSProfile() *tlsfingerprint.Profile {
 	return &tlsfingerprint.Profile{
 		Name:                p.Name,

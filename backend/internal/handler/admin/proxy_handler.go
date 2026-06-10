@@ -63,7 +63,7 @@ func (h *ProxyHandler) List(c *gin.Context) {
 	search := c.Query("search")
 	sortBy := c.DefaultQuery("sort_by", "id")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
-	// 标准化和验证 search 参数
+	//
 	search = strings.TrimSpace(search)
 	if len(search) > 100 {
 		search = search[:100]

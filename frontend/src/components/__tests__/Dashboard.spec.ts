@@ -72,7 +72,7 @@ const DashboardTestComponent = defineComponent({
   },
   template: `
     <div>
-      <div v-if="loading" class="loading">加载中...</div>
+      <div v-if="loading" class="loading">Loading...</div>
       <div v-if="error" class="error">{{ error }}</div>
       <div v-if="stats" class="stats">
         <span class="balance">{{ stats.balance }}</span>
@@ -80,7 +80,7 @@ const DashboardTestComponent = defineComponent({
         <span class="today-requests">{{ stats.today_requests }}</span>
         <span class="today-cost">{{ stats.today_cost }}</span>
       </div>
-      <button class="refresh" @click="loadStats">刷新</button>
+      <button class="refresh" @click="loadStats">Refresh</button>
     </div>
   `,
 })
@@ -114,7 +114,7 @@ describe('Dashboard 数据加载', () => {
     expect(wrapper.find('.today-cost').text()).toBe('2.5')
   })
 
-  it('加载中显示 loading 状态', async () => {
+  it('Loading显示 loading Status', async () => {
     let resolveStats: (v: any) => void
     mockGetDashboardStats.mockImplementation(
       () => new Promise((resolve) => { resolveStats = resolve })
@@ -142,7 +142,7 @@ describe('Dashboard 数据加载', () => {
     expect(wrapper.find('.stats').exists()).toBe(false)
   })
 
-  it('点击刷新按钮重新加载数据', async () => {
+  it('点击Refresh按钮重新加载数据', async () => {
     mockGetDashboardStats.mockResolvedValue(fakeStats)
 
     const wrapper = mount(DashboardTestComponent)
@@ -150,7 +150,6 @@ describe('Dashboard 数据加载', () => {
 
     expect(mockGetDashboardStats).toHaveBeenCalledTimes(1)
 
-    // 更新数据
     const updatedStats = { ...fakeStats, today_requests: 200 }
     mockGetDashboardStats.mockResolvedValue(updatedStats)
 

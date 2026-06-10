@@ -12,7 +12,7 @@ import (
 	"github.com/lib/pq"
 )
 
-// --- 模型定价 ---
+// ---
 
 func (r *channelRepository) ListModelPricing(ctx context.Context, channelID int64) ([]service.ChannelModelPricing, error) {
 	rows, err := r.db.QueryContext(ctx,
@@ -86,9 +86,9 @@ func (r *channelRepository) ReplaceModelPricing(ctx context.Context, channelID i
 	})
 }
 
-// --- 批量加载辅助方法 ---
+// ---
 
-// batchLoadModelPricing 批量加载多个渠道的模型定价（含区间）
+// batchLoadModelPricing
 func (r *channelRepository) batchLoadModelPricing(ctx context.Context, channelIDs []int64) (map[int64][]service.ChannelModelPricing, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, channel_id, platform, models, billing_mode, input_price, output_price, cache_write_price, cache_read_price, image_output_price, per_request_price, created_at, updated_at
@@ -105,13 +105,12 @@ func (r *channelRepository) batchLoadModelPricing(ctx context.Context, channelID
 		return nil, err
 	}
 
-	// 按 channelID 分组
+	//
 	pricingMap := make(map[int64][]service.ChannelModelPricing, len(channelIDs))
 	for _, p := range allPricing {
 		pricingMap[p.ChannelID] = append(pricingMap[p.ChannelID], p)
 	}
 
-	// 批量加载所有区间
 	if len(allPricingIDs) > 0 {
 		intervalMap, err := r.batchLoadIntervals(ctx, allPricingIDs)
 		if err != nil {
@@ -127,7 +126,7 @@ func (r *channelRepository) batchLoadModelPricing(ctx context.Context, channelID
 	return pricingMap, nil
 }
 
-// batchLoadIntervals 批量加载多个定价条目的区间
+// batchLoadIntervals
 func (r *channelRepository) batchLoadIntervals(ctx context.Context, pricingIDs []int64) (map[int64][]service.PricingInterval, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, pricing_id, min_tokens, max_tokens, tier_label,
@@ -160,9 +159,9 @@ func (r *channelRepository) batchLoadIntervals(ctx context.Context, pricingIDs [
 	return intervalMap, nil
 }
 
-// --- 共享 scan 辅助 ---
+// ---
 
-// scanModelPricingRows 扫描 model pricing 行，返回结果列表和 ID 列表
+// scanModelPricingRows
 func scanModelPricingRows(rows *sql.Rows) ([]service.ChannelModelPricing, []int64, error) {
 	var result []service.ChannelModelPricing
 	var pricingIDs []int64
@@ -188,9 +187,9 @@ func scanModelPricingRows(rows *sql.Rows) ([]service.ChannelModelPricing, []int6
 	return result, pricingIDs, nil
 }
 
-// --- 事务内辅助方法 ---
+// ---
 
-// dbExec 是 *sql.DB 和 *sql.Tx 共享的最小 SQL 执行接口
+// dbExec *sql.DB *sql.Tx
 type dbExec interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
@@ -273,7 +272,7 @@ func replaceModelPricingTx(ctx context.Context, exec dbExec, channelID int64, pr
 	return nil
 }
 
-// isUniqueViolation 检查 pq 唯一约束违反错误
+// isUniqueViolation
 func isUniqueViolation(err error) bool {
 	var pqErr *pq.Error
 	if errors.As(err, &pqErr) && pqErr != nil {
@@ -282,7 +281,7 @@ func isUniqueViolation(err error) bool {
 	return false
 }
 
-// escapeLike 转义 LIKE/ILIKE 模式中的特殊字符
+// escapeLike
 func escapeLike(s string) string {
 	s = strings.ReplaceAll(s, `\`, `\\`)
 	s = strings.ReplaceAll(s, `%`, `\%`)

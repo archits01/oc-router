@@ -15,12 +15,12 @@ func ptrString[T ~string](v T) *string {
 	return &s
 }
 
-// groupRepoStubForAdmin 用于测试 AdminService 的 GroupRepository Stub
+// groupRepoStubForAdmin
 type groupRepoStubForAdmin struct {
 	created *Group // 记录 Create 调用的参数
 	updated *Group // 记录 Update 调用的参数
-	getByID *Group // GetByID 返回值
-	getErr  error  // GetByID 返回的错误
+	getByID *Group // GetByID returned值
+	getErr  error  // GetByID returned的error
 
 	listWithFiltersCalls       int
 	listWithFiltersParams      pagination.PaginationParams
@@ -141,7 +141,7 @@ func TestAdminService_ListGroups_PassesSortParams(t *testing.T) {
 	}, repo.listWithFiltersParams)
 }
 
-// TestAdminService_CreateGroup_WithImagePricing 测试创建分组时 ImagePrice 字段正确传递
+// TestAdminService_CreateGroup_WithImagePricing
 func TestAdminService_CreateGroup_WithImagePricing(t *testing.T) {
 	repo := &groupRepoStubForAdmin{}
 	svc := &adminServiceImpl{groupRepo: repo}
@@ -164,7 +164,7 @@ func TestAdminService_CreateGroup_WithImagePricing(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, group)
 
-	// 验证 repo 收到了正确的字段
+	//
 	require.NotNil(t, repo.created)
 	require.NotNil(t, repo.created.ImagePrice1K)
 	require.NotNil(t, repo.created.ImagePrice2K)
@@ -174,7 +174,7 @@ func TestAdminService_CreateGroup_WithImagePricing(t *testing.T) {
 	require.InDelta(t, 0.30, *repo.created.ImagePrice4K, 0.0001)
 }
 
-// TestAdminService_CreateGroup_NilImagePricing 测试 ImagePrice 为 nil 时正常创建
+// TestAdminService_CreateGroup_NilImagePricing
 func TestAdminService_CreateGroup_NilImagePricing(t *testing.T) {
 	repo := &groupRepoStubForAdmin{}
 	svc := &adminServiceImpl{groupRepo: repo}
@@ -184,21 +184,21 @@ func TestAdminService_CreateGroup_NilImagePricing(t *testing.T) {
 		Description:    "Test group",
 		Platform:       PlatformAntigravity,
 		RateMultiplier: 1.0,
-		// ImagePrice 字段全部为 nil
+		// ImagePrice
 	}
 
 	group, err := svc.CreateGroup(context.Background(), input)
 	require.NoError(t, err)
 	require.NotNil(t, group)
 
-	// 验证 ImagePrice 字段为 nil
+	//
 	require.NotNil(t, repo.created)
 	require.Nil(t, repo.created.ImagePrice1K)
 	require.Nil(t, repo.created.ImagePrice2K)
 	require.Nil(t, repo.created.ImagePrice4K)
 }
 
-// TestAdminService_UpdateGroup_WithImagePricing 测试更新分组时 ImagePrice 字段正确更新
+// TestAdminService_UpdateGroup_WithImagePricing
 func TestAdminService_UpdateGroup_WithImagePricing(t *testing.T) {
 	existingGroup := &Group{
 		ID:       1,
@@ -223,7 +223,7 @@ func TestAdminService_UpdateGroup_WithImagePricing(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, group)
 
-	// 验证 repo 收到了更新后的字段
+	//
 	require.NotNil(t, repo.updated)
 	require.NotNil(t, repo.updated.ImagePrice1K)
 	require.NotNil(t, repo.updated.ImagePrice2K)
@@ -233,7 +233,7 @@ func TestAdminService_UpdateGroup_WithImagePricing(t *testing.T) {
 	require.InDelta(t, 0.36, *repo.updated.ImagePrice4K, 0.0001)
 }
 
-// TestAdminService_UpdateGroup_PartialImagePricing 测试仅更新部分 ImagePrice 字段
+// TestAdminService_UpdateGroup_PartialImagePricing
 func TestAdminService_UpdateGroup_PartialImagePricing(t *testing.T) {
 	oldPrice2K := 0.15
 	existingGroup := &Group{
@@ -246,18 +246,17 @@ func TestAdminService_UpdateGroup_PartialImagePricing(t *testing.T) {
 	repo := &groupRepoStubForAdmin{getByID: existingGroup}
 	svc := &adminServiceImpl{groupRepo: repo}
 
-	// 只更新 1K 价格
 	price1K := 0.10
 	input := &UpdateGroupInput{
 		ImagePrice1K: &price1K,
-		// ImagePrice2K 和 ImagePrice4K 为 nil，不更新
+		// ImagePrice2K
 	}
 
 	group, err := svc.UpdateGroup(context.Background(), 1, input)
 	require.NoError(t, err)
 	require.NotNil(t, group)
 
-	// 验证：1K 被更新，2K 保持原值，4K 仍为 nil
+	//
 	require.NotNil(t, repo.updated)
 	require.NotNil(t, repo.updated.ImagePrice1K)
 	require.InDelta(t, 0.10, *repo.updated.ImagePrice1K, 0.0001)
@@ -486,10 +485,9 @@ func TestAdminService_UpdateGroup_ClearsMessagesDispatchFieldsWhenPlatformChange
 }
 
 func TestAdminService_ListGroups_WithSearch(t *testing.T) {
-	// 测试：
-	// 1. search 参数正常传递到 repository 层
-	// 2. search 为空字符串时的行为
-	// 3. search 与其他过滤条件组合使用
+	// 1. search
+	// 2. search
+	// 3. search
 
 	t.Run("search 参数正常传递到 repository 层", func(t *testing.T) {
 		repo := &groupRepoStubForAdmin{
@@ -509,7 +507,7 @@ func TestAdminService_ListGroups_WithSearch(t *testing.T) {
 		require.Nil(t, repo.listWithFiltersIsExclusive)
 	})
 
-	t.Run("search 为空字符串时传递空字符串", func(t *testing.T) {
+	t.Run("search 为empty string时传递empty string", func(t *testing.T) {
 		repo := &groupRepoStubForAdmin{
 			listWithFiltersGroups: []Group{},
 			listWithFiltersResult: &pagination.PaginationResult{Total: 0},

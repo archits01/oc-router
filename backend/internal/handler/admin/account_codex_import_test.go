@@ -224,7 +224,7 @@ func TestNormalizeCodexImportRejectsExpiredAccessToken(t *testing.T) {
 	if err == nil {
 		t.Fatal("normalizeCodexImportEntry error = nil, want expired token error")
 	}
-	if !strings.Contains(err.Error(), "已过期") {
+	if !strings.Contains(err.Error(), "expired") {
 		t.Fatalf("error = %v, want expired token message", err)
 	}
 }
@@ -269,7 +269,7 @@ func TestResolveCodexImportExpiryForNoRefreshTokenRequiresExpiry(t *testing.T) {
 	if err == nil {
 		t.Fatal("resolveCodexImportExpiry error = nil, want missing expiry error")
 	}
-	if !strings.Contains(err.Error(), "无法解析 accessToken 过期时间") {
+	if !strings.Contains(err.Error(), "无法parse accessToken expiry time") {
 		t.Fatalf("error = %v, want missing expiry message", err)
 	}
 }

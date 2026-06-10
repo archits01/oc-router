@@ -77,51 +77,46 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 	uptime := int64(time.Since(h.startTime).Seconds())
 
 	response.Success(c, gin.H{
-		// 用户统计
 		"total_users":     stats.TotalUsers,
 		"today_new_users": stats.TodayNewUsers,
 		"active_users":    stats.ActiveUsers,
 
-		// API Key 统计
+		// API Key
 		"total_api_keys":  stats.TotalAPIKeys,
 		"active_api_keys": stats.ActiveAPIKeys,
 
-		// 账户统计
 		"total_accounts":     stats.TotalAccounts,
 		"normal_accounts":    stats.NormalAccounts,
 		"error_accounts":     stats.ErrorAccounts,
 		"ratelimit_accounts": stats.RateLimitAccounts,
 		"overload_accounts":  stats.OverloadAccounts,
 
-		// 累计 Token 使用统计
+		//
 		"total_requests":              stats.TotalRequests,
 		"total_input_tokens":          stats.TotalInputTokens,
 		"total_output_tokens":         stats.TotalOutputTokens,
 		"total_cache_creation_tokens": stats.TotalCacheCreationTokens,
 		"total_cache_read_tokens":     stats.TotalCacheReadTokens,
 		"total_tokens":                stats.TotalTokens,
-		"total_cost":                  stats.TotalCost,       // 标准计费
-		"total_actual_cost":           stats.TotalActualCost, // 实际扣除
+		"total_cost":                  stats.TotalCost,       // standard billing
+		"total_actual_cost":           stats.TotalActualCost, // actual deduction
 
-		// 今日 Token 使用统计
+		//
 		"today_requests":              stats.TodayRequests,
 		"today_input_tokens":          stats.TodayInputTokens,
 		"today_output_tokens":         stats.TodayOutputTokens,
 		"today_cache_creation_tokens": stats.TodayCacheCreationTokens,
 		"today_cache_read_tokens":     stats.TodayCacheReadTokens,
 		"today_tokens":                stats.TodayTokens,
-		"today_cost":                  stats.TodayCost,       // 今日标准计费
-		"today_actual_cost":           stats.TodayActualCost, // 今日实际扣除
+		"today_cost":                  stats.TodayCost,       // today's standard billing
+		"today_actual_cost":           stats.TodayActualCost, // today's actual deduction
 
-		// 系统运行统计
 		"average_duration_ms": stats.AverageDurationMs,
 		"uptime":              uptime,
 
-		// 性能指标
 		"rpm": stats.Rpm,
 		"tpm": stats.Tpm,
 
-		// 预聚合新鲜度
 		"hourly_active_users": stats.HourlyActiveUsers,
 		"stats_updated_at":    stats.StatsUpdatedAt,
 		"stats_stale":         stats.StatsStale,
@@ -546,7 +541,7 @@ func (h *DashboardHandler) GetBatchUsersUsage(c *gin.Context) {
 		return
 	}
 
-	// cacheKey 必须包含当日日期，否则跨午夜后 30s 内会复用昨天的 "today_*" 结果。
+	// cacheKey "today_*"
 	keyRaw, _ := json.Marshal(struct {
 		V       int     `json:"v"`
 		Day     string  `json:"day"`

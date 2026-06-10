@@ -5,16 +5,16 @@ import (
 	"github.com/google/wire"
 )
 
-// JWTAuthMiddleware JWT 认证中间件类型
+// JWTAuthMiddleware JWT
 type JWTAuthMiddleware gin.HandlerFunc
 
-// AdminAuthMiddleware 管理员认证中间件类型
+// AdminAuthMiddleware
 type AdminAuthMiddleware gin.HandlerFunc
 
-// APIKeyAuthMiddleware API Key 认证中间件类型
+// APIKeyAuthMiddleware API Key
 type APIKeyAuthMiddleware gin.HandlerFunc
 
-// ProviderSet 中间件层的依赖注入
+// ProviderSet
 var ProviderSet = wire.NewSet(
 	NewJWTAuthMiddleware,
 	NewAdminAuthMiddleware,

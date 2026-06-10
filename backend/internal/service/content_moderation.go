@@ -68,7 +68,7 @@ const (
 	defaultContentModerationBanThreshold         = 10
 	defaultContentModerationViolationWindowHours = 720
 	defaultContentModerationBlockHTTPStatus      = http.StatusForbidden
-	defaultContentModerationBlockMessage         = "内容审计命中风险规则，请调整输入后重试"
+	defaultContentModerationBlockMessage         = "内容审计命中风险规则，请调整输入后retry"
 	defaultContentModerationRetryCount           = 2
 	maxContentModerationRetryCount               = 5
 	defaultContentModerationHitRetentionDays     = 180
@@ -1248,15 +1248,15 @@ func (s *ContentModerationService) ListLogs(ctx context.Context, filter ContentM
 
 func (s *ContentModerationService) UnbanUser(ctx context.Context, userID int64) (*ContentModerationUnbanUserResult, error) {
 	if s == nil || s.userRepo == nil {
-		return nil, infraerrors.InternalServer("CONTENT_MODERATION_USER_REPOSITORY_UNAVAILABLE", "用户仓储不可用")
+		return nil, infraerrors.InternalServer("CONTENT_MODERATION_USER_REPOSITORY_UNAVAILABLE", "user仓储不可用")
 	}
 	if userID <= 0 {
-		return nil, infraerrors.BadRequest("INVALID_USER_ID", "用户 ID 无效")
+		return nil, infraerrors.BadRequest("INVALID_USER_ID", "user ID 无效")
 	}
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
-			return nil, infraerrors.NotFound("USER_NOT_FOUND", "用户不存在")
+			return nil, infraerrors.NotFound("USER_NOT_FOUND", "userdoes not exist")
 		}
 		return nil, fmt.Errorf("get content moderation unban user: %w", err)
 	}
@@ -1435,7 +1435,7 @@ func (s *ContentModerationService) loadConfig(ctx context.Context) (*ContentMode
 		return cfg, nil
 	}
 	if err := json.Unmarshal([]byte(raw), cfg); err != nil {
-		return nil, infraerrors.BadRequest("INVALID_CONTENT_MODERATION_CONFIG", "内容审计配置不是有效 JSON")
+		return nil, infraerrors.BadRequest("INVALID_CONTENT_MODERATION_CONFIG", "内容审计configuration不是valid JSON")
 	}
 	cfg.normalize()
 	return cfg, nil
@@ -1451,7 +1451,7 @@ func (s *ContentModerationService) isRiskControlEnabled(ctx context.Context) boo
 
 func (s *ContentModerationService) validateConfig(ctx context.Context, cfg *ContentModerationConfig) error {
 	if cfg == nil {
-		return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_CONFIG", "内容审计配置不能为空")
+		return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_CONFIG", "内容审计configuration不能为空")
 	}
 	cfg.normalize()
 	switch cfg.Mode {
@@ -1463,15 +1463,15 @@ func (s *ContentModerationService) validateConfig(ctx context.Context, cfg *Cont
 		return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_BASE_URL", "OpenAI Base URL 无效")
 	}
 	if cfg.BlockStatus < 400 || cfg.BlockStatus > 599 {
-		return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_BLOCK_STATUS", "拦截 HTTP 状态码必须在 400-599 之间")
+		return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_BLOCK_STATUS", "拦截 HTTP status code必须在 400-599 之间")
 	}
 	if cfg.ModelFilter.Type != ContentModerationModelFilterAll && len(cfg.ModelFilter.Models) == 0 {
-		return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_MODEL_FILTER", "指定或排除模型时至少需要配置 1 个模型")
+		return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_MODEL_FILTER", "指定or排除model时至少需要configuration 1 models")
 	}
 	if !cfg.AllGroups && len(cfg.GroupIDs) > 0 && s.groupRepo != nil {
 		for _, groupID := range cfg.GroupIDs {
 			if _, err := s.groupRepo.GetByIDLite(ctx, groupID); err != nil {
-				return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_GROUP", fmt.Sprintf("审计分组不存在: %d", groupID))
+				return infraerrors.BadRequest("INVALID_CONTENT_MODERATION_GROUP", fmt.Sprintf("审计分组does not exist: %d", groupID))
 			}
 		}
 	}
@@ -2299,7 +2299,7 @@ func buildModerationTestInput(prompt string, images []string) (any, int, error) 
 			continue
 		}
 		if len(normalizedImages) >= maxContentModerationTestImages {
-			return nil, 0, infraerrors.BadRequest("TOO_MANY_MODERATION_TEST_IMAGES", fmt.Sprintf("最多上传 %d 张测试图片", maxContentModerationTestImages))
+			return nil, 0, infraerrors.BadRequest("TOO_MANY_MODERATION_TEST_IMAGES", fmt.Sprintf("最多上传 %d 张test图片", maxContentModerationTestImages))
 		}
 		if err := validateModerationTestImageDataURL(image); err != nil {
 			return nil, 0, err
@@ -2339,21 +2339,21 @@ func contentModerationTestHasAuditInput(prompt string, images []string) bool {
 
 func validateModerationTestImageDataURL(value string) error {
 	if len(value) > maxContentModerationTestImageDataURLBytes {
-		return infraerrors.BadRequest("MODERATION_TEST_IMAGE_TOO_LARGE", "测试图片不能超过 8MB")
+		return infraerrors.BadRequest("MODERATION_TEST_IMAGE_TOO_LARGE", "test图片不能超过 8MB")
 	}
 	if !strings.HasPrefix(value, "data:image/") {
-		return infraerrors.BadRequest("INVALID_MODERATION_TEST_IMAGE", "测试图片必须是 data:image/* base64")
+		return infraerrors.BadRequest("INVALID_MODERATION_TEST_IMAGE", "test图片必须是 data:image/* base64")
 	}
 	parts := strings.SplitN(value, ",", 2)
 	if len(parts) != 2 || !strings.Contains(parts[0], ";base64") {
-		return infraerrors.BadRequest("INVALID_MODERATION_TEST_IMAGE", "测试图片必须是 base64 data URL")
+		return infraerrors.BadRequest("INVALID_MODERATION_TEST_IMAGE", "test图片必须是 base64 data URL")
 	}
 	raw, err := base64.StdEncoding.DecodeString(parts[1])
 	if err != nil {
-		return infraerrors.BadRequest("INVALID_MODERATION_TEST_IMAGE", "测试图片 base64 无效")
+		return infraerrors.BadRequest("INVALID_MODERATION_TEST_IMAGE", "test图片 base64 无效")
 	}
 	if len(raw) > maxContentModerationTestImageBytes {
-		return infraerrors.BadRequest("MODERATION_TEST_IMAGE_TOO_LARGE", "测试图片不能超过 8MB")
+		return infraerrors.BadRequest("MODERATION_TEST_IMAGE_TOO_LARGE", "test图片不能超过 8MB")
 	}
 	return nil
 }

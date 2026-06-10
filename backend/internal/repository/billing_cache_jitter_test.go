@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// --- Task 6.1 验证: math/rand/v2 迁移后 jitteredTTL 行为正确 ---
+// --- Task 6.1
 
 func TestJitteredTTL_WithinExpectedRange(t *testing.T) {
-	// jitteredTTL 使用减法抖动: billingCacheTTL - [0, billingCacheJitter)
-	// 所以结果应在 [billingCacheTTL - billingCacheJitter, billingCacheTTL] 范围内
+	// jitteredTTL [0, billingCacheJitter)
+	// [billingCacheTTL - billingCacheJitter, billingCacheTTL]
 	lowerBound := billingCacheTTL - billingCacheJitter // 5min - 30s = 4min30s
 	upperBound := billingCacheTTL                      // 5min
 
@@ -26,7 +26,7 @@ func TestJitteredTTL_WithinExpectedRange(t *testing.T) {
 }
 
 func TestJitteredTTL_NeverExceedsBase(t *testing.T) {
-	// 关键安全性测试：jitteredTTL 使用减法抖动，确保永远不超过 billingCacheTTL
+	//
 	for i := 0; i < 500; i++ {
 		ttl := jitteredTTL()
 		assert.LessOrEqual(t, int64(ttl), int64(billingCacheTTL),
@@ -35,7 +35,6 @@ func TestJitteredTTL_NeverExceedsBase(t *testing.T) {
 }
 
 func TestJitteredTTL_HasVariance(t *testing.T) {
-	// 验证抖动确实产生了不同的值
 	results := make(map[time.Duration]bool)
 	for i := 0; i < 100; i++ {
 		ttl := jitteredTTL()
@@ -47,7 +46,6 @@ func TestJitteredTTL_HasVariance(t *testing.T) {
 }
 
 func TestJitteredTTL_AverageNearCenter(t *testing.T) {
-	// 验证平均值大约在抖动范围中间
 	var sum time.Duration
 	runs := 1000
 	for i := 0; i < runs; i++ {
@@ -57,7 +55,7 @@ func TestJitteredTTL_AverageNearCenter(t *testing.T) {
 	avg := sum / time.Duration(runs)
 	expectedCenter := billingCacheTTL - billingCacheJitter/2 // 4min45s
 
-	// 允许 ±5s 的误差
+	// ±5s
 	tolerance := 5 * time.Second
 	assert.InDelta(t, float64(expectedCenter), float64(avg), float64(tolerance),
 		"平均 TTL 应接近抖动范围中心 %v", expectedCenter)

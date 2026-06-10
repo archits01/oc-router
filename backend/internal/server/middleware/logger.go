@@ -10,19 +10,15 @@ import (
 	"go.uber.org/zap"
 )
 
-// Logger 请求日志中间件
+// Logger
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 开始时间
 		startTime := time.Now()
 
-		// 请求路径
 		path := c.Request.URL.Path
 
-		// 处理请求
 		c.Next()
 
-		// 跳过健康检查等高频探针路径的日志
 		if path == "/health" || path == "/setup/status" {
 			return
 		}

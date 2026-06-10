@@ -9,14 +9,13 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// 用户/分组级 RPM 计数器 Redis 实现。
 //
-// 设计说明：
-//   - key 形式：rpm:ug:{uid}:{gid}:{minute}、rpm:u:{uid}:{minute}
-//   - 时间来源：rdb.Time()（Redis 服务端时间），避免多实例时钟漂移。
-//   - 原子操作：TxPipeline (MULTI/EXEC) 执行 INCR+EXPIRE，兼容 Redis Cluster。
-//   - TTL：120s，覆盖当前分钟窗口 + 少量冗余。
-//   - 返回值语义：超限判断由调用方（billing_cache_service.checkRPM）与 RPMLimit 比较完成。
+//
+//   - key {uid}:{gid}:{minute}、rpm:u:{uid}:{minute}
+//   - ()（Redis
+//   - (MULTI/EXEC) +EXPIRE，
+//   - TTL：120s，+
+//   -
 const (
 	userGroupRPMKeyPrefix = "rpm:ug:"
 	userRPMKeyPrefix      = "rpm:u:"
@@ -28,12 +27,12 @@ type userRPMCacheImpl struct {
 	rdb *redis.Client
 }
 
-// NewUserRPMCache 创建用户/分组级 RPM 计数器。
+// NewUserRPMCache
 func NewUserRPMCache(rdb *redis.Client) service.UserRPMCache {
 	return &userRPMCacheImpl{rdb: rdb}
 }
 
-// minuteTS 获取当前 Redis 服务端分钟时间戳。
+// minuteTS
 func (c *userRPMCacheImpl) minuteTS(ctx context.Context) (int64, error) {
 	t, err := c.rdb.Time(ctx).Result()
 	if err != nil {
@@ -42,7 +41,7 @@ func (c *userRPMCacheImpl) minuteTS(ctx context.Context) (int64, error) {
 	return t.Unix() / 60, nil
 }
 
-// atomicIncr 原子 INCR+EXPIRE。
+// atomicIncr +EXPIRE。
 func (c *userRPMCacheImpl) atomicIncr(ctx context.Context, key string) (int, error) {
 	pipe := c.rdb.TxPipeline()
 	incr := pipe.Incr(ctx, key)
@@ -53,7 +52,7 @@ func (c *userRPMCacheImpl) atomicIncr(ctx context.Context, key string) (int, err
 	return int(incr.Val()), nil
 }
 
-// IncrementUserGroupRPM 递增 (user, group) 分钟计数。
+// IncrementUserGroupRPM (user, group)
 func (c *userRPMCacheImpl) IncrementUserGroupRPM(ctx context.Context, userID, groupID int64) (int, error) {
 	minute, err := c.minuteTS(ctx)
 	if err != nil {
@@ -63,7 +62,7 @@ func (c *userRPMCacheImpl) IncrementUserGroupRPM(ctx context.Context, userID, gr
 	return c.atomicIncr(ctx, key)
 }
 
-// IncrementUserRPM 递增用户分钟计数。
+// IncrementUserRPM
 func (c *userRPMCacheImpl) IncrementUserRPM(ctx context.Context, userID int64) (int, error) {
 	minute, err := c.minuteTS(ctx)
 	if err != nil {
@@ -73,7 +72,7 @@ func (c *userRPMCacheImpl) IncrementUserRPM(ctx context.Context, userID int64) (
 	return c.atomicIncr(ctx, key)
 }
 
-// GetUserGroupRPM 获取 (user, group) 当前分钟已用 RPM（只读）。
+// GetUserGroupRPM (user, group)
 func (c *userRPMCacheImpl) GetUserGroupRPM(ctx context.Context, userID, groupID int64) (int, error) {
 	minute, err := c.minuteTS(ctx)
 	if err != nil {
@@ -90,7 +89,7 @@ func (c *userRPMCacheImpl) GetUserGroupRPM(ctx context.Context, userID, groupID 
 	return val, nil
 }
 
-// GetUserRPM 获取用户当前分钟已用 RPM（只读）。
+// GetUserRPM
 func (c *userRPMCacheImpl) GetUserRPM(ctx context.Context, userID int64) (int, error) {
 	minute, err := c.minuteTS(ctx)
 	if err != nil {

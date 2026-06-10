@@ -8,13 +8,13 @@ func TestIsCodexCLIRequest(t *testing.T) {
 		ua   string
 		want bool
 	}{
-		{name: "codex_cli_rs 前缀", ua: "codex_cli_rs/0.1.0", want: true},
-		{name: "codex_vscode 前缀", ua: "codex_vscode/1.2.3", want: true},
-		{name: "大小写混合", ua: "Codex_CLI_Rs/0.1.0", want: true},
-		{name: "复合 UA 包含 codex", ua: "Mozilla/5.0 codex_cli_rs/0.1.0", want: true},
-		{name: "空白包裹", ua: "  codex_vscode/1.2.3  ", want: true},
-		{name: "非 codex", ua: "curl/8.0.1", want: false},
-		{name: "空字符串", ua: "", want: false},
+		{name: "codex_cli_rs prefix", ua: "codex_cli_rs/0.1.0", want: true},
+		{name: "codex_vscode prefix", ua: "codex_vscode/1.2.3", want: true},
+		{name: "mixed case", ua: "Codex_CLI_Rs/0.1.0", want: true},
+		{name: "composite UA contains codex", ua: "Mozilla/5.0 codex_cli_rs/0.1.0", want: true},
+		{name: "whitespace wrapped", ua: "  codex_vscode/1.2.3  ", want: true},
+		{name: "non-codex", ua: "curl/8.0.1", want: false},
+		{name: "empty string", ua: "", want: false},
 	}
 
 	for _, tt := range tests {
@@ -33,18 +33,18 @@ func TestIsCodexOfficialClientRequest(t *testing.T) {
 		ua   string
 		want bool
 	}{
-		{name: "codex_cli_rs 前缀", ua: "codex_cli_rs/0.98.0", want: true},
-		{name: "codex_vscode 前缀", ua: "codex_vscode/1.0.0", want: true},
-		{name: "codex_app 前缀", ua: "codex_app/0.1.0", want: true},
-		{name: "codex_chatgpt_desktop 前缀", ua: "codex_chatgpt_desktop/1.0.0", want: true},
-		{name: "codex_atlas 前缀", ua: "codex_atlas/1.0.0", want: true},
-		{name: "codex_exec 前缀", ua: "codex_exec/0.1.0", want: true},
-		{name: "codex_sdk_ts 前缀", ua: "codex_sdk_ts/0.1.0", want: true},
-		{name: "Codex 桌面 UA", ua: "Codex Desktop/1.2.3", want: true},
-		{name: "复合 UA 包含 codex_app", ua: "Mozilla/5.0 codex_app/0.1.0", want: true},
-		{name: "大小写混合", ua: "Codex_VSCode/1.2.3", want: true},
-		{name: "非 codex", ua: "curl/8.0.1", want: false},
-		{name: "空字符串", ua: "", want: false},
+		{name: "codex_cli_rs prefix", ua: "codex_cli_rs/0.98.0", want: true},
+		{name: "codex_vscode prefix", ua: "codex_vscode/1.0.0", want: true},
+		{name: "codex_app prefix", ua: "codex_app/0.1.0", want: true},
+		{name: "codex_chatgpt_desktop prefix", ua: "codex_chatgpt_desktop/1.0.0", want: true},
+		{name: "codex_atlas prefix", ua: "codex_atlas/1.0.0", want: true},
+		{name: "codex_exec prefix", ua: "codex_exec/0.1.0", want: true},
+		{name: "codex_sdk_ts prefix", ua: "codex_sdk_ts/0.1.0", want: true},
+		{name: "Codex desktop UA", ua: "Codex Desktop/1.2.3", want: true},
+		{name: "composite UA contains codex_app", ua: "Mozilla/5.0 codex_app/0.1.0", want: true},
+		{name: "mixed case", ua: "Codex_VSCode/1.2.3", want: true},
+		{name: "non-codex", ua: "curl/8.0.1", want: false},
+		{name: "empty string", ua: "", want: false},
 	}
 
 	for _, tt := range tests {
@@ -70,10 +70,10 @@ func TestIsCodexOfficialClientOriginator(t *testing.T) {
 		{name: "codex_atlas", originator: "codex_atlas", want: true},
 		{name: "codex_exec", originator: "codex_exec", want: true},
 		{name: "codex_sdk_ts", originator: "codex_sdk_ts", want: true},
-		{name: "Codex 前缀", originator: "Codex Desktop", want: true},
-		{name: "空白包裹", originator: "  codex_vscode  ", want: true},
-		{name: "非 codex", originator: "my_client", want: false},
-		{name: "空字符串", originator: "", want: false},
+		{name: "Codex prefix", originator: "Codex Desktop", want: true},
+		{name: "whitespace wrapped", originator: "  codex_vscode  ", want: true},
+		{name: "non-codex", originator: "my_client", want: false},
+		{name: "empty string", originator: "", want: false},
 	}
 
 	for _, tt := range tests {
@@ -93,10 +93,10 @@ func TestIsCodexOfficialClientByHeaders(t *testing.T) {
 		originator string
 		want       bool
 	}{
-		{name: "仅 originator 命中 desktop", originator: "Codex Desktop", want: true},
-		{name: "仅 originator 命中 vscode", originator: "codex_vscode", want: true},
-		{name: "仅 ua 命中 desktop", ua: "Codex Desktop/1.2.3", want: true},
-		{name: "ua 与 originator 都未命中", ua: "curl/8.0.1", originator: "my_client", want: false},
+		{name: "only originator matches desktop", originator: "Codex Desktop", want: true},
+		{name: "only originator matches vscode", originator: "codex_vscode", want: true},
+		{name: "only UA matches desktop", ua: "Codex Desktop/1.2.3", want: true},
+		{name: "neither UA nor originator matches", ua: "curl/8.0.1", originator: "my_client", want: false},
 	}
 
 	for _, tt := range tests {

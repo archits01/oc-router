@@ -12,19 +12,19 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-// toolNameRewriteKey 是 gin.Context 上存 ToolNameRewrite 映射的 key。
-// 请求阶段写入，响应阶段读取，用于 bytes 级逆向还原假名 → 真名。
+// toolNameRewriteKey
+// →
 const toolNameRewriteKey = "claude_tool_name_rewrite"
 
-// staticToolNameRewrites 是"静态前缀映射"，与 Parrot src/transform/cc_mimicry.py
-// TOOL_NAME_REWRITES 完全一致。只有以这些前缀开头的工具会被重写。
+// staticToolNameRewrites ""，
+// TOOL_NAME_REWRITES
 var staticToolNameRewrites = map[string]string{
 	"sessions_": "cc_sess_",
 	"session_":  "cc_ses_",
 }
 
-// fakeToolNamePrefixes 是"动态映射"的前缀池，与 Parrot _FAKE_PREFIXES 一致。
-// 当 tools 数量 > dynamicToolMapThreshold 时随机选用其中前缀生成可读假名。
+// fakeToolNamePrefixes ""
+// > dynamicToolMapThreshold
 var fakeToolNamePrefixes = []string{
 	"analyze_", "compute_", "fetch_", "generate_", "lookup_", "modify_",
 	"process_", "query_", "render_", "resolve_", "sync_", "update_",
@@ -32,16 +32,16 @@ var fakeToolNamePrefixes = []string{
 	"review_", "search_", "transform_", "handle_", "invoke_", "notify_",
 }
 
-// dynamicToolMapThreshold 与 Parrot 一致：tools 数量超过 5 才启用动态映射。
-// 少量工具不需要混淆（一般是 Claude Code 自己的核心工具 bash/edit/read 等）。
+// dynamicToolMapThreshold
+//
 const dynamicToolMapThreshold = 5
 
-// ToolNameRewrite 是单次请求内的工具名混淆映射。
-//   - Forward: real → fake，请求阶段在 body 上应用。
-//   - Reverse: fake → real，响应阶段对每个 chunk 做 bytes.Replace 还原。
+// ToolNameRewrite
+//   - Forward: real → fake，
+//   - Reverse: fake → real，
 //
-// ReverseOrdered 是按假名长度倒序的 (fake, real) 列表，用于防止短假名是长假名的
-// 子串时 bytes.Replace 先被吃掉（对齐 Parrot _restore_tool_names_in_chunk 的
+// ReverseOrdered (fake, real)
+//
 // `sorted(..., key=lambda x: len(x[1]), reverse=True)`）。
 type ToolNameRewrite struct {
 	Forward        map[string]string
@@ -49,16 +49,16 @@ type ToolNameRewrite struct {
 	ReverseOrdered [][2]string
 }
 
-// buildDynamicToolMap 构造 tools 的动态假名映射。
+// buildDynamicToolMap
 //
-// 与 Parrot _build_dynamic_tool_map 语义等价：
-//   - tools 数量 ≤ dynamicToolMapThreshold 时返回 nil（不做动态映射，走静态 fallback）
-//   - 同一组 tool_names 在同进程内映射稳定（保证 cache 命中）
 //
-// Parrot 用 `random.Random(hash(tuple(tool_names)))` 作 seed + shuffle 前缀池；
-// Go 无法字节级复刻 Python hash，但"稳定性"和"前缀池打散"两个不变量都保留：
-// 用 fnv64a(strings.Join(names, "\x00")) 作 seed 喂 math/rand.New。
-// 字节级不同不影响上游判定（Anthropic 不会验证我们的随机种子算法）。
+//   - tools ≤ dynamicToolMapThreshold
+//   -
+//
+// Parrot `random.Random(hash(tuple(tool_names)))` + shuffle
+// Go """"
+// (strings.Join(names, "\x00"))
+//
 func buildDynamicToolMap(toolNames []string) map[string]string {
 	if len(toolNames) <= dynamicToolMapThreshold {
 		return nil
@@ -89,8 +89,8 @@ func buildDynamicToolMap(toolNames []string) map[string]string {
 	return mapping
 }
 
-// sanitizeToolName 把真名转成假名。
-// 与 Parrot _sanitize_tool_name 语义一致：动态映射优先，再走静态前缀映射。
+// sanitizeToolName
+//
 func sanitizeToolName(name string, dynamic map[string]string) string {
 	if dynamic != nil {
 		if fake, ok := dynamic[name]; ok {
@@ -105,9 +105,9 @@ func sanitizeToolName(name string, dynamic map[string]string) string {
 	return name
 }
 
-// shouldMimicToolName 指示某个 tool 是否需要重命名。
-// server tool（type != "" 且不是 "function" / "custom"）是 Anthropic 协议语义的一部分，
-// 比如 "web_search_20250305" / "computer_20250124"；误改会导致上游拒绝。
+// shouldMimicToolName
+// server tool（type != "" "function" / "custom"）
+// "web_search_20250305" / "computer_20250124"；
 func shouldMimicToolName(toolType string) bool {
 	if toolType == "" || toolType == "function" || toolType == "custom" {
 		return true
@@ -115,10 +115,10 @@ func shouldMimicToolName(toolType string) bool {
 	return false
 }
 
-// buildToolNameRewriteFromBody 扫描 body 的 tools[*].name，构造 ToolNameRewrite
-// 并返回它。若不需要混淆（tools 数量不足 + 没有匹配静态前缀的工具）返回 nil。
+// buildToolNameRewriteFromBody [*].name，
+// +
 //
-// 注意：只扫描，不改 body。真正的 body 改写在 applyToolNameRewriteToBody。
+//
 func buildToolNameRewriteFromBody(body []byte) *ToolNameRewrite {
 	tools := gjson.GetBytes(body, "tools")
 	if !tools.IsArray() {
@@ -167,14 +167,14 @@ func buildToolNameRewriteFromBody(body []byte) *ToolNameRewrite {
 	return rw
 }
 
-// applyToolNameRewriteToBody 把已构造的 ToolNameRewrite 应用到 body 上：
+// applyToolNameRewriteToBody
 //
-//   - 改写 $.tools[*].name（仅对 shouldMimicToolName 通过的 tool）
-//   - 改写 $.tool_choice.name（仅当 $.tool_choice.type == "tool"）
-//   - 改写 $.messages[*].content[*].name（仅当 type == "tool_use"）
-//   - 在 $.tools[last].cache_control 上打 ephemeral 缓存断点
+//   - $.tools[*].name（
+//   - $.tool_choice.name（$.tool_choice.type == "tool"）
+//   - $.messages[*].content[*].name（== "tool_use"）
+//   - $.tools[last].cache_control
 //
-// 响应侧 bytes.Replace 会连带还原假名 → 真名。
+// →
 func applyToolNameRewriteToBody(body []byte, rw *ToolNameRewrite) []byte {
 	if rw == nil || len(rw.Forward) == 0 {
 		body = applyToolsLastCacheBreakpoint(body)
@@ -213,8 +213,8 @@ func applyToolNameRewriteToBody(body []byte, rw *ToolNameRewrite) []byte {
 		}
 	}
 
-	// 同步改写历史消息中的 tool_use.name，确保它和 tools[] 中的假名一致。
-	// 否则 Anthropic 会因为 tool_use 引用了未声明的原始工具名而拒绝请求。
+	// []
+	//
 	messages := gjson.GetBytes(body, "messages")
 	if messages.IsArray() {
 		messages.ForEach(func(msgKey, msg gjson.Result) bool {
@@ -248,13 +248,13 @@ func applyToolNameRewriteToBody(body []byte, rw *ToolNameRewrite) []byte {
 	return body
 }
 
-// applyToolsLastCacheBreakpoint 在 tools 数组最后一个工具上注入 cache_control
-// 断点，对齐 Parrot `tools[-1]["cache_control"] = {"type":"ephemeral","ttl":"1h"}`
-// 行为，但 ttl 按本仓规则：
-//   - 客户端已为该 tool 显式设置 cache_control.ttl → 完全透传不覆盖
-//   - 否则注入 {"type":"ephemeral","ttl": claude.DefaultCacheControlTTL}
+// applyToolsLastCacheBreakpoint
+// `tools[-1]["cache_control"] = {"type":"ephemeral","ttl":"1h"}`
 //
-// 纯副作用函数，tools 不存在或为空数组时 no-op。
+//   - →
+//   - {"type":"ephemeral","ttl": claude.DefaultCacheControlTTL}
+//
+//
 func applyToolsLastCacheBreakpoint(body []byte) []byte {
 	tools := gjson.GetBytes(body, "tools")
 	if !tools.IsArray() {
@@ -285,12 +285,12 @@ func applyToolsLastCacheBreakpoint(body []byte) []byte {
 	return body
 }
 
-// restoreToolNamesInBytes 对 bytes chunk 做逆向还原：假名 → 真名。
-// 按 ReverseOrdered 的假名长度倒序逐个 bytes.Replace，防止子串冲突
-// （与 Parrot _restore_tool_names_in_chunk 的 sorted(..., reverse=True) 等价）。
-// 再做静态前缀还原（cc_sess_ → sessions_ / cc_ses_ → session_）。
+// restoreToolNamesInBytes →
 //
-// rw 可为 nil；nil 时仍会做静态前缀还原。
+// （(..., reverse=True)
+// → sessions_ / cc_ses_ → session_）。
+//
+// rw
 func restoreToolNamesInBytes(data []byte, rw *ToolNameRewrite) []byte {
 	if rw != nil {
 		for _, pair := range rw.ReverseOrdered {
@@ -307,7 +307,7 @@ func restoreToolNamesInBytes(data []byte, rw *ToolNameRewrite) []byte {
 	return data
 }
 
-// replaceAllBytes 是 bytes.ReplaceAll 的便捷封装，避免每个调用点各自做 []byte 转换。
+// replaceAllBytes []byte
 func replaceAllBytes(data []byte, from, to string) []byte {
 	if len(data) == 0 || from == to || !strings.Contains(string(data), from) {
 		return data
@@ -315,8 +315,8 @@ func replaceAllBytes(data []byte, from, to string) []byte {
 	return []byte(strings.ReplaceAll(string(data), from, to))
 }
 
-// toolNameRewriteFromContext 从 gin.Context 取出请求阶段保存的工具名映射。
-// 找不到（c==nil 或 key 不存在或类型不对）时返回 nil；调用方必须能处理 nil。
+// toolNameRewriteFromContext
+// ==nil
 func toolNameRewriteFromContext(c interface {
 	Get(string) (any, bool)
 }) *ToolNameRewrite {
@@ -331,8 +331,8 @@ func toolNameRewriteFromContext(c interface {
 	return rw
 }
 
-// reverseToolNamesIfPresent 是响应侧 5 处注入点的统一封装：从 c 取出 mapping
-// 并对 chunk 做 bytes 级假名→真名替换。c 没有 mapping 时仍会做静态前缀还原。
+// reverseToolNamesIfPresent
+// →
 func reverseToolNamesIfPresent(c interface {
 	Get(string) (any, bool)
 }, chunk []byte) []byte {

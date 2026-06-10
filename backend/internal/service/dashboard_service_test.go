@@ -282,7 +282,7 @@ func TestDashboardService_CacheHitStale_TriggersAsyncRefresh(t *testing.T) {
 	select {
 	case <-refreshCh:
 	case <-time.After(1 * time.Second):
-		t.Fatal("等待异步刷新超时")
+		t.Fatal("等待异步刷新timeout")
 	}
 	require.Eventually(t, func() bool {
 		return atomic.LoadInt32(&cache.setCalls) >= 1

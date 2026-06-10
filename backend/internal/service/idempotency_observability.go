@@ -10,7 +10,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 )
 
-// IdempotencyMetricsSnapshot 提供幂等核心指标快照（进程内累计）。
+// IdempotencyMetricsSnapshot
 type IdempotencyMetricsSnapshot struct {
 	ClaimTotal                uint64  `json:"claim_total"`
 	ReplayTotal               uint64  `json:"replay_total"`
@@ -33,7 +33,7 @@ type idempotencyMetrics struct {
 
 var defaultIdempotencyMetrics idempotencyMetrics
 
-// GetIdempotencyMetricsSnapshot 返回当前幂等指标快照。
+// GetIdempotencyMetricsSnapshot
 func GetIdempotencyMetricsSnapshot() IdempotencyMetricsSnapshot {
 	totalMicros := defaultIdempotencyMetrics.processingDurationMicros.Load()
 	return IdempotencyMetricsSnapshot{
@@ -76,7 +76,7 @@ func recordIdempotencyProcessingDuration(endpoint, scope string, duration time.D
 	logIdempotencyMetric("idempotency_processing_duration_ms", endpoint, scope, strconv.FormatFloat(duration.Seconds()*1000, 'f', 3, 64), attrs)
 }
 
-// RecordIdempotencyStoreUnavailable 记录幂等存储不可用事件（用于降级路径观测）。
+// RecordIdempotencyStoreUnavailable
 func RecordIdempotencyStoreUnavailable(endpoint, scope, strategy string) {
 	defaultIdempotencyMetrics.storeUnavailableTotal.Add(1)
 	attrs := map[string]string{}
@@ -144,7 +144,7 @@ func safeAuditField(v string) string {
 	if value == "" {
 		return "-"
 	}
-	// 日志按 key=value 输出，替换空白避免解析歧义。
+	// =value
 	value = strings.ReplaceAll(value, "\n", "_")
 	value = strings.ReplaceAll(value, "\r", "_")
 	value = strings.ReplaceAll(value, "\t", "_")

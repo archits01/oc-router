@@ -25,7 +25,7 @@ describe('NavigationProgress', () => {
     const wrapper = mount(NavigationProgress)
 
     const progressBar = wrapper.find('.navigation-progress')
-    // v-show 会设置 display: none
+    // v-show 会Settings display: none
     expect(progressBar.isVisible()).toBe(false)
   })
 
@@ -59,16 +59,15 @@ describe('NavigationProgress', () => {
     expect(bar.exists()).toBe(true)
   })
 
-  it('应该正确响应 isLoading 状态变化', async () => {
-    // 测试初始状态为 false
+  it('应该正确响应 isLoading Status变化', async () => {
+    // 测试初始Status为 false
     mockIsLoading.value = false
     const wrapper = mount(NavigationProgress)
     await wrapper.vm.$nextTick()
 
-    // 初始状态隐藏
     expect(wrapper.find('.navigation-progress').isVisible()).toBe(false)
 
-    // 卸载后重新挂载以测试 true 状态
+    // 卸载后重新挂载以测试 true Status
     wrapper.unmount()
 
     // 改变为 true 后重新挂载
@@ -77,7 +76,6 @@ describe('NavigationProgress', () => {
     await wrapper2.vm.$nextTick()
     expect(wrapper2.find('.navigation-progress').isVisible()).toBe(true)
 
-    // 清理
     wrapper2.unmount()
   })
 })

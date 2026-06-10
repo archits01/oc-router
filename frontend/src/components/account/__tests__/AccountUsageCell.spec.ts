@@ -150,7 +150,7 @@ describe('AccountUsageCell', () => {
   })
 
 
-  it('OpenAI OAuth 快照已过期时首屏会重新请求 usage', async () => {
+  it('OpenAI OAuth 快照已Expired时首屏会重新请求 usage', async () => {
     getUsage.mockResolvedValue({
       five_hour: {
         utilization: 15,
@@ -268,12 +268,12 @@ describe('AccountUsageCell', () => {
     await flushPromises()
 
     expect(getUsage).toHaveBeenCalledWith(2001)
-    // 单一数据源：始终使用 /usage API 返回值，忽略 codex 快照
+    // 单一数据源：始终使用 /usage API Back值，忽略 codex 快照
     expect(wrapper.text()).toContain('5h|18|900')
     expect(wrapper.text()).toContain('7d|36|900')
   })
 
-  it('OpenAI OAuth 有现成快照时，手动刷新信号会触发 usage 重拉', async () => {
+  it('OpenAI OAuth 有现成快照时，Manual Refresh信号会触发 usage 重拉', async () => {
     getUsage.mockResolvedValue({
       five_hour: {
         utilization: 18,
@@ -336,7 +336,6 @@ describe('AccountUsageCell', () => {
     await wrapper.setProps({ manualRefreshToken: 1 })
     await flushPromises()
 
-    // 手动刷新再拉一次
     expect(getUsage).toHaveBeenCalledTimes(2)
     expect(getUsage).toHaveBeenCalledWith(2010)
     // 单一数据源：始终使用 /usage API 值
@@ -398,7 +397,7 @@ describe('AccountUsageCell', () => {
 	expect(wrapper.text()).toContain('7d|0|27700')
   })
 
-  it('OpenAI OAuth 在行数据刷新但仍无 codex 快照时会重新拉取 usage', async () => {
+  it('OpenAI OAuth 在行数据Refresh但仍无 codex 快照时会重新拉取 usage', async () => {
 	getUsage
 	  .mockResolvedValueOnce({
 	    five_hour: {
@@ -471,7 +470,7 @@ describe('AccountUsageCell', () => {
 	expect(wrapper.text()).toContain('5h|0|200')
   })
 
-  it('OpenAI OAuth 已限额时显示 /usage API 返回的限额数据', async () => {
+  it('OpenAI OAuth 已限额时显示 /usage API Back的限额数据', async () => {
 	getUsage.mockResolvedValue({
 	  five_hour: {
 	    utilization: 100,

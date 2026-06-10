@@ -47,7 +47,7 @@ func resetOpsErrorLoggerStateForTest(t *testing.T) {
 func TestEnqueueOpsErrorLog_QueueFullDrop(t *testing.T) {
 	resetOpsErrorLoggerStateForTest(t)
 
-	// 禁止 enqueueOpsErrorLog 触发 workers，使用测试队列验证满队列降级。
+	//
 	opsErrorLogOnce.Do(func() {})
 
 	opsErrorLogMu.Lock()
@@ -71,17 +71,17 @@ func TestEnqueueOpsErrorLog_EarlyReturnBranches(t *testing.T) {
 	ops := service.NewOpsService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	entry := &service.OpsInsertErrorLogInput{ErrorPhase: "upstream", ErrorType: "upstream_error"}
 
-	// nil 入参分支
+	// nil
 	enqueueOpsErrorLog(nil, entry)
 	enqueueOpsErrorLog(ops, nil)
 	require.Equal(t, int64(0), OpsErrorLogEnqueuedTotal())
 
-	// shutdown 分支
+	// shutdown
 	close(opsErrorLogShutdownCh)
 	enqueueOpsErrorLog(ops, entry)
 	require.Equal(t, int64(0), OpsErrorLogEnqueuedTotal())
 
-	// stopping 分支
+	// stopping
 	resetOpsErrorLoggerStateForTest(t)
 	opsErrorLogMu.Lock()
 	opsErrorLogStopping = true
@@ -89,7 +89,7 @@ func TestEnqueueOpsErrorLog_EarlyReturnBranches(t *testing.T) {
 	enqueueOpsErrorLog(ops, entry)
 	require.Equal(t, int64(0), OpsErrorLogEnqueuedTotal())
 
-	// queue nil 分支（防止启动 worker 干扰）
+	// queue nil
 	resetOpsErrorLoggerStateForTest(t)
 	opsErrorLogOnce.Do(func() {})
 	opsErrorLogMu.Lock()
@@ -263,7 +263,7 @@ func TestClassifyOpsAuthClientErrorsExcludedFromSLA(t *testing.T) {
 		{
 			name:    "expired local API key",
 			errType: "api_error",
-			message: "API key 已过期",
+			message: "API key expired",
 			code:    "API_KEY_EXPIRED",
 			status:  http.StatusForbidden,
 		},
@@ -291,7 +291,7 @@ func TestClassifyOpsAuthClientErrorsExcludedFromSLA(t *testing.T) {
 		{
 			name:    "deleted local API key group",
 			errType: "api_error",
-			message: "API Key 所属分组已删除",
+			message: "API Key 所属分组已delete",
 			code:    "GROUP_DELETED",
 			status:  http.StatusForbidden,
 		},
@@ -305,7 +305,7 @@ func TestClassifyOpsAuthClientErrorsExcludedFromSLA(t *testing.T) {
 		{
 			name:    "google deleted API key group message without semantic code",
 			errType: "api_error",
-			message: "API Key 所属分组已删除",
+			message: "API Key 所属分组已delete",
 			code:    "403",
 			status:  http.StatusForbidden,
 		},
@@ -764,7 +764,7 @@ func TestClassifyOpsUpstreamAuthTextStillCountsForSLA(t *testing.T) {
 		},
 		{
 			name:    "provider deleted group shaped error",
-			message: "API Key 所属分组已删除",
+			message: "API Key 所属分组已delete",
 			code:    "GROUP_DELETED",
 			status:  http.StatusForbidden,
 		},
@@ -880,11 +880,11 @@ func TestClassifyOpsUpstreamNoAvailableTextStillCountsForSLA(t *testing.T) {
 }
 
 func TestParseOpsErrorResponsePreservesNestedStringCode(t *testing.T) {
-	parsed := parseOpsErrorResponse([]byte(`{"error":{"type":"permission_error","code":"GROUP_DELETED","message":"API Key 所属分组已删除"}}`))
+	parsed := parseOpsErrorResponse([]byte(`{"error":{"type":"permission_error","code":"GROUP_DELETED","message":"API Key 所属分组已delete"}}`))
 
 	require.Equal(t, "permission_error", parsed.ErrorType)
 	require.Equal(t, "GROUP_DELETED", parsed.Code)
-	require.Equal(t, "API Key 所属分组已删除", parsed.Message)
+	require.Equal(t, "API Key 所属分组已delete", parsed.Message)
 }
 
 func TestSetOpsEndpointContext_SetsContextKeys(t *testing.T) {
@@ -937,10 +937,10 @@ func TestGetOpsAPIKeyFallsBackToOpsFallbackKey(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
 
-	// 主 key 缺席（鉴权早退场景）：返回 nil。
+	//
 	require.Nil(t, getOpsAPIKey(c))
 
-	// 写入 ops 专用 fallback key 后应能取到，且带齐 user/group。
+	//
 	groupID := int64(55)
 	apiKey := &service.APIKey{
 		ID:      100,

@@ -417,7 +417,7 @@ function confirmApply(tpl: ChannelMonitorTemplate) {
   applyPicker.show = true
 }
 
-// picker 提交后触发：刷新模板列表（拿最新 associated_monitors）+ 通知父组件
+// picker Submit后触发：Refresh模板列表（拿最新 associated_monitors）+ 通知父组件
 async function onApplied(_affected: number) {
   await fetchTemplates()
   emit('updated')

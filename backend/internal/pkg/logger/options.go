@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	// DefaultContainerLogPath 为容器内默认日志文件路径。
+	// DefaultContainerLogPath
 	DefaultContainerLogPath = "/app/data/logs/sub2api.log"
 	defaultLogFilename      = "sub2api.log"
 )

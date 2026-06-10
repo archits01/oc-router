@@ -633,18 +633,17 @@ func (s *UserSubscriptionRepoSuite) TestActiveExpiredBoundaries_UsageAndReset_Ba
 	s.Require().Equal(service.SubscriptionStatusExpired, updated.Status, "expected status expired")
 }
 
-// --- 软删除过滤测试 ---
+// ---
 
 func (s *UserSubscriptionRepoSuite) TestIncrementUsage_SoftDeletedGroup() {
 	user := s.mustCreateUser("softdeleted@test.com", service.RoleUser)
 	group := s.mustCreateGroup("g-softdeleted")
 	sub := s.mustCreateSubscription(user.ID, group.ID, nil)
 
-	// 软删除分组
 	_, err := s.client.Group.UpdateOneID(group.ID).SetDeletedAt(time.Now()).Save(s.ctx)
 	s.Require().NoError(err, "soft delete group")
 
-	// IncrementUsage 应该失败，因为分组已软删除
+	// IncrementUsage
 	err = s.repo.IncrementUsage(s.ctx, sub.ID, 1.0)
 	s.Require().Error(err, "should fail for soft-deleted group")
 	s.Require().ErrorIs(err, service.ErrSubscriptionNotFound)
@@ -656,7 +655,7 @@ func (s *UserSubscriptionRepoSuite) TestIncrementUsage_NotFound() {
 	s.Require().ErrorIs(err, service.ErrSubscriptionNotFound)
 }
 
-// --- nil 入参测试 ---
+// --- nil
 
 func (s *UserSubscriptionRepoSuite) TestCreate_NilInput() {
 	err := s.repo.Create(s.ctx, nil)
@@ -670,7 +669,7 @@ func (s *UserSubscriptionRepoSuite) TestUpdate_NilInput() {
 	s.Require().ErrorIs(err, service.ErrSubscriptionNilInput)
 }
 
-// --- 并发用量更新测试 ---
+// ---
 
 func (s *UserSubscriptionRepoSuite) TestIncrementUsage_Concurrent() {
 	user := s.mustCreateUser("concurrent@test.com", service.RoleUser)
@@ -680,7 +679,7 @@ func (s *UserSubscriptionRepoSuite) TestIncrementUsage_Concurrent() {
 	const numGoroutines = 10
 	const incrementPerGoroutine = 1.5
 
-	// 启动多个 goroutine 并发调用 IncrementUsage
+	//
 	errCh := make(chan error, numGoroutines)
 	for i := 0; i < numGoroutines; i++ {
 		go func() {
@@ -688,13 +687,12 @@ func (s *UserSubscriptionRepoSuite) TestIncrementUsage_Concurrent() {
 		}()
 	}
 
-	// 等待所有 goroutine 完成
+	//
 	for i := 0; i < numGoroutines; i++ {
 		err := <-errCh
 		s.Require().NoError(err, "IncrementUsage should succeed")
 	}
 
-	// 验证累加结果正确
 	got, err := s.repo.GetByID(s.ctx, sub.ID)
 	s.Require().NoError(err)
 	expectedUsage := float64(numGoroutines) * incrementPerGoroutine

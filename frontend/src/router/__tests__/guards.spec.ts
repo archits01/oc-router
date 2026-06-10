@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { resolveCompletedSetupRedirectPath } from '@/router/setupRedirect'
 
-// Mock 导航加载状态
+// Mock 导航加载Status
 vi.mock('@/composables/useNavigationLoading', () => {
   const mockStart = vi.fn()
   const mockEnd = vi.fn()
@@ -47,7 +47,7 @@ vi.mock('@/api/auth', () => ({
 }))
 
 
-// 用于测试的 auth 状态
+// 用于测试的 auth Status
 interface MockAuthState {
   isAuthenticated: boolean
   isAdmin: boolean
@@ -72,7 +72,6 @@ function simulateGuard(
     return resolveCompletedSetupRedirectPath(authState.isAuthenticated, authState.isAdmin)
   }
 
-  // 不需要认证的路由
   if (!requiresAuth) {
     if (
       authState.isAuthenticated &&
@@ -104,17 +103,14 @@ function simulateGuard(
     return null // 允许通过
   }
 
-  // 需要认证但未登录
   if (!authState.isAuthenticated) {
     return '/login'
   }
 
-  // 需要管理员但不是管理员
   if (requiresAdmin && !authState.isAdmin) {
     return '/dashboard'
   }
 
-  // 简易模式限制
   if (authState.isSimpleMode) {
     const restrictedPaths = [
       '/admin/groups',
@@ -159,9 +155,9 @@ describe('路由守卫逻辑', () => {
     setActivePinia(createPinia())
   })
 
-  // --- 未认证用户 ---
+  // --- 未认证User ---
 
-  describe('未认证用户', () => {
+  describe('未认证User', () => {
     const authState: MockAuthState = {
       isAuthenticated: false,
       isAdmin: false,
@@ -191,9 +187,9 @@ describe('路由守卫逻辑', () => {
     })
   })
 
-  // --- 已认证普通用户 ---
+  // --- 已认证普通User ---
 
-  describe('已认证普通用户', () => {
+  describe('已认证普通User', () => {
     const authState: MockAuthState = {
       isAuthenticated: true,
       isAdmin: false,
@@ -228,9 +224,9 @@ describe('路由守卫逻辑', () => {
     })
   })
 
-  // --- 已认证管理员 ---
+  // --- 已认证Admin ---
 
-  describe('已认证管理员', () => {
+  describe('已认证Admin', () => {
     const authState: MockAuthState = {
       isAuthenticated: true,
       isAdmin: true,
@@ -249,7 +245,7 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBeNull()
     })
 
-    it('访问用户页面允许通过', () => {
+    it('访问User页面允许通过', () => {
       const redirect = simulateGuard('/dashboard', {}, authState)
       expect(redirect).toBeNull()
     })
@@ -258,7 +254,7 @@ describe('路由守卫逻辑', () => {
   // --- 简易模式 ---
 
   describe('简易模式受限路由', () => {
-    it('普通用户简易模式访问 /subscriptions 重定向到 /dashboard', () => {
+    it('普通User简易模式访问 /subscriptions 重定向到 /dashboard', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,
         isAdmin: false,
@@ -270,7 +266,7 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBe('/dashboard')
     })
 
-    it('普通用户简易模式访问 /redeem 重定向到 /dashboard', () => {
+    it('普通User简易模式访问 /redeem 重定向到 /dashboard', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,
         isAdmin: false,
@@ -282,7 +278,7 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBe('/dashboard')
     })
 
-    it('管理员简易模式访问 /admin/groups 重定向到 /admin/dashboard', () => {
+    it('Admin简易模式访问 /admin/groups 重定向到 /admin/dashboard', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,
         isAdmin: true,
@@ -294,7 +290,7 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBe('/admin/dashboard')
     })
 
-    it('管理员简易模式访问 /admin/subscriptions 重定向', () => {
+    it('Admin简易模式访问 /admin/subscriptions 重定向', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,
         isAdmin: true,
@@ -310,7 +306,7 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBe('/admin/dashboard')
     })
 
-    it('简易模式下非受限页面正常访问', () => {
+    it('简易模式下非受限页面Normal访问', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,
         isAdmin: false,
@@ -322,7 +318,7 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBeNull()
     })
 
-    it('简易模式下 /keys 正常访问', () => {
+    it('简易模式下 /keys Normal访问', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,
         isAdmin: false,

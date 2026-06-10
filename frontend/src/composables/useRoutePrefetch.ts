@@ -11,7 +11,7 @@ import { ref, readonly } from 'vue'
 import type { RouteLocationNormalized, Router } from 'vue-router'
 
 /**
- * 组件导入函数类型
+ * 组件Import函数类型
  */
 type ComponentImportFn = () => Promise<unknown>
 
@@ -35,7 +35,7 @@ const PREFETCH_ADJACENCY: Record<string, string[]> = {
 }
 
 /**
- * requestIdleCallback 的返回类型
+ * requestIdleCallback 的Back类型
  */
 type IdleCallbackHandle = number | ReturnType<typeof setTimeout>
 
@@ -68,10 +68,8 @@ const cancelScheduledCallback = (handle: IdleCallbackHandle): void => {
  * @param router - Vue Router 实例，用于获取路由组件
  */
 export function useRoutePrefetch(router?: Router) {
-  // 当前挂起的预加载任务句柄
   const pendingPrefetchHandle = ref<IdleCallbackHandle | null>(null)
 
-  // 已预加载的路由集合
   const prefetchedRoutes = ref<Set<string>>(new Set())
 
   /**
@@ -85,7 +83,6 @@ export function useRoutePrefetch(router?: Router) {
 
     if (route && route.components?.default) {
       const component = route.components.default
-      // 检查是否是懒加载组件（函数形式）
       if (typeof component === 'function') {
         return component as ComponentImportFn
       }
@@ -107,7 +104,6 @@ export function useRoutePrefetch(router?: Router) {
     try {
       await importFn()
     } catch (error) {
-      // 静默处理预加载错误
       if (import.meta.env.DEV) {
         console.debug('[Prefetch] Failed to prefetch component:', error)
       }
@@ -115,7 +111,7 @@ export function useRoutePrefetch(router?: Router) {
   }
 
   /**
-   * 取消挂起的预加载任务
+   * Cancel挂起的预加载任务
    */
   const cancelPendingPrefetch = (): void => {
     if (pendingPrefetchHandle.value !== null) {
@@ -160,7 +156,7 @@ export function useRoutePrefetch(router?: Router) {
   }
 
   /**
-   * 重置预加载状态
+   * Reset预加载Status
    */
   const resetPrefetchState = (): void => {
     cancelPendingPrefetch()
@@ -168,7 +164,7 @@ export function useRoutePrefetch(router?: Router) {
   }
 
   /**
-   * 判断是否为管理员路由
+   * 判断YesNo为Admin路由
    */
   const isAdminRoute = (path: string): boolean => {
     return path.startsWith('/admin')
@@ -197,6 +193,5 @@ export function useRoutePrefetch(router?: Router) {
   }
 }
 
-// 兼容旧测试的导出
 export const _adminPrefetchMap = PREFETCH_ADJACENCY
 export const _userPrefetchMap = PREFETCH_ADJACENCY

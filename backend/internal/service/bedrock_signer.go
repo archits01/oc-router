@@ -12,14 +12,14 @@ import (
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 )
 
-// BedrockSigner 使用 AWS SigV4 对 Bedrock 请求签名
+// BedrockSigner
 type BedrockSigner struct {
 	credentials aws.Credentials
 	region      string
 	signer      *v4.Signer
 }
 
-// NewBedrockSigner 创建 BedrockSigner
+// NewBedrockSigner
 func NewBedrockSigner(accessKeyID, secretAccessKey, sessionToken, region string) *BedrockSigner {
 	return &BedrockSigner{
 		credentials: aws.Credentials{
@@ -32,7 +32,7 @@ func NewBedrockSigner(accessKeyID, secretAccessKey, sessionToken, region string)
 	}
 }
 
-// NewBedrockSignerFromAccount 从 Account 凭证创建 BedrockSigner
+// NewBedrockSignerFromAccount
 func NewBedrockSignerFromAccount(account *Account) (*BedrockSigner, error) {
 	accessKeyID := account.GetCredential("aws_access_key_id")
 	if accessKeyID == "" {
@@ -51,11 +51,11 @@ func NewBedrockSignerFromAccount(account *Account) (*BedrockSigner, error) {
 	return NewBedrockSigner(accessKeyID, secretAccessKey, sessionToken, region), nil
 }
 
-// SignRequest 对 HTTP 请求进行 SigV4 签名
-// 重要约束：调用此方法前，req 应只包含 AWS 相关的 header（如 Content-Type、Accept）。
-// 非 AWS header（如 anthropic-beta）会参与签名计算，如果 Bedrock 服务端不识别这些 header，
-// 签名验证可能失败。litellm 通过 _filter_headers_for_aws_signature 实现头过滤，
-// 当前实现中 buildUpstreamRequestBedrock 仅设置了 Content-Type 和 Accept，因此是安全的。
+// SignRequest
+//
+//
+//
+//
 func (s *BedrockSigner) SignRequest(ctx context.Context, req *http.Request, body []byte) error {
 	payloadHash := sha256Hash(body)
 	return s.signer.SignHTTP(ctx, s.credentials, req, payloadHash, "bedrock", s.region, time.Now())

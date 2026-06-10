@@ -83,7 +83,6 @@ func TestBuildUsageInfo_BasicModels(t *testing.T) {
 
 	info := fetcher.buildUsageInfo(modelsResp, "g1-pro-tier", "PRO", nil)
 
-	// 基本字段
 	require.NotNil(t, info.UpdatedAt, "UpdatedAt should be set")
 	require.Equal(t, "PRO", info.SubscriptionTier)
 	require.Equal(t, "g1-pro-tier", info.SubscriptionTierRaw)
@@ -391,14 +390,14 @@ func TestBuildUsageInfo_AICredits(t *testing.T) {
 }
 
 func TestFetchQuota_ForbiddenReturnsIsForbidden(t *testing.T) {
-	// 模拟 FetchQuota 遇到 403 时的行为：
-	// FetchAvailableModels 返回 ForbiddenError → FetchQuota 应返回 is_forbidden=true
+	//
+	// FetchAvailableModels → FetchQuota =true
 	forbiddenErr := &antigravity.ForbiddenError{
 		StatusCode: 403,
 		Body:       "Access denied",
 	}
 
-	// 验证 ForbiddenError 满足 errors.As
+	//
 	var target *antigravity.ForbiddenError
 	require.True(t, errors.As(forbiddenErr, &target))
 	require.Equal(t, 403, target.StatusCode)

@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// dingTalkClientConfig 是 DingTalkClient 需要的最小配置子集
+// dingTalkClientConfig
 type dingTalkClientConfig struct {
 	ClientID     string
 	ClientSecret string
@@ -25,10 +25,10 @@ type dingTalkClientConfig struct {
 type DingTalkClient struct {
 	cfg         dingTalkClientConfig
 	appToken    string
-	appTokenExp time.Time // 钉钉 7200s，留 200s 余量 → 7000s
+	appTokenExp time.Time // DingTalk 7200s, with 200s margin -> 7000s
 	mu          sync.Mutex
 	httpClient  *http.Client
-	// TODO(multi-instance): Redis 集中缓存 appToken
+	// TODO(multi-instance): Redis
 }
 
 type DingTalkUserTokenResp struct {
@@ -99,8 +99,8 @@ func parseDingTalkErr(raw []byte, status int) error {
 	return &DingTalkAPIError{Code: code, Message: msg, HTTP: status}
 }
 
-// GetUnionIdByUserToken 调用 /v1.0/contact/users/me 返回 unionId 与用户自设昵称 nick。
-// nick 来自钉钉新版 OIDC 接口（用户在 App 个人资料填的昵称），与旧版 user/get.nickname 不同源。
+// GetUnionIdByUserToken
+// nick
 func (c *DingTalkClient) GetUnionIdByUserToken(ctx context.Context, userToken string) (unionID string, nick string, err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.cfg.UserInfoURL, nil)
 	if err != nil {
@@ -131,15 +131,15 @@ func (c *DingTalkClient) GetUnionIdByUserToken(ctx context.Context, userToken st
 
 type DingTalkStaffInfo struct {
 	UserID   string
-	Name     string // 企业内真实姓名（钉钉企业管理后台配置）
-	Nickname string // 钉钉个人昵称（用户自己设置）
+	Name     string // real name within organization (configured in DingTalk admin console)
+	Nickname string // DingTalk personal nickname (set by user)
 	Email    string
 	DeptIDs  []int64
-	// CorpID 不来自 staff 接口，来自 userToken；不在此 struct
+	// CorpID
 }
 
-// dingTalkOAPIBase 推导钉钉旧版 OAPI base URL（host: api.dingtalk.com → oapi.dingtalk.com）。
-// getbyunionid 与 topapi/v2/user/get 仅在旧版 OAPI 提供，不在 v1.0 OpenAPI。
+// dingTalkOAPIBase → oapi.dingtalk.com）。
+// getbyunionid
 func (c *DingTalkClient) dingTalkOAPIBase() string {
 	u, err := url.Parse(c.cfg.UserInfoURL)
 	if err != nil || u.Scheme == "" || u.Host == "" {
@@ -160,8 +160,8 @@ func (c *DingTalkClient) GetAppToken(ctx context.Context) (string, error) {
 	}
 	body := map[string]string{"appKey": c.cfg.ClientID, "appSecret": c.cfg.ClientSecret}
 	payload, _ := json.Marshal(body)
-	// 钉钉新版 v1.0 企业内部应用 access_token: POST /v1.0/oauth2/accessToken
-	// 此 token 也可作为旧版 OAPI 的 access_token 使用（钉钉文档已说明）
+	//
+	//
 	appTokenURL := strings.Replace(c.cfg.TokenURL, "/oauth2/userAccessToken", "/oauth2/accessToken", 1)
 	if !strings.Contains(appTokenURL, "accessToken") && !strings.Contains(appTokenURL, "gettoken") {
 		appTokenURL = c.cfg.TokenURL // fallback for test stub
@@ -206,8 +206,8 @@ func (c *DingTalkClient) GetUserIdByUnionId(ctx context.Context, unionID string)
 	}
 	body := map[string]string{"unionid": unionID}
 	payload, _ := json.Marshal(body)
-	// 钉钉旧版 OAPI: POST https://oapi.dingtalk.com/topapi/user/getbyunionid?access_token=XXX
-	// access_token 通过 query string 传递（不是 header）
+	// ?access_token=XXX
+	// access_token
 	var targetURL string
 	if strings.Contains(c.cfg.UserInfoURL, "/contact/users/me") {
 		targetURL = c.dingTalkOAPIBase() + "/topapi/user/getbyunionid?access_token=" + url.QueryEscape(appToken)
@@ -247,15 +247,15 @@ func (c *DingTalkClient) GetUserIdByUnionId(ctx context.Context, unionID string)
 	return v.Result.UserID, nil
 }
 
-// DingTalkDeptInfo 部门信息（topapi/v2/department/get 返回子集）
+// DingTalkDeptInfo
 type DingTalkDeptInfo struct {
 	DeptID   int64
 	Name     string
 	ParentID int64
 }
 
-// GetDeptInfo 查询单个部门信息（用于递归拼部门路径）。
-// 调用钉钉旧版 OAPI: POST /topapi/v2/department/get?access_token=XXX
+// GetDeptInfo
+// ?access_token=XXX
 func (c *DingTalkClient) GetDeptInfo(ctx context.Context, deptID int64) (*DingTalkDeptInfo, error) {
 	appToken, err := c.GetAppToken(ctx)
 	if err != nil {
@@ -312,7 +312,7 @@ func (c *DingTalkClient) GetStaffInfoByUserId(ctx context.Context, userID string
 	}
 	body := map[string]string{"userid": userID}
 	payload, _ := json.Marshal(body)
-	// 钉钉旧版 OAPI: POST https://oapi.dingtalk.com/topapi/v2/user/get?access_token=XXX
+	// ?access_token=XXX
 	var targetURL string
 	if strings.Contains(c.cfg.UserInfoURL, "/contact/users/me") {
 		targetURL = c.dingTalkOAPIBase() + "/topapi/v2/user/get?access_token=" + url.QueryEscape(appToken)
@@ -355,7 +355,7 @@ func (c *DingTalkClient) GetStaffInfoByUserId(ctx context.Context, userID string
 	if strings.TrimSpace(v.Result.UserID) == "" {
 		return nil, parseDingTalkErr(raw, resp.StatusCode)
 	}
-	// 邮箱三级 fallback：org_email > email > extension["企业邮箱"]（钉钉自定义扩展字段，JSON string）
+	// > email > extension[""]（
 	email := strings.TrimSpace(v.Result.OrgEmail)
 	emailSource := "org_email"
 	if email == "" {

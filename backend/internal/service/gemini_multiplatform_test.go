@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockAccountRepoForGemini Gemini 测试用的 mock
+// mockAccountRepoForGemini Gemini
 type mockAccountRepoForGemini struct {
 	accounts           []Account
 	accountsByID       map[int64]*Account
@@ -57,7 +57,7 @@ func (m *mockAccountRepoForGemini) ListSchedulableByPlatform(ctx context.Context
 }
 
 func (m *mockAccountRepoForGemini) ListSchedulableByGroupIDAndPlatform(ctx context.Context, groupID int64, platform string) ([]Account, error) {
-	// 测试时不区分 groupID，直接按 platform 过滤
+	//
 	return m.ListSchedulableByPlatform(ctx, platform)
 }
 
@@ -194,7 +194,7 @@ func (m *mockAccountRepoForGemini) RevertProxyFallback(ctx context.Context, acco
 // Verify interface implementation
 var _ AccountRepository = (*mockAccountRepoForGemini)(nil)
 
-// mockGroupRepoForGemini Gemini 测试用的 group repo mock
+// mockGroupRepoForGemini Gemini
 type mockGroupRepoForGemini struct {
 	groups           map[int64]*Group
 	getByIDCalls     int
@@ -258,7 +258,7 @@ func (m *mockGroupRepoForGemini) UpdateSortOrders(ctx context.Context, updates [
 
 var _ GroupRepository = (*mockGroupRepoForGemini)(nil)
 
-// mockGatewayCacheForGemini Gemini 测试用的 cache mock
+// mockGatewayCacheForGemini Gemini
 type mockGatewayCacheForGemini struct {
 	sessionBindings map[string]int64
 	deletedSessions map[string]int
@@ -295,7 +295,7 @@ func (m *mockGatewayCacheForGemini) DeleteSessionAccountID(ctx context.Context, 
 	return nil
 }
 
-// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_GeminiPlatform 测试 Gemini 单平台选择
+// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_GeminiPlatform
 func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_GeminiPlatform(t *testing.T) {
 	ctx := context.Background()
 
@@ -320,12 +320,12 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_GeminiP
 		cache:       cache,
 	}
 
-	// 无分组时使用 gemini 平台
+	//
 	acc, err := svc.SelectAccountForModelWithExclusions(ctx, nil, "", "gemini-2.5-flash", nil)
 	require.NoError(t, err)
 	require.NotNil(t, acc)
 	require.Equal(t, int64(1), acc.ID, "应选择优先级最高的 gemini 账户")
-	require.Equal(t, PlatformGemini, acc.Platform, "无分组时应只返回 gemini 平台账户")
+	require.Equal(t, PlatformGemini, acc.Platform, "无分组时应只returned gemini 平台账户")
 }
 
 func TestGeminiMessagesCompatService_GroupResolution_ReusesContextGroup(t *testing.T) {
@@ -399,7 +399,7 @@ func TestGeminiMessagesCompatService_GroupResolution_UsesLiteFetch(t *testing.T)
 	require.Equal(t, 1, groupRepo.getByIDLiteCalls)
 }
 
-// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_AntigravityGroup 测试 antigravity 分组
+// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_AntigravityGroup
 func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_AntigravityGroup(t *testing.T) {
 	ctx := context.Background()
 
@@ -432,10 +432,10 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_Antigra
 	require.NoError(t, err)
 	require.NotNil(t, acc)
 	require.Equal(t, int64(2), acc.ID)
-	require.Equal(t, PlatformAntigravity, acc.Platform, "antigravity 分组应只返回 antigravity 账户")
+	require.Equal(t, PlatformAntigravity, acc.Platform, "antigravity 分组应只returned antigravity 账户")
 }
 
-// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_OAuthPreferred 测试 OAuth 优先
+// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_OAuthPreferred
 func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_OAuthPreferred(t *testing.T) {
 	ctx := context.Background()
 
@@ -466,7 +466,7 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_OAuthPr
 	require.Equal(t, AccountTypeOAuth, acc.Type)
 }
 
-// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_NoAvailableAccounts 测试无可用账户
+// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_NoAvailableAccounts
 func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_NoAvailableAccounts(t *testing.T) {
 	ctx := context.Background()
 
@@ -490,7 +490,7 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_NoAvail
 	require.Contains(t, err.Error(), "no available")
 }
 
-// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_StickySession 测试粘性会话
+// TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_StickySession
 func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_StickySession(t *testing.T) {
 	ctx := context.Background()
 
@@ -506,7 +506,7 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_StickyS
 			repo.accountsByID[repo.accounts[i].ID] = &repo.accounts[i]
 		}
 
-		// 注意：缓存键使用 "gemini:" 前缀
+		// "gemini:"
 		cache := &mockGatewayCacheForGemini{
 			sessionBindings: map[string]int64{"gemini:session-123": 1},
 		}
@@ -521,10 +521,10 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_StickyS
 		acc, err := svc.SelectAccountForModelWithExclusions(ctx, nil, "session-123", "gemini-2.5-flash", nil)
 		require.NoError(t, err)
 		require.NotNil(t, acc)
-		require.Equal(t, int64(1), acc.ID, "应返回粘性会话绑定的账户")
+		require.Equal(t, int64(1), acc.ID, "应returned粘性会话绑定的账户")
 	})
 
-	t.Run("粘性会话平台不匹配-降级选择", func(t *testing.T) {
+	t.Run("粘性会话平台mismatch-降级选择", func(t *testing.T) {
 		repo := &mockAccountRepoForGemini{
 			accounts: []Account{
 				{ID: 1, Platform: PlatformAntigravity, Priority: 2, Status: StatusActive, Schedulable: true}, // 粘性会话绑定
@@ -547,11 +547,11 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_StickyS
 			cache:       cache,
 		}
 
-		// 无分组时使用 gemini 平台，粘性会话绑定的 antigravity 账户平台不匹配
+		//
 		acc, err := svc.SelectAccountForModelWithExclusions(ctx, nil, "session-123", "gemini-2.5-flash", nil)
 		require.NoError(t, err)
 		require.NotNil(t, acc)
-		require.Equal(t, int64(2), acc.ID, "粘性会话账户平台不匹配，应降级选择 gemini 账户")
+		require.Equal(t, int64(2), acc.ID, "粘性会话账户平台mismatch，应降级选择 gemini 账户")
 		require.Equal(t, PlatformGemini, acc.Platform)
 	})
 
@@ -567,7 +567,7 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_StickyS
 			repo.accountsByID[repo.accounts[i].ID] = &repo.accounts[i]
 		}
 
-		// 缓存键没有 "gemini:" 前缀，不应命中
+		// "gemini:"
 		cache := &mockGatewayCacheForGemini{
 			sessionBindings: map[string]int64{"session-123": 1},
 		}
@@ -582,11 +582,10 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_StickyS
 		acc, err := svc.SelectAccountForModelWithExclusions(ctx, nil, "session-123", "gemini-2.5-flash", nil)
 		require.NoError(t, err)
 		require.NotNil(t, acc)
-		// 粘性会话未命中，按优先级选择
 		require.Equal(t, int64(2), acc.ID, "粘性会话未命中，应按优先级选择")
 	})
 
-	t.Run("粘性会话不可调度-清理并回退选择", func(t *testing.T) {
+	t.Run("粘性会话不可调度-cleanup并fallback选择", func(t *testing.T) {
 		repo := &mockAccountRepoForGemini{
 			accounts: []Account{
 				{ID: 1, Platform: PlatformGemini, Priority: 2, Status: StatusDisabled, Schedulable: true},
@@ -855,7 +854,7 @@ func TestGeminiMessagesCompatService_SelectAccountForModelWithExclusions_PreferL
 	require.Equal(t, int64(2), acc.ID)
 }
 
-// TestGeminiPlatformRouting_DocumentRouteDecision 测试平台路由决策逻辑
+// TestGeminiPlatformRouting_DocumentRouteDecision
 func TestGeminiPlatformRouting_DocumentRouteDecision(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -878,7 +877,7 @@ func TestGeminiPlatformRouting_DocumentRouteDecision(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			account := &Account{Platform: tt.platform}
 
-			// 模拟 Handler 层的路由逻辑
+			//
 			var serviceName string
 			if account.Platform == PlatformAntigravity {
 				serviceName = "antigravity"
@@ -902,31 +901,31 @@ func TestGeminiMessagesCompatService_isModelSupportedByAccount(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "Antigravity平台-支持gemini模型",
+			name:     "Antigravity平台-支持geminimodel",
 			account:  &Account{Platform: PlatformAntigravity},
 			model:    "gemini-2.5-flash",
 			expected: true,
 		},
 		{
-			name:     "Antigravity平台-支持claude模型",
+			name:     "Antigravity平台-支持claudemodel",
 			account:  &Account{Platform: PlatformAntigravity},
 			model:    "claude-sonnet-4-5",
 			expected: true,
 		},
 		{
-			name:     "Antigravity平台-不支持gpt模型",
+			name:     "Antigravity平台-不支持gptmodel",
 			account:  &Account{Platform: PlatformAntigravity},
 			model:    "gpt-4",
 			expected: false,
 		},
 		{
-			name:     "Antigravity平台-空模型允许",
+			name:     "Antigravity平台-空model允许",
 			account:  &Account{Platform: PlatformAntigravity},
 			model:    "",
 			expected: true,
 		},
 		{
-			name: "Antigravity平台-自定义映射-支持自定义模型",
+			name: "Antigravity平台-自定义映射-支持自定义model",
 			account: &Account{
 				Platform: PlatformAntigravity,
 				Credentials: map[string]any{
@@ -940,7 +939,7 @@ func TestGeminiMessagesCompatService_isModelSupportedByAccount(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "Antigravity平台-自定义映射-不在映射中的模型不支持",
+			name: "Antigravity平台-自定义映射-不在映射中的model不支持",
 			account: &Account{
 				Platform: PlatformAntigravity,
 				Credentials: map[string]any{
@@ -953,13 +952,13 @@ func TestGeminiMessagesCompatService_isModelSupportedByAccount(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:     "Gemini平台-无映射配置-支持所有模型",
+			name:     "Gemini平台-无映射configuration-支持所有model",
 			account:  &Account{Platform: PlatformGemini},
 			model:    "gemini-2.5-flash",
 			expected: true,
 		},
 		{
-			name: "Gemini平台-有映射配置-只支持配置的模型",
+			name: "Gemini平台-有映射configuration-只支持configuration的model",
 			account: &Account{
 				Platform:    PlatformGemini,
 				Credentials: map[string]any{"model_mapping": map[string]any{"gemini-2.5-pro": "x"}},

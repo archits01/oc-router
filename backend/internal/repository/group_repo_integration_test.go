@@ -412,7 +412,7 @@ func (s *GroupRepoSuite) TestUpdateSortOrders_BatchCaseWhen() {
 		{ID: g1.ID, SortOrder: 30},
 		{ID: g2.ID, SortOrder: 10},
 		{ID: g3.ID, SortOrder: 20},
-		{ID: g2.ID, SortOrder: 15}, // 重复 ID 应以最后一次为准
+		{ID: g2.ID, SortOrder: 15}, // duplicate ID should use last occurrence
 	})
 	s.Require().NoError(err)
 
@@ -651,9 +651,9 @@ func (s *GroupRepoSuite) TestGetAccountCount_Empty() {
 	s.Require().Zero(count)
 }
 
-// TestListWithFilters_ActiveAccountCount_LessThanTotal 验证 ActiveAccountCount 正确区分可用与不可用账号。
-// 当分组内存在 disabled 或 schedulable=false 的账号时，ActiveAccountCount 必须小于 AccountCount，
-// 且与 GetAccountCount 返回的 active 值一致。
+// TestListWithFilters_ActiveAccountCount_LessThanTotal
+// =false
+//
 func (s *GroupRepoSuite) TestListWithFilters_ActiveAccountCount_LessThanTotal() {
 	g := &service.Group{
 		Name:             "g-mixed-status",
@@ -714,9 +714,9 @@ func (s *GroupRepoSuite) TestListWithFilters_ActiveAccountCount_LessThanTotal() 
 	s.Assert().Equal(found.ActiveAccountCount, active, "GetAccountCount active must match ListWithFilters ActiveAccountCount")
 }
 
-// TestListWithFilters_RateLimitedAccountCount 验证临时受限账号不会计入可用账号数。
-// rate_limit / overload / temp_unschedulable 都会让账号退出当前调度池，
-// 因此 ActiveAccountCount 必须与真实调度查询口径一致。
+// TestListWithFilters_RateLimitedAccountCount
+// rate_limit / overload / temp_unschedulable
+//
 func (s *GroupRepoSuite) TestListWithFilters_RateLimitedAccountCount() {
 	g := &service.Group{
 		Name:             "g-rate-limited",
@@ -881,7 +881,7 @@ func (s *GroupRepoSuite) TestDeleteAccountGroupsByGroupID_MultipleAccounts() {
 	s.Require().Zero(count)
 }
 
-// --- 软删除过滤测试 ---
+// ---
 
 func (s *GroupRepoSuite) TestDelete_SoftDelete_NotVisibleInList() {
 	group := &service.Group{
@@ -894,21 +894,19 @@ func (s *GroupRepoSuite) TestDelete_SoftDelete_NotVisibleInList() {
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
-	// 获取删除前的列表数量
 	listBefore, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 100})
 	s.Require().NoError(err)
 	beforeCount := len(listBefore)
 
-	// 软删除
 	err = s.repo.Delete(s.ctx, group.ID)
 	s.Require().NoError(err, "Delete (soft delete)")
 
-	// 验证列表中不再包含软删除的 group
+	//
 	listAfter, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 100})
 	s.Require().NoError(err)
 	s.Require().Len(listAfter, beforeCount-1, "soft deleted group should not appear in list")
 
-	// 验证 GetByID 也无法找到
+	//
 	_, err = s.repo.GetByID(s.ctx, group.ID)
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, service.ErrGroupNotFound)
@@ -925,12 +923,11 @@ func (s *GroupRepoSuite) TestDelete_SoftDeletedGroup_lockForUpdate() {
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
-	// 软删除
 	err := s.repo.Delete(s.ctx, group.ID)
 	s.Require().NoError(err)
 
-	// 验证软删除的 group 在 GetByID 时返回 ErrGroupNotFound
-	// 这证明 lockForUpdate 的 deleted_at IS NULL 过滤正在工作
+	//
+	//
 	_, err = s.repo.GetByID(s.ctx, group.ID)
 	s.Require().Error(err, "should fail to get soft-deleted group")
 	s.Require().ErrorIs(err, service.ErrGroupNotFound)

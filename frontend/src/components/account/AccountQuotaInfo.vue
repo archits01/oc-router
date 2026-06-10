@@ -41,7 +41,7 @@ const { t } = useI18n()
 const now = ref(new Date())
 let timer: ReturnType<typeof setInterval> | null = null
 
-// 是否为 Code Assist OAuth
+// YesNo为 Code Assist OAuth
 // 判断逻辑与后端保持一致：project_id 存在即为 Code Assist
 const isCodeAssist = computed(() => {
   const creds = props.account.credentials as GeminiCredentials | undefined
@@ -49,13 +49,12 @@ const isCodeAssist = computed(() => {
   return creds?.oauth_type === 'code_assist' || (!creds?.oauth_type && !!creds?.project_id)
 })
 
-// 是否为 Google One OAuth
+// YesNo为 Google One OAuth
 const isGoogleOne = computed(() => {
   const creds = props.account.credentials as GeminiCredentials | undefined
   return creds?.oauth_type === 'google_one'
 })
 
-// 是否应该显示配额信息
 const shouldShowQuota = computed(() => {
   return props.account.platform === 'gemini'
 })
@@ -128,7 +127,6 @@ const tierBadgeClass = computed(() => {
   return 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300'
 })
 
-// 是否限流
 const isRateLimited = computed(() => {
   if (!props.account.rate_limit_reset_at) return false
   const resetTime = Date.parse(props.account.rate_limit_reset_at)
@@ -137,11 +135,9 @@ const isRateLimited = computed(() => {
   return resetTime > now.value.getTime()
 })
 
-// 倒计时文本
 const resetCountdown = computed(() => {
   if (!props.account.rate_limit_reset_at) return ''
   const resetTime = Date.parse(props.account.rate_limit_reset_at)
-  // 防护：如果日期解析失败，显示 "-"
   if (Number.isNaN(resetTime)) return '-'
 
   const diffMs = resetTime - now.value.getTime()
@@ -160,28 +156,25 @@ const resetCountdown = computed(() => {
   return `${diffHours}h ${mins}m`
 })
 
-// 是否紧急（< 1分钟）
+// YesNo紧急（< 1分钟）
 const isUrgent = computed(() => {
   if (!props.account.rate_limit_reset_at) return false
   const resetTime = Date.parse(props.account.rate_limit_reset_at)
-  // 防护：如果日期解析失败，返回 false
+  // 防护：如果日期解析失败，Back false
   if (Number.isNaN(resetTime)) return false
 
   const diffMs = resetTime - now.value.getTime()
   return diffMs > 0 && diffMs < 60000
 })
 
-// 监听限流状态，动态启动/停止定时器
 watch(
   () => isRateLimited.value,
   (limited) => {
     if (limited && !timer) {
-      // 进入限流状态，启动定时器
       timer = setInterval(() => {
         now.value = new Date()
       }, 1000)
     } else if (!limited && timer) {
-      // 解除限流，停止定时器
       clearInterval(timer)
       timer = null
     }

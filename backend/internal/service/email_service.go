@@ -81,7 +81,7 @@ const (
 	passwordResetEmailCooldown = 30 * time.Second
 )
 
-// SMTPConfig SMTP配置
+// SMTPConfig SMTP
 type SMTPConfig struct {
 	Host     string
 	Port     int
@@ -92,14 +92,14 @@ type SMTPConfig struct {
 	UseTLS   bool
 }
 
-// EmailService 邮件服务
+// EmailService
 type EmailService struct {
 	settingRepo              SettingRepository
 	cache                    EmailCache
 	notificationEmailService *NotificationEmailService
 }
 
-// NewEmailService 创建邮件服务实例
+// NewEmailService
 func NewEmailService(settingRepo SettingRepository, cache EmailCache) *EmailService {
 	return &EmailService{
 		settingRepo: settingRepo,
@@ -129,7 +129,7 @@ func emailRecipientName(email string) string {
 	return trimmed
 }
 
-// GetSMTPConfig 从数据库获取SMTP配置
+// GetSMTPConfig
 func (s *EmailService) GetSMTPConfig(ctx context.Context) (*SMTPConfig, error) {
 	keys := []string{
 		SettingKeySMTPHost,
@@ -171,7 +171,7 @@ func (s *EmailService) GetSMTPConfig(ctx context.Context) (*SMTPConfig, error) {
 	}, nil
 }
 
-// SendEmail 发送邮件（使用数据库中保存的配置）
+// SendEmail
 func (s *EmailService) SendEmail(ctx context.Context, to, subject, body string) error {
 	config, err := s.GetSMTPConfig(ctx)
 	if err != nil {
@@ -183,7 +183,7 @@ func (s *EmailService) SendEmail(ctx context.Context, to, subject, body string) 
 const smtpDialTimeout = 10 * time.Second
 const smtpIOTimeout = 20 * time.Second
 
-// SendEmailWithConfig 使用指定配置发送邮件
+// SendEmailWithConfig
 func (s *EmailService) SendEmailWithConfig(config *SMTPConfig, to, subject, body string) error {
 	// Sanitize all SMTP header fields to prevent header injection (CR/LF removal).
 	to = sanitizeEmailHeader(to)
@@ -254,11 +254,11 @@ func (s *EmailService) sendMailPlain(addr string, auth smtp.Auth, from, to strin
 	return nil
 }
 
-// sendMailTLS 使用TLS发送邮件
+// sendMailTLS
 func (s *EmailService) sendMailTLS(addr string, auth smtp.Auth, from, to string, msg []byte, host string) error {
 	tlsConfig := &tls.Config{
 		ServerName: host,
-		// 强制 TLS 1.2+，避免协议降级导致的弱加密风险。
+		// +，
 		MinVersion: tls.VersionTLS12,
 	}
 
@@ -309,7 +309,7 @@ func (s *EmailService) sendMailTLS(addr string, auth smtp.Auth, from, to string,
 	return nil
 }
 
-// GenerateVerifyCode 生成6位数字验证码
+// GenerateVerifyCode
 func (s *EmailService) GenerateVerifyCode() (string, error) {
 	const digits = "0123456789"
 	code := make([]byte, 6)
@@ -323,9 +323,8 @@ func (s *EmailService) GenerateVerifyCode() (string, error) {
 	return string(code), nil
 }
 
-// SendVerifyCode 发送验证码邮件
+// SendVerifyCode
 func (s *EmailService) SendVerifyCode(ctx context.Context, email, siteName string, locale ...string) error {
-	// 检查是否在冷却期内
 	existing, err := s.cache.GetVerificationCode(ctx, email)
 	if err == nil && existing != nil {
 		if time.Since(existing.CreatedAt) < verifyCodeCooldown {
@@ -333,13 +332,12 @@ func (s *EmailService) SendVerifyCode(ctx context.Context, email, siteName strin
 		}
 	}
 
-	// 生成验证码
 	code, err := s.GenerateVerifyCode()
 	if err != nil {
 		return fmt.Errorf("generate code: %w", err)
 	}
 
-	// 保存验证码到 Redis
+	//
 	data := &VerificationCodeData{
 		Code:      code,
 		Attempts:  0,
@@ -370,11 +368,9 @@ func (s *EmailService) SendVerifyCode(ctx context.Context, email, siteName strin
 		slog.Warn("failed to send templated verification email, falling back to legacy template", "recipient_hash", notificationEmailHash(email), "error", err)
 	}
 
-	// 构建邮件内容
 	subject := fmt.Sprintf("[%s] Email Verification Code", siteName)
 	body := s.buildVerifyCodeEmailBody(code, siteName)
 
-	// 发送邮件
 	if err := s.SendEmail(ctx, email, subject, body); err != nil {
 		return fmt.Errorf("send email: %w", err)
 	}
@@ -382,19 +378,18 @@ func (s *EmailService) SendVerifyCode(ctx context.Context, email, siteName strin
 	return nil
 }
 
-// VerifyCode 验证验证码
+// VerifyCode
 func (s *EmailService) VerifyCode(ctx context.Context, email, code string) error {
 	data, err := s.cache.GetVerificationCode(ctx, email)
 	if err != nil || data == nil {
 		return ErrInvalidVerifyCode
 	}
 
-	// 检查是否已达到最大尝试次数
 	if data.Attempts >= maxVerifyCodeAttempts {
 		return ErrVerifyCodeMaxAttempts
 	}
 
-	// 验证码不匹配 (constant-time comparison to prevent timing attacks)
+	// (constant-time comparison to prevent timing attacks)
 	if subtle.ConstantTimeCompare([]byte(data.Code), []byte(code)) != 1 {
 		data.Attempts++
 		remaining := time.Until(data.ExpiresAt)
@@ -410,14 +405,13 @@ func (s *EmailService) VerifyCode(ctx context.Context, email, code string) error
 		return ErrInvalidVerifyCode
 	}
 
-	// 验证成功，删除验证码
 	if err := s.cache.DeleteVerificationCode(ctx, email); err != nil {
 		slog.Error("failed to delete verification code after success", "email", email, "error", err)
 	}
 	return nil
 }
 
-// buildVerifyCodeEmailBody 构建验证码邮件HTML内容
+// buildVerifyCodeEmailBody
 func (s *EmailService) buildVerifyCodeEmailBody(code, siteName string) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
@@ -457,14 +451,14 @@ func (s *EmailService) buildVerifyCodeEmailBody(code, siteName string) string {
 `, siteName, code)
 }
 
-// TestSMTPConnectionWithConfig 使用指定配置测试SMTP连接
+// TestSMTPConnectionWithConfig
 func (s *EmailService) TestSMTPConnectionWithConfig(config *SMTPConfig) error {
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 
 	if config.UseTLS {
 		tlsConfig := &tls.Config{
 			ServerName: config.Host,
-			// 与发送逻辑一致，显式要求 TLS 1.2+。
+			// +。
 			MinVersion: tls.VersionTLS12,
 		}
 		conn, err := tls.Dial("tcp", addr, tlsConfig)
@@ -487,7 +481,7 @@ func (s *EmailService) TestSMTPConnectionWithConfig(config *SMTPConfig) error {
 		return client.Quit()
 	}
 
-	// 非TLS连接测试
+	//
 	client, err := smtp.Dial(addr)
 	if err != nil {
 		return fmt.Errorf("smtp connection failed: %w", err)
@@ -659,7 +653,7 @@ func (s *EmailService) buildPasswordResetEmailBody(resetURL, siteName string) st
             <p style="color: #666;">您已请求重置密码。请点击下方按钮设置新密码：</p>
             <a href="%s" class="button">重置密码</a>
             <div class="info">
-                <p>此链接将在 <strong>30 分钟</strong>后失效。</p>
+                <p>此链接将在 <strong>30 minutes</strong>后失效。</p>
                 <p class="warning">如果您没有请求重置密码，请忽略此邮件。您的密码将保持不变。</p>
             </div>
             <div class="link-fallback">

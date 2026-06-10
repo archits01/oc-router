@@ -135,7 +135,7 @@ func (APIKey) Edges() []ent.Edge {
 
 func (APIKey) Indexes() []ent.Index {
 	return []ent.Index{
-		// key 字段已在 Fields() 中声明 Unique()，无需重复索引
+		// key () ()，
 		index.Fields("user_id"),
 		index.Fields("group_id"),
 		index.Fields("status"),

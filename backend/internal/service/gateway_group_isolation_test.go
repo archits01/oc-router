@@ -11,7 +11,7 @@ import (
 )
 
 // ============================================================================
-// Part 1: isAccountInGroup 单元测试
+// Part 1: isAccountInGroup
 // ============================================================================
 
 func TestIsAccountInGroup(t *testing.T) {
@@ -25,7 +25,7 @@ func TestIsAccountInGroup(t *testing.T) {
 		groupID  *int64
 		expected bool
 	}{
-		// groupID == nil（无分组 API Key）
+		// groupID == nil（
 		{
 			"nil_groupID_ungrouped_account_nil_groups",
 			&Account{ID: 1, AccountGroups: nil},
@@ -46,7 +46,7 @@ func TestIsAccountInGroup(t *testing.T) {
 			&Account{ID: 4, AccountGroups: []AccountGroup{{GroupID: 100}, {GroupID: 200}}},
 			nil, false,
 		},
-		// groupID != nil（有分组 API Key）
+		// groupID != nil（
 		{
 			"with_groupID_account_in_group",
 			&Account{ID: 5, AccountGroups: []AccountGroup{{GroupID: 100}}},
@@ -72,7 +72,6 @@ func TestIsAccountInGroup(t *testing.T) {
 			&Account{ID: 9, AccountGroups: []AccountGroup{{GroupID: 300}, {GroupID: 400}}},
 			&groupID100, false,
 		},
-		// 防御性边界
 		{
 			"nil_account_nil_groupID",
 			nil,
@@ -94,17 +93,17 @@ func TestIsAccountInGroup(t *testing.T) {
 }
 
 // ============================================================================
-// Part 2: 分组隔离端到端调度测试
+// Part 2:
 // ============================================================================
 
-// groupAwareMockAccountRepo 嵌入 mockAccountRepoForPlatform，覆写分组隔离相关方法。
-// allAccounts 存储所有账号，分组查询方法按 AccountGroups 字段进行真实过滤。
+// groupAwareMockAccountRepo
+// allAccounts
 type groupAwareMockAccountRepo struct {
 	*mockAccountRepoForPlatform
 	allAccounts []Account
 }
 
-// ListSchedulableUngroupedByPlatform 仅返回未分组账号（AccountGroups 为空）
+// ListSchedulableUngroupedByPlatform
 func (m *groupAwareMockAccountRepo) ListSchedulableUngroupedByPlatform(ctx context.Context, platform string) ([]Account, error) {
 	var result []Account
 	for _, acc := range m.allAccounts {
@@ -115,7 +114,7 @@ func (m *groupAwareMockAccountRepo) ListSchedulableUngroupedByPlatform(ctx conte
 	return result, nil
 }
 
-// ListSchedulableUngroupedByPlatforms 仅返回未分组账号（多平台版本）
+// ListSchedulableUngroupedByPlatforms
 func (m *groupAwareMockAccountRepo) ListSchedulableUngroupedByPlatforms(ctx context.Context, platforms []string) ([]Account, error) {
 	platformSet := make(map[string]bool, len(platforms))
 	for _, p := range platforms {
@@ -130,7 +129,7 @@ func (m *groupAwareMockAccountRepo) ListSchedulableUngroupedByPlatforms(ctx cont
 	return result, nil
 }
 
-// ListSchedulableByGroupIDAndPlatform 返回属于指定分组的账号
+// ListSchedulableByGroupIDAndPlatform
 func (m *groupAwareMockAccountRepo) ListSchedulableByGroupIDAndPlatform(ctx context.Context, groupID int64, platform string) ([]Account, error) {
 	var result []Account
 	for _, acc := range m.allAccounts {
@@ -141,7 +140,7 @@ func (m *groupAwareMockAccountRepo) ListSchedulableByGroupIDAndPlatform(ctx cont
 	return result, nil
 }
 
-// ListSchedulableByGroupIDAndPlatforms 返回属于指定分组的账号（多平台版本）
+// ListSchedulableByGroupIDAndPlatforms
 func (m *groupAwareMockAccountRepo) ListSchedulableByGroupIDAndPlatforms(ctx context.Context, groupID int64, platforms []string) ([]Account, error) {
 	platformSet := make(map[string]bool, len(platforms))
 	for _, p := range platforms {
@@ -156,7 +155,7 @@ func (m *groupAwareMockAccountRepo) ListSchedulableByGroupIDAndPlatforms(ctx con
 	return result, nil
 }
 
-// accountBelongsToGroup 检查账号是否属于指定分组
+// accountBelongsToGroup
 func accountBelongsToGroup(acc Account, groupID int64) bool {
 	for _, ag := range acc.AccountGroups {
 		if ag.GroupID == groupID {
@@ -169,7 +168,7 @@ func accountBelongsToGroup(acc Account, groupID int64) bool {
 // Verify interface implementation
 var _ AccountRepository = (*groupAwareMockAccountRepo)(nil)
 
-// newGroupAwareMockRepo 创建分组感知的 mock repo
+// newGroupAwareMockRepo
 func newGroupAwareMockRepo(accounts []Account) *groupAwareMockAccountRepo {
 	byID := make(map[int64]*Account, len(accounts))
 	for i := range accounts {
@@ -185,7 +184,7 @@ func newGroupAwareMockRepo(accounts []Account) *groupAwareMockAccountRepo {
 }
 
 func TestGroupIsolation_UngroupedKey_ShouldNotScheduleGroupedAccounts(t *testing.T) {
-	// 场景：无分组 API Key（groupID=nil），池中只有已分组账号 → 应返回错误
+	// =nil），→
 	ctx := context.Background()
 
 	accounts := []Account{
@@ -209,7 +208,7 @@ func TestGroupIsolation_UngroupedKey_ShouldNotScheduleGroupedAccounts(t *testing
 }
 
 func TestGroupIsolation_GroupedKey_ShouldNotScheduleUngroupedAccounts(t *testing.T) {
-	// 场景：有分组 API Key（groupID=100），池中只有未分组账号 → 应返回错误
+	// =100），→
 	ctx := context.Background()
 	groupID := int64(100)
 
@@ -234,7 +233,7 @@ func TestGroupIsolation_GroupedKey_ShouldNotScheduleUngroupedAccounts(t *testing
 }
 
 func TestGroupIsolation_UngroupedKey_ShouldOnlyScheduleUngroupedAccounts(t *testing.T) {
-	// 场景：无分组 API Key（groupID=nil），池中有未分组和已分组账号 → 应只选中未分组的
+	// =nil），→
 	ctx := context.Background()
 
 	accounts := []Account{
@@ -255,13 +254,13 @@ func TestGroupIsolation_UngroupedKey_ShouldOnlyScheduleUngroupedAccounts(t *test
 	}
 
 	acc, err := svc.selectAccountForModelWithPlatform(ctx, nil, "", "", nil, PlatformOpenAI)
-	require.NoError(t, err, "应成功调度未分组账号")
+	require.NoError(t, err, "应success调度未分组账号")
 	require.NotNil(t, acc)
 	require.Equal(t, int64(2), acc.ID, "应选中未分组的账号 ID=2")
 }
 
 func TestGroupIsolation_GroupedKey_ShouldOnlyScheduleMatchingGroupAccounts(t *testing.T) {
-	// 场景：有分组 API Key（groupID=100），池中有未分组和多个分组账号 → 应只选中分组 100 内的
+	// =100），→
 	ctx := context.Background()
 	groupID := int64(100)
 
@@ -283,21 +282,21 @@ func TestGroupIsolation_GroupedKey_ShouldOnlyScheduleMatchingGroupAccounts(t *te
 	}
 
 	acc, err := svc.selectAccountForModelWithPlatform(ctx, &groupID, "", "", nil, PlatformOpenAI)
-	require.NoError(t, err, "应成功调度分组内账号")
+	require.NoError(t, err, "应success调度分组内账号")
 	require.NotNil(t, acc)
 	require.Equal(t, int64(3), acc.ID, "应选中分组 100 内的账号 ID=3")
 }
 
 // ============================================================================
-// Part 3: SimpleMode 旁路测试
+// Part 3: SimpleMode
 // ============================================================================
 
 func TestGroupIsolation_SimpleMode_SkipsGroupIsolation(t *testing.T) {
-	// SimpleMode 应跳过分组隔离，使用 ListSchedulableByPlatform 返回所有账号。
-	// 测试非 useMixed 路径（platform=openai，不会触发 mixed 调度逻辑）。
+	// SimpleMode
+	// =openai，
 	ctx := context.Background()
 
-	// 混合未分组和已分组账号，SimpleMode 下应全部可调度
+	//
 	accounts := []Account{
 		{ID: 1, Platform: PlatformOpenAI, Priority: 2, Status: StatusActive, Schedulable: true,
 			AccountGroups: []AccountGroup{{GroupID: 100}}}, // 已分组
@@ -305,7 +304,7 @@ func TestGroupIsolation_SimpleMode_SkipsGroupIsolation(t *testing.T) {
 			AccountGroups: nil}, // 未分组
 	}
 
-	// 使用基础 mock（ListSchedulableByPlatform 返回所有匹配平台的账号，不做分组过滤）
+	//
 	byID := make(map[int64]*Account, len(accounts))
 	for i := range accounts {
 		byID[accounts[i].ID] = &accounts[i]
@@ -322,19 +321,19 @@ func TestGroupIsolation_SimpleMode_SkipsGroupIsolation(t *testing.T) {
 		cfg:         &config.Config{RunMode: config.RunModeSimple},
 	}
 
-	// groupID=nil 时，SimpleMode 应使用 ListSchedulableByPlatform（不过滤分组）
+	// groupID=nil
 	acc, err := svc.selectAccountForModelWithPlatform(ctx, nil, "", "", nil, PlatformOpenAI)
-	require.NoError(t, err, "SimpleMode 应跳过分组隔离直接返回账号")
+	require.NoError(t, err, "SimpleMode 应跳过分组隔离直接returned账号")
 	require.NotNil(t, acc)
-	// 应选择优先级最高的账号（Priority=1, ID=2），即使它未分组
+	// =1, ID=2），
 	require.Equal(t, int64(2), acc.ID, "SimpleMode 应按优先级选择，不考虑分组")
 }
 
 func TestGroupIsolation_SimpleMode_GroupedAccountAlsoSchedulable(t *testing.T) {
-	// SimpleMode + groupID=nil 时，已分组账号也应该可被调度
+	// SimpleMode + groupID=nil
 	ctx := context.Background()
 
-	// 只有已分组账号，在 standard 模式下 groupID=nil 会报错，但 simple 模式应正常
+	// =nil
 	accounts := []Account{
 		{ID: 1, Platform: PlatformOpenAI, Priority: 1, Status: StatusActive, Schedulable: true,
 			AccountGroups: []AccountGroup{{GroupID: 100}}},

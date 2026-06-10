@@ -32,7 +32,7 @@ type OAuthSession struct {
 	// For oauth types that support auto detection (google_one/code_assist), the server will prefer
 	// the detected tier and fall back to TierID when detection fails.
 	TierID    string    `json:"tier_id,omitempty"`
-	OAuthType string    `json:"oauth_type"` // "code_assist" 或 "ai_studio"
+	OAuthType string    `json:"oauth_type"` // "code_assist" or "ai_studio"
 	CreatedAt time.Time `json:"created_at"`
 }
 

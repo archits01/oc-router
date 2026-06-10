@@ -19,13 +19,9 @@ type PromoCodeUsage struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
-	// 优惠码ID
 	PromoCodeID int64 `json:"promo_code_id,omitempty"`
-	// 使用用户ID
 	UserID int64 `json:"user_id,omitempty"`
-	// 实际赠送金额
 	BonusAmount float64 `json:"bonus_amount,omitempty"`
-	// 使用时间
 	UsedAt time.Time `json:"used_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PromoCodeUsageQuery when eager-loading is set.

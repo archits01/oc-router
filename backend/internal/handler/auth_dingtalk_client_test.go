@@ -96,7 +96,7 @@ func TestDingTalkClient_GetUserIdByUnionId_60011(t *testing.T) {
 	require.Equal(t, "60011", apiErr.Code)
 }
 
-// TestDingTalkClient_GetDeptInfo_Success 验证 GetDeptInfo 正常情况返回部门信息。
+// TestDingTalkClient_GetDeptInfo_Success
 func TestDingTalkClient_GetDeptInfo_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -120,7 +120,7 @@ func TestDingTalkClient_GetDeptInfo_Success(t *testing.T) {
 	require.Equal(t, int64(1), info.ParentID)
 }
 
-// TestDingTalkClient_GetDeptInfo_ErrCode60003 验证 errcode=60003（部门不存在）时返回错误。
+// TestDingTalkClient_GetDeptInfo_ErrCode60003 =60003（
 func TestDingTalkClient_GetDeptInfo_ErrCode60003(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

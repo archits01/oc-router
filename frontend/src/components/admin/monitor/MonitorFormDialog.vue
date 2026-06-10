@@ -114,7 +114,7 @@
         <Toggle v-model="form.enabled" />
       </div>
 
-      <!-- 高级设置区：请求模板 + 自定义 headers/body -->
+      <!-- 高级Settings区：请求模板 + 自定义 headers/body -->
       <details class="rounded-lg border border-gray-200 bg-gray-50/50 p-3 dark:border-dark-700 dark:bg-dark-900/30">
         <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
           {{ t('admin.channelMonitor.advanced.section') }}
@@ -255,7 +255,6 @@ interface MonitorForm {
   group_name: string
   interval_seconds: number
   enabled: boolean
-  // 高级设置快照
   template_id: number | null
   extra_headers: Record<string, string>
   body_override_mode: BodyOverrideMode
@@ -304,14 +303,13 @@ async function loadTemplates() {
     const { items } = await adminAPI.channelMonitorTemplate.list()
     templatesCache.value = items
   } catch (err: unknown) {
-    // 模板拉取失败不阻塞监控表单，用户可以不选模板
     console.warn('load monitor templates failed', err)
   } finally {
     templatesLoading.value = false
   }
 }
 
-// 模板下拉绑定：value 是 string（Select 组件约束），需要与 number | null 互转。
+// 模板下拉绑定：value Yes string（Select 组件约束），需要与 number | null 互转。
 const templateSelectValue = computed<string>({
   get: () => (form.template_id == null ? '' : String(form.template_id)),
   set: (raw: string) => {
@@ -322,7 +320,6 @@ const templateSelectValue = computed<string>({
     const id = Number(raw)
     if (!Number.isFinite(id)) return
     form.template_id = id
-    // 应用模板 = 拷贝快照
     const tpl = templatesCache.value.find((t) => t.id === id)
     if (tpl) {
       suppressFormWatchers = true
@@ -447,7 +444,7 @@ function loadFromMonitor(m: ChannelMonitor) {
 }
 
 // Re-sync form whenever the dialog is opened or the target monitor changes.
-// 同时拉取模板列表（cache 过的话一次性返回）。
+// 同时拉取模板列表（cache 过的话一次性Back）。
 watch(
   () => [props.show, props.monitor] as const,
   ([show, m]) => {

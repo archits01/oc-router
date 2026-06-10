@@ -8,7 +8,7 @@ const (
 	SortOrderDesc = "desc"
 )
 
-// PaginationParams 分页参数
+// PaginationParams
 type PaginationParams struct {
 	Page      int
 	PageSize  int
@@ -16,7 +16,7 @@ type PaginationParams struct {
 	SortOrder string
 }
 
-// PaginationResult 分页结果
+// PaginationResult
 type PaginationResult struct {
 	Total    int64
 	Page     int
@@ -24,7 +24,7 @@ type PaginationResult struct {
 	Pages    int
 }
 
-// DefaultPagination 默认分页参数
+// DefaultPagination
 func DefaultPagination() PaginationParams {
 	return PaginationParams{
 		Page:      1,
@@ -33,7 +33,7 @@ func DefaultPagination() PaginationParams {
 	}
 }
 
-// Offset 计算偏移量
+// Offset
 func (p PaginationParams) Offset() int {
 	if p.Page < 1 {
 		p.Page = 1
@@ -41,7 +41,7 @@ func (p PaginationParams) Offset() int {
 	return (p.Page - 1) * p.PageSize
 }
 
-// Limit 获取限制数
+// Limit
 func (p PaginationParams) Limit() int {
 	if p.PageSize < 1 {
 		return 20

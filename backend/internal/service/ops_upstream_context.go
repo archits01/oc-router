@@ -22,20 +22,20 @@ const (
 	OpsUpstreamLatencyMsKey  = "ops_upstream_latency_ms"
 	OpsResponseLatencyMsKey  = "ops_response_latency_ms"
 	OpsTimeToFirstTokenMsKey = "ops_time_to_first_token_ms"
-	// OpenAI WS 关键观测字段
+	// OpenAI WS
 	OpsOpenAIWSQueueWaitMsKey = "ops_openai_ws_queue_wait_ms"
 	OpsOpenAIWSConnPickMsKey  = "ops_openai_ws_conn_pick_ms"
 	OpsOpenAIWSConnReusedKey  = "ops_openai_ws_conn_reused"
 	OpsOpenAIWSConnIDKey      = "ops_openai_ws_conn_id"
 
-	// OpsSkipPassthroughKey 由 applyErrorPassthroughRule 在命中 skip_monitoring=true 的规则时设置。
-	// ops_error_logger 中间件检查此 key，为 true 时跳过错误记录。
+	// OpsSkipPassthroughKey =true
+	// ops_error_logger
 	OpsSkipPassthroughKey = "ops_skip_passthrough"
 
 	// Client-side configuration denials should remain visible in ops_error_logs,
 	// but should be excluded from SLA/error-rate calculations.
-	// ResponseCommittedKey 由 handleErrorResponse 系列函数在写完 HTTP 错误响应后设置。
-	// ensureForwardErrorResponse 检查此 key，为 true 时跳过兜底写入，避免在已完成的 JSON 后追加 SSE。
+	// ResponseCommittedKey
+	// ensureForwardErrorResponse
 	ResponseCommittedKey = "response_committed"
 
 	OpsClientBusinessLimitedKey                          = "ops_client_business_limited"
@@ -114,8 +114,8 @@ func setOpsUpstreamError(c *gin.Context, upstreamStatusCode int, upstreamMessage
 type OpsUpstreamErrorEvent struct {
 	AtUnixMs int64 `json:"at_unix_ms,omitempty"`
 
-	// Passthrough 表示本次请求是否命中“原样透传（仅替换认证）”分支。
-	// 该字段用于排障与灰度评估；存入 JSON，不涉及 DB schema 变更。
+	// Passthrough “”
+	//
 	Passthrough bool `json:"passthrough,omitempty"`
 
 	// Context

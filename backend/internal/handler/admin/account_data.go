@@ -41,15 +41,14 @@ type DataProxy struct {
 	Username        string `json:"username,omitempty"`
 	Password        string `json:"password,omitempty"`
 	Status          string `json:"status"`
-	ExpiresAt       *int64 `json:"expires_at,omitempty"`        // unix 秒，与 DataAccount.ExpiresAt 风格一致
+	ExpiresAt       *int64 `json:"expires_at,omitempty"`        // unix seconds，与 DataAccount.ExpiresAt 风格一致
 	FallbackMode    string `json:"fallback_mode,omitempty"`     // none/direct/proxy
 	BackupProxyName string `json:"backup_proxy_name,omitempty"` // 备用代理 name（跨实例按 name 反查）
 	ExpiryWarnDays  int    `json:"expiry_warn_days,omitempty"`
 }
 
-// DataAccount 是管理员显式备份导出使用的账号结构，故意不走 dto.Account 的脱敏路径，
-// Credentials 原文返回。这是"管理员备份"这一显式行为的一部分；如未来需要导出脱敏版本，
-// 应新增独立结构而非修改这里。
+// DataAccount
+// Credentials ""
 type DataAccount struct {
 	Name               string         `json:"name"`
 	Notes              *string        `json:"notes,omitempty"`
@@ -122,7 +121,7 @@ func (h *AccountHandler) ExportData(c *gin.Context) {
 		proxies = []service.Proxy{}
 	}
 
-	// 构建 id→name 映射，用于导出备用代理 name
+	// →name
 	proxyNameByID := make(map[int64]string, len(proxies))
 	for i := range proxies {
 		proxyNameByID[proxies[i].ID] = proxies[i].Name
@@ -231,7 +230,7 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 	}
 
 	proxyKeyToID := make(map[string]int64, len(existingProxies))
-	// proxyNameToID 用于 backup_proxy_name 反查：DB 已有 + 本批次新建均会写入
+	// proxyNameToID +
 	proxyNameToID := make(map[string]int64, len(existingProxies))
 	for i := range existingProxies {
 		p := existingProxies[i]
@@ -264,7 +263,7 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 			result.ProxyReused++
 			if normalizedStatus != "" {
 				if proxy, getErr := h.adminService.GetProxy(ctx, existingID); getErr == nil && proxy != nil && proxy.Status != normalizedStatus {
-					// 同步 status 时传入完整字段，避免零值覆盖已存在代理的有效期/fallback 配置。
+					//
 					var existingExpiresAt *time.Time
 					if item.ExpiresAt != nil {
 						t := time.Unix(*item.ExpiresAt, 0).UTC()
@@ -298,21 +297,21 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 			continue
 		}
 
-		// 解析 expires_at（unix 秒 → *time.Time）
+		// → *time.Time）
 		var expiresAt *time.Time
 		if item.ExpiresAt != nil {
 			t := time.Unix(*item.ExpiresAt, 0).UTC()
 			expiresAt = &t
 		}
 
-		// 解析 backup_proxy_name → backup_proxy_id
+		// → backup_proxy_id
 		fallbackMode := item.FallbackMode
 		var backupProxyID *int64
 		if item.BackupProxyName != "" {
 			if bid, ok := proxyNameToID[item.BackupProxyName]; ok {
 				backupProxyID = &bid
 			} else {
-				// 查不到备用代理：降级 fallback_mode=none，记录 warning
+				// =none，
 				fallbackMode = service.FallbackModeNone
 				result.Errors = append(result.Errors, DataImportError{
 					Kind:     "proxy",
@@ -346,14 +345,14 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 			continue
 		}
 		proxyKeyToID[key] = created.ID
-		// 把新建代理的 name 也加入反查表，供后续批内代理引用
+		//
 		if created.Name != "" {
 			proxyNameToID[created.Name] = created.ID
 		}
 		result.ProxyCreated++
 
 		if normalizedStatus != "" && normalizedStatus != created.Status {
-			// 新建后同步 status 时，传入完整字段，避免零值覆盖刚创建的有效期/fallback 配置。
+			//
 			_, _ = h.adminService.UpdateProxy(ctx, created.ID, &service.UpdateProxyInput{
 				Status:         normalizedStatus,
 				ExpiresAt:      expiresAt,
@@ -370,7 +369,7 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 		}
 	}
 
-	// 收集需要异步设置隐私的 Antigravity OAuth 账号
+	//
 	var privacyAccounts []*service.Account
 
 	for i := range dataPayload.Accounts {
@@ -430,14 +429,14 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 			})
 			continue
 		}
-		// 收集 Antigravity OAuth 账号，稍后异步设置隐私
+		//
 		if created.Platform == service.PlatformAntigravity && created.Type == service.AccountTypeOAuth {
 			privacyAccounts = append(privacyAccounts, created)
 		}
 		result.AccountCreated++
 	}
 
-	// 异步设置 Antigravity 隐私，避免大量导入时阻塞请求
+	//
 	if len(privacyAccounts) > 0 {
 		adminSvc := h.adminService
 		go func() {
@@ -746,7 +745,7 @@ func normalizeProxyStatus(status string) string {
 	case "inactive", service.StatusDisabled:
 		return "inactive"
 	case "expired":
-		// 导入 expired 代理按 inactive 处理，避免导入即触发到期改投逻辑
+		//
 		return "inactive"
 	default:
 		return normalized

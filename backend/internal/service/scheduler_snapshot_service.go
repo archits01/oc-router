@@ -160,7 +160,7 @@ func (s *SchedulerSnapshotService) GetAccount(ctx context.Context, accountID int
 	return s.accountRepo.GetByID(fallbackCtx, accountID)
 }
 
-// GetGroupByID 获取分组信息（供调度器使用）
+// GetGroupByID
 func (s *SchedulerSnapshotService) GetGroupByID(ctx context.Context, groupID int64) (*Group, error) {
 	if s.groupRepo == nil {
 		return nil, nil
@@ -168,7 +168,7 @@ func (s *SchedulerSnapshotService) GetGroupByID(ctx context.Context, groupID int
 	return s.groupRepo.GetByID(ctx, groupID)
 }
 
-// UpdateAccountInCache 立即更新 Redis 中单个账号的数据（用于模型限流后立即生效）
+// UpdateAccountInCache
 func (s *SchedulerSnapshotService) UpdateAccountInCache(ctx context.Context, account *Account) error {
 	if s.cache == nil || account == nil {
 		return nil

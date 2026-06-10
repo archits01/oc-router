@@ -7,7 +7,7 @@ import (
 )
 
 func TestIsMigrationChecksumCompatible(t *testing.T) {
-	t.Run("054历史checksum可兼容", func(t *testing.T) {
+	t.Run("054 historical checksum is compatible", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"054_drop_legacy_cache_columns.sql",
 			"182c193f3359946cf094090cd9e57d5c3fd9abaffbc1e8fc378646b8a6fa12b4",
@@ -16,7 +16,7 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("054在未知文件checksum下不兼容", func(t *testing.T) {
+	t.Run("054 incompatible with unknown file checksum", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"054_drop_legacy_cache_columns.sql",
 			"182c193f3359946cf094090cd9e57d5c3fd9abaffbc1e8fc378646b8a6fa12b4",
@@ -25,7 +25,7 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.False(t, ok)
 	})
 
-	t.Run("061历史checksum可兼容", func(t *testing.T) {
+	t.Run("061 historical checksum is compatible", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"061_add_usage_log_request_type.sql",
 			"08a248652cbab7cfde147fc6ef8cda464f2477674e20b718312faa252e0481c0",
@@ -34,7 +34,7 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("061第二个历史checksum可兼容", func(t *testing.T) {
+	t.Run("061 second historical checksum is compatible", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"061_add_usage_log_request_type.sql",
 			"222b4a09c797c22e5922b6b172327c824f5463aaa8760e4f621bc5c22e2be0f3",
@@ -43,7 +43,7 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("非白名单迁移不兼容", func(t *testing.T) {
+	t.Run("non-allowlisted migration is incompatible", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"001_init.sql",
 			"182c193f3359946cf094090cd9e57d5c3fd9abaffbc1e8fc378646b8a6fa12b4",
@@ -52,7 +52,7 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.False(t, ok)
 	})
 
-	t.Run("109历史checksum可兼容", func(t *testing.T) {
+	t.Run("109 historical checksum is compatible", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"109_auth_identity_compat_backfill.sql",
 			"551e498aa5616d2d91096e9d72cf9fb36e418ee22eacc557f8811cadbc9e20ee",
@@ -61,7 +61,7 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("109当前checksum可兼容历史checksum", func(t *testing.T) {
+	t.Run("109 current checksum is compatible with historical checksum", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"109_auth_identity_compat_backfill.sql",
 			"551e498aa5616d2d91096e9d72cf9fb36e418ee22eacc557f8811cadbc9e20ee",
@@ -70,7 +70,7 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("109回滚到历史文件后仍兼容已应用的新checksum", func(t *testing.T) {
+	t.Run("109 still compatible with applied new checksum after rolling back to historical file", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"109_auth_identity_compat_backfill.sql",
 			"0580b4602d85435edf9aca1633db580bb3932f26517f75134106f80275ec2ace",
@@ -79,7 +79,7 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("110历史checksum可兼容", func(t *testing.T) {
+	t.Run("110 historical checksum is compatible", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"110_pending_auth_and_provider_default_grants.sql",
 			"e3d1f433be2b564cfbdc549adf98fce13c5c7b363ebc20fd05b765d0563b0925",

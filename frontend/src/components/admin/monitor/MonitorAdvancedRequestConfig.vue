@@ -140,7 +140,6 @@ const headersError = ref('')
 watch(
   () => props.extraHeaders,
   (v) => {
-    // 外部重置时（切换平台 / 应用模板）同步行。
     // 同值不回写，避免每次 commit 都把行重排。
     if (!isSameHeaderMap(toMap(headerRows.value), v)) {
       headerRows.value = toRows(v)
@@ -177,7 +176,7 @@ function isSameHeaderMap(a: Record<string, string>, b: Record<string, string>): 
 
 function commitHeaders() {
   // 空白 name + 空白 value 的行允许保留作为"占位新行"，不报错；
-  // name 非空但 value 为空（或反之）都视为用户正在编辑，同样不报错。
+  // name 非空但 value 为空（或反之）都视为User正在Edit，同样不报错。
   // 只在 name 里含冒号这种明显不合法时兜一下。
   for (const row of headerRows.value) {
     const name = row.name.trim()
@@ -248,7 +247,6 @@ function formatBody() {
     const parsed = JSON.parse(trimmed)
     bodyText.value = JSON.stringify(parsed, null, 2)
     bodyError.value = ''
-    // 同步把校验过的对象提交，避免格式化后焦点未移走时父组件读到旧值
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       emit('update:bodyOverride', parsed as Record<string, unknown>)
     }
@@ -267,7 +265,7 @@ function serializeBody(body: Record<string, unknown> | null): string {
 
 function updateBodyMode(mode: BodyOverrideMode) {
   emit('update:bodyOverrideMode', mode)
-  // 切换到 off 时清掉 body（提示用户）
+  // 切换到 off 时清掉 body（提示User）
   if (mode === 'off') {
     emit('update:bodyOverride', null)
   }

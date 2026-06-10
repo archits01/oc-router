@@ -50,7 +50,7 @@ declare module 'vue-router' {
     requiresPayment?: boolean
 
     /**
-     * 是否要求风控中心功能开关已启用
+     * YesNo要求Risk Control中心功能开关Enabled
      * @default false
      */
     requiresRiskControl?: boolean

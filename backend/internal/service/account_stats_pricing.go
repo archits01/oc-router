@@ -5,17 +5,16 @@ import (
 	"strings"
 )
 
-// resolveAccountStatsCost 计算账号统计定价费用。
-// 返回 nil 表示不覆盖，使用默认公式（total_cost × account_rate_multiplier）。
+// resolveAccountStatsCost
+// × account_rate_multiplier）。
 //
-// 优先级（先命中为准）：
-//  1. 自定义规则（始终尝试，不依赖 ApplyPricingToAccountStats 开关）
-//  2. ApplyPricingToAccountStats 启用时，直接使用本次请求的客户计费（倍率前的 totalCost）
-//  3. 模型定价文件（LiteLLM）中上游模型的默认价格
-//  4. nil → 走默认公式（total_cost × account_rate_multiplier）
+//  1.
+//  2. ApplyPricingToAccountStats
+//  3.
+//  4. nil → × account_rate_multiplier）
 //
-// upstreamModel 是最终发往上游的模型 ID。
-// totalCost 是本次请求的客户计费（倍率前），用于优先级 2。
+// upstreamModel
+// totalCost
 func resolveAccountStatsCost(
 	ctx context.Context,
 	channelService *ChannelService,
@@ -37,12 +36,11 @@ func resolveAccountStatsCost(
 
 	platform := channelService.GetGroupPlatform(ctx, groupID)
 
-	// 优先级 1：自定义规则（始终尝试）
 	if cost := tryCustomRules(channel, accountID, groupID, platform, upstreamModel, tokens, requestCount); cost != nil {
 		return cost
 	}
 
-	// 优先级 2：渠道开启"应用模型定价到账号统计"时，直接使用客户计费（倍率前）
+	// ""
 	if channel.ApplyPricingToAccountStats {
 		cost := totalCost
 		if cost <= 0 {
@@ -51,7 +49,7 @@ func resolveAccountStatsCost(
 		return &cost
 	}
 
-	// 优先级 3：模型定价文件（LiteLLM）默认价格
+	//
 	if billingService != nil {
 		return tryModelFilePricing(billingService, upstreamModel, tokens)
 	}
@@ -59,7 +57,7 @@ func resolveAccountStatsCost(
 	return nil
 }
 
-// tryModelFilePricing 使用模型定价文件（LiteLLM/fallback）中的标准价格计算费用。
+// tryModelFilePricing
 func tryModelFilePricing(billingService *BillingService, model string, tokens UsageTokens) *float64 {
 	pricing, err := billingService.GetModelPricing(model)
 	if err != nil || pricing == nil {
@@ -76,7 +74,7 @@ func tryModelFilePricing(billingService *BillingService, model string, tokens Us
 	return &cost
 }
 
-// tryCustomRules 遍历自定义规则，按数组顺序先命中为准。
+// tryCustomRules
 func tryCustomRules(
 	channel *Channel, accountID, groupID int64,
 	platform, model string, tokens UsageTokens, requestCount int,
@@ -88,16 +86,16 @@ func tryCustomRules(
 		}
 		pricing := findPricingForModel(rule.Pricing, platform, modelLower)
 		if pricing == nil {
-			continue // 规则匹配但模型不在规则定价中，继续下一条
+			continue // 规则匹配但model不在规则定价中，继续下一条
 		}
 		return calculateStatsCost(pricing, tokens, requestCount)
 	}
 	return nil
 }
 
-// matchAccountStatsRule 检查规则是否匹配指定的 accountID 和 groupID。
-// 匹配条件：accountID ∈ rule.AccountIDs 或 groupID ∈ rule.GroupIDs。
-// 如果规则的 AccountIDs 和 GroupIDs 都为空，视为不匹配。
+// matchAccountStatsRule
+// ∈ rule.AccountIDs ∈ rule.GroupIDs。
+//
 func matchAccountStatsRule(rule *AccountStatsPricingRule, accountID, groupID int64) bool {
 	if len(rule.AccountIDs) == 0 && len(rule.GroupIDs) == 0 {
 		return false
@@ -115,10 +113,8 @@ func matchAccountStatsRule(rule *AccountStatsPricingRule, accountID, groupID int
 	return false
 }
 
-// findPricingForModel 在定价列表中查找匹配的模型定价。
-// 先精确匹配，再通配符匹配（按配置顺序，先匹配先使用）。
+// findPricingForModel
 func findPricingForModel(pricingList []ChannelModelPricing, platform, modelLower string) *ChannelModelPricing {
-	// 精确匹配优先
 	for i := range pricingList {
 		p := &pricingList[i]
 		if !isPlatformMatch(platform, p.Platform) {
@@ -130,7 +126,6 @@ func findPricingForModel(pricingList []ChannelModelPricing, platform, modelLower
 			}
 		}
 	}
-	// 通配符匹配：按配置顺序，先匹配先使用
 	for i := range pricingList {
 		p := &pricingList[i]
 		if !isPlatformMatch(platform, p.Platform) {
@@ -150,7 +145,7 @@ func findPricingForModel(pricingList []ChannelModelPricing, platform, modelLower
 	return nil
 }
 
-// isPlatformMatch 判断平台是否匹配（空平台视为不限平台）。
+// isPlatformMatch
 func isPlatformMatch(queryPlatform, pricingPlatform string) bool {
 	if queryPlatform == "" || pricingPlatform == "" {
 		return true
@@ -158,7 +153,7 @@ func isPlatformMatch(queryPlatform, pricingPlatform string) bool {
 	return queryPlatform == pricingPlatform
 }
 
-// calculateStatsCost 使用给定的定价计算费用（不含任何倍率，原始费用）。
+// calculateStatsCost
 func calculateStatsCost(pricing *ChannelModelPricing, tokens UsageTokens, requestCount int) *float64 {
 	if pricing == nil {
 		return nil
@@ -171,7 +166,7 @@ func calculateStatsCost(pricing *ChannelModelPricing, tokens UsageTokens, reques
 	}
 }
 
-// calculatePerRequestStatsCost 按次/图片计费。
+// calculatePerRequestStatsCost
 func calculatePerRequestStatsCost(pricing *ChannelModelPricing, requestCount int) *float64 {
 	if pricing.PerRequestPrice == nil || *pricing.PerRequestPrice <= 0 {
 		return nil
@@ -180,7 +175,7 @@ func calculatePerRequestStatsCost(pricing *ChannelModelPricing, requestCount int
 	return &cost
 }
 
-// calculateTokenStatsCost Token 计费。
+// calculateTokenStatsCost Token
 // If the pricing has intervals, find the matching interval by total token count
 // and use its prices instead of the flat pricing fields.
 func calculateTokenStatsCost(pricing *ChannelModelPricing, tokens UsageTokens) *float64 {

@@ -32,7 +32,7 @@ func (m *mockInternal500Cache) ResetInternal500Count(_ context.Context, accountI
 	return m.resetErr
 }
 
-// --- mock: 专用于 internal500 惩罚测试的 AccountRepository ---
+// --- mock:
 
 type internal500AccountRepoStub struct {
 	AccountRepository // 嵌入接口，未实现的方法会 panic（不应被调用）
@@ -79,17 +79,17 @@ func TestIsAntigravityInternalServerError(t *testing.T) {
 		require.False(t, isAntigravityInternalServerError(200, body))
 	})
 
-	t.Run("body 中 message 不匹配", func(t *testing.T) {
+	t.Run("body 中 message mismatch", func(t *testing.T) {
 		body := []byte(`{"error":{"code":500,"message":"Some other error","status":"INTERNAL"}}`)
 		require.False(t, isAntigravityInternalServerError(500, body))
 	})
 
-	t.Run("body 中 status 不匹配", func(t *testing.T) {
+	t.Run("body 中 status mismatch", func(t *testing.T) {
 		body := []byte(`{"error":{"code":500,"message":"Internal error encountered.","status":"UNAVAILABLE"}}`)
 		require.False(t, isAntigravityInternalServerError(500, body))
 	})
 
-	t.Run("body 中 code 不匹配", func(t *testing.T) {
+	t.Run("body 中 code mismatch", func(t *testing.T) {
 		body := []byte(`{"error":{"code":503,"message":"Internal error encountered.","status":"INTERNAL"}}`)
 		require.False(t, isAntigravityInternalServerError(500, body))
 	})
@@ -99,12 +99,12 @@ func TestIsAntigravityInternalServerError(t *testing.T) {
 		require.False(t, isAntigravityInternalServerError(500, nil))
 	})
 
-	t.Run("其他 500 错误格式（纯文本）", func(t *testing.T) {
+	t.Run("其他 500 error格式（纯文本）", func(t *testing.T) {
 		body := []byte(`Internal Server Error`)
 		require.False(t, isAntigravityInternalServerError(500, body))
 	})
 
-	t.Run("其他 500 错误格式（不同 JSON 结构）", func(t *testing.T) {
+	t.Run("其他 500 error格式（不同 JSON 结构）", func(t *testing.T) {
 		body := []byte(`{"message":"Internal Server Error","statusCode":500}`)
 		require.False(t, isAntigravityInternalServerError(500, body))
 	})
@@ -115,7 +115,7 @@ func TestIsAntigravityInternalServerError(t *testing.T) {
 // =============================================================================
 
 func TestApplyInternal500Penalty(t *testing.T) {
-	t.Run("count=1 → SetTempUnschedulable 10 分钟", func(t *testing.T) {
+	t.Run("count=1 → SetTempUnschedulable 10 minutes", func(t *testing.T) {
 		repo := &internal500AccountRepoStub{}
 		svc := &AntigravityGatewayService{accountRepo: repo}
 		account := &Account{ID: 1, Name: "acc-1"}
@@ -130,7 +130,7 @@ func TestApplyInternal500Penalty(t *testing.T) {
 		call := repo.tempUnschedCalls[0]
 		require.Equal(t, int64(1), call.accountID)
 		require.Contains(t, call.reason, "INTERNAL 500")
-		// until 应在 [before+10m, after+10m] 范围内
+		// until [before+10m, after+10m]
 		require.True(t, call.until.After(before.Add(internal500PenaltyTier1Duration).Add(-time.Second)))
 		require.True(t, call.until.Before(after.Add(internal500PenaltyTier1Duration).Add(time.Second)))
 	})
@@ -209,7 +209,7 @@ func TestHandleInternal500RetryExhausted(t *testing.T) {
 		}
 		account := &Account{ID: 1, Name: "acc-1"}
 
-		// 不应 panic
+		//
 		require.NotPanics(t, func() {
 			svc.handleInternal500RetryExhausted(context.Background(), "[test]", account)
 		})
@@ -217,7 +217,7 @@ func TestHandleInternal500RetryExhausted(t *testing.T) {
 		require.Empty(t, repo.setErrorCalls)
 	})
 
-	t.Run("IncrementInternal500Count 返回 error → 不调用惩罚方法", func(t *testing.T) {
+	t.Run("IncrementInternal500Count returned error → 不调用惩罚方法", func(t *testing.T) {
 		repo := &internal500AccountRepoStub{}
 		cache := &mockInternal500Cache{
 			incrementErr: errors.New("redis connection error"),
@@ -236,7 +236,7 @@ func TestHandleInternal500RetryExhausted(t *testing.T) {
 		require.Empty(t, repo.setErrorCalls)
 	})
 
-	t.Run("IncrementInternal500Count 返回 count=1 → 触发 tier1 惩罚", func(t *testing.T) {
+	t.Run("IncrementInternal500Count returned count=1 → 触发 tier1 惩罚", func(t *testing.T) {
 		repo := &internal500AccountRepoStub{}
 		cache := &mockInternal500Cache{
 			incrementCount: 1,
@@ -257,7 +257,7 @@ func TestHandleInternal500RetryExhausted(t *testing.T) {
 		require.Empty(t, repo.setErrorCalls)
 	})
 
-	t.Run("IncrementInternal500Count 返回 count=3 → 触发 tier3 永久禁用", func(t *testing.T) {
+	t.Run("IncrementInternal500Count returned count=3 → 触发 tier3 永久禁用", func(t *testing.T) {
 		repo := &internal500AccountRepoStub{}
 		cache := &mockInternal500Cache{
 			incrementCount: 3,
@@ -292,7 +292,7 @@ func TestResetInternal500Counter(t *testing.T) {
 		})
 	})
 
-	t.Run("ResetInternal500Count 返回 error → 不 panic（仅日志）", func(t *testing.T) {
+	t.Run("ResetInternal500Count returned error → 不 panic（仅日志）", func(t *testing.T) {
 		cache := &mockInternal500Cache{
 			resetErr: errors.New("redis timeout"),
 		}

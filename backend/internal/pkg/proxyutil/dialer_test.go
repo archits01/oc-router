@@ -128,7 +128,7 @@ func TestConfigureTransportProxy_WithAuth(t *testing.T) {
 
 func TestConfigureTransportProxy_EmptyScheme(t *testing.T) {
 	transport := &http.Transport{}
-	// 空 scheme 的 URL
+	//
 	proxyURL := &url.URL{Host: "proxy.example.com:8080"}
 
 	err := ConfigureTransportProxy(transport, proxyURL)
@@ -138,7 +138,7 @@ func TestConfigureTransportProxy_EmptyScheme(t *testing.T) {
 }
 
 func TestConfigureTransportProxy_PreservesExistingConfig(t *testing.T) {
-	// 验证代理配置不会覆盖 Transport 的其他配置
+	//
 	transport := &http.Transport{
 		MaxIdleConns:        100,
 		MaxIdleConnsPerHost: 10,
@@ -180,13 +180,12 @@ func TestConfigureTransportProxy_SpecialCharsInPassword(t *testing.T) {
 		name     string
 		proxyURL string
 	}{
-		// 密码包含 @ 符号（URL 编码为 %40）
+		// @ %40）
 		{"password with @", "socks5://user:p%40ssword@proxy.example.com:1080"},
-		// 密码包含 : 符号（URL 编码为 %3A）
+		// %3A）
 		{"password with :", "socks5://user:pass%3Aword@proxy.example.com:1080"},
-		// 密码包含 / 符号（URL 编码为 %2F）
+		// %2F）
 		{"password with /", "socks5://user:pass%2Fword@proxy.example.com:1080"},
-		// 复杂密码
 		{"complex password", "socks5h://admin:P%40ss%3Aw0rd%2F123@proxy.example.com:1080"},
 	}
 

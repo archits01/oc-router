@@ -98,7 +98,7 @@ describe("admin settings auth source defaults helpers", () => {
 
   it("appends auth source defaults back onto update payload", () => {
     const payload: UpdateSettingsRequest = {
-      site_name: "Sub2API",
+      site_name: "OC Router",
     };
 
     appendAuthSourceDefaultsToUpdateRequest(payload, {
@@ -161,7 +161,7 @@ describe("admin settings auth source defaults helpers", () => {
     });
 
     expect(payload).toMatchObject({
-      site_name: "Sub2API",
+      site_name: "OC Router",
       auth_source_default_email_balance: 1.25,
       auth_source_default_email_concurrency: 2,
       auth_source_default_email_subscriptions: [
@@ -221,7 +221,7 @@ describe("admin settings auth source defaults helpers", () => {
 
     const emailQuotas = (payload as Record<string, unknown>)["auth_source_default_email_platform_quotas"] as DefaultPlatformQuotasMap;
     expect(emailQuotas.anthropic).toEqual({ daily: 10, weekly: 50, monthly: 200 });
-    // 0 是合法值（不限额=0 与"不设"不同，保留）
+    // 0 Yes合法值（不限额=0 与"不设"不同，保留）
     expect(emailQuotas.openai?.daily).toBe(0);
     // 缺失平台归一化为全 null
     expect(emailQuotas.gemini).toEqual({ daily: null, weekly: null, monthly: null });
@@ -238,7 +238,7 @@ describe("normalizePlatformQuotasMap", () => {
     expect(result.antigravity).toEqual({ daily: null, weekly: null, monthly: null });
   });
 
-  it("无参数时返回全 4 平台全 null", () => {
+  it("无参数时Back全 4 平台全 null", () => {
     const result = normalizePlatformQuotasMap();
     expect(Object.keys(result)).toHaveLength(4);
     for (const v of Object.values(result)) {

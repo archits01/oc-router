@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// 编译期接口断言
 var _ HTTPUpstream = (*stubAntigravityUpstream)(nil)
 var _ HTTPUpstream = (*recordingOKUpstream)(nil)
 var _ AccountRepository = (*stubAntigravityAccountRepo)(nil)
@@ -73,7 +72,7 @@ type rateLimitCall struct {
 
 type modelRateLimitCall struct {
 	accountID int64
-	modelKey  string // 存储的 key（应该是官方模型 ID，如 "claude-sonnet-4-5"）
+	modelKey  string // 存储的 key（应该是official model ID，如 "claude-sonnet-4-5"）
 	resetAt   time.Time
 }
 
@@ -163,13 +162,13 @@ func TestAntigravityRetryLoop_NoURLFallback_UsesConfiguredBaseURL(t *testing.T) 
 	require.Equal(t, base1, available[0])
 }
 
-// TestHandleUpstreamError_429_ModelRateLimit 测试 429 模型限流场景
+// TestHandleUpstreamError_429_ModelRateLimit
 func TestHandleUpstreamError_429_ModelRateLimit(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	svc := &AntigravityGatewayService{accountRepo: repo}
 	account := &Account{ID: 1, Name: "acc-1", Platform: PlatformAntigravity}
 
-	// 429 + RATE_LIMIT_EXCEEDED + 模型名 → 模型限流
+	// 429 + RATE_LIMIT_EXCEEDED + →
 	body := []byte(`{
 		"error": {
 			"status": "RESOURCE_EXHAUSTED",
@@ -182,7 +181,6 @@ func TestHandleUpstreamError_429_ModelRateLimit(t *testing.T) {
 
 	result := svc.handleUpstreamError(context.Background(), "[test]", account, http.StatusTooManyRequests, http.Header{}, body, "claude-sonnet-4-5", 0, "", false)
 
-	// 应该触发模型限流
 	require.NotNil(t, result)
 	require.True(t, result.Handled)
 	require.NotNil(t, result.SwitchError)
@@ -191,26 +189,26 @@ func TestHandleUpstreamError_429_ModelRateLimit(t *testing.T) {
 	require.Equal(t, "claude-sonnet-4-5", repo.modelRateLimitCalls[0].modelKey)
 }
 
-// TestHandleUpstreamError_429_NonModelRateLimit 测试 429 非模型限流场景（走模型级限流兜底）
+// TestHandleUpstreamError_429_NonModelRateLimit
 func TestHandleUpstreamError_429_NonModelRateLimit(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	svc := &AntigravityGatewayService{accountRepo: repo}
 	account := &Account{ID: 2, Name: "acc-2", Platform: PlatformAntigravity}
 
-	// 429 + 普通限流响应（无 RATE_LIMIT_EXCEEDED reason）→ 走模型级限流兜底
+	// 429 + →
 	body := buildGeminiRateLimitBody("5s")
 
 	result := svc.handleUpstreamError(context.Background(), "[test]", account, http.StatusTooManyRequests, http.Header{}, body, "claude-sonnet-4-5", 0, "", false)
 
-	// handleModelRateLimit 不会处理（因为没有 RATE_LIMIT_EXCEEDED），
-	// 但 429 兜底逻辑会使用 requestedModel 设置模型级限流
+	// handleModelRateLimit
+	//
 	require.Nil(t, result)
 	require.Len(t, repo.modelRateLimitCalls, 1)
 	require.Equal(t, "claude-sonnet-4-5", repo.modelRateLimitCalls[0].modelKey)
 }
 
-// TestHandleUpstreamError_429_NonModelRateLimit_UsesMappedModelKey 测试 429 非模型限流场景
-// 验证：requestedModel 会被映射到 Antigravity 最终模型（例如 claude-opus-4-6 -> claude-opus-4-6-thinking）
+// TestHandleUpstreamError_429_NonModelRateLimit_UsesMappedModelKey
+// > claude-opus-4-6-thinking）
 func TestHandleUpstreamError_429_NonModelRateLimit_UsesMappedModelKey(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	svc := &AntigravityGatewayService{accountRepo: repo}
@@ -225,14 +223,14 @@ func TestHandleUpstreamError_429_NonModelRateLimit_UsesMappedModelKey(t *testing
 	require.Equal(t, "claude-opus-4-6-thinking", repo.modelRateLimitCalls[0].modelKey)
 }
 
-// TestHandleUpstreamError_503_ModelCapacityExhausted 测试 503 模型容量不足场景
-// MODEL_CAPACITY_EXHAUSTED 时应等待重试，不切换账号
+// TestHandleUpstreamError_503_ModelCapacityExhausted
+// MODEL_CAPACITY_EXHAUSTED
 func TestHandleUpstreamError_503_ModelCapacityExhausted(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	svc := &AntigravityGatewayService{accountRepo: repo}
 	account := &Account{ID: 3, Name: "acc-3", Platform: PlatformAntigravity}
 
-	// 503 + MODEL_CAPACITY_EXHAUSTED → 等待重试，不切换账号
+	// 503 + MODEL_CAPACITY_EXHAUSTED →
 	body := []byte(`{
 		"error": {
 			"status": "UNAVAILABLE",
@@ -245,8 +243,8 @@ func TestHandleUpstreamError_503_ModelCapacityExhausted(t *testing.T) {
 
 	result := svc.handleUpstreamError(context.Background(), "[test]", account, http.StatusServiceUnavailable, http.Header{}, body, "gemini-3-pro-high", 0, "", false)
 
-	// MODEL_CAPACITY_EXHAUSTED 应该标记为已处理，不切换账号，不设置模型限流
-	// 实际重试由 handleSmartRetry 处理
+	// MODEL_CAPACITY_EXHAUSTED
+	//
 	require.NotNil(t, result)
 	require.True(t, result.Handled)
 	require.False(t, result.ShouldRetry, "MODEL_CAPACITY_EXHAUSTED should not trigger retry from handleModelRateLimit path")
@@ -254,13 +252,13 @@ func TestHandleUpstreamError_503_ModelCapacityExhausted(t *testing.T) {
 	require.Empty(t, repo.modelRateLimitCalls, "MODEL_CAPACITY_EXHAUSTED should not set model rate limit")
 }
 
-// TestHandleUpstreamError_503_NonModelRateLimit 测试 503 非模型限流场景（不处理）
+// TestHandleUpstreamError_503_NonModelRateLimit
 func TestHandleUpstreamError_503_NonModelRateLimit(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	svc := &AntigravityGatewayService{accountRepo: repo}
 	account := &Account{ID: 4, Name: "acc-4", Platform: PlatformAntigravity}
 
-	// 503 + 普通错误（非 MODEL_CAPACITY_EXHAUSTED）→ 不做任何处理
+	// 503 + →
 	body := []byte(`{
 		"error": {
 			"status": "UNAVAILABLE",
@@ -273,24 +271,24 @@ func TestHandleUpstreamError_503_NonModelRateLimit(t *testing.T) {
 
 	result := svc.handleUpstreamError(context.Background(), "[test]", account, http.StatusServiceUnavailable, http.Header{}, body, "gemini-3-pro-high", 0, "", false)
 
-	// 503 非模型限流不应该做任何处理
+	// 503
 	require.Nil(t, result)
 	require.Empty(t, repo.modelRateLimitCalls, "503 non-model rate limit should not trigger model rate limit")
 	require.Empty(t, repo.rateCalls, "503 non-model rate limit should not trigger account rate limit")
 }
 
-// TestHandleUpstreamError_503_EmptyBody 测试 503 空响应体（不处理）
+// TestHandleUpstreamError_503_EmptyBody
 func TestHandleUpstreamError_503_EmptyBody(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	svc := &AntigravityGatewayService{accountRepo: repo}
 	account := &Account{ID: 5, Name: "acc-5", Platform: PlatformAntigravity}
 
-	// 503 + 空响应体 → 不做任何处理
+	// 503 + →
 	body := []byte(`{}`)
 
 	result := svc.handleUpstreamError(context.Background(), "[test]", account, http.StatusServiceUnavailable, http.Header{}, body, "gemini-3-pro-high", 0, "", false)
 
-	// 503 空响应不应该做任何处理
+	// 503
 	require.Nil(t, result)
 	require.Empty(t, repo.modelRateLimitCalls)
 	require.Empty(t, repo.rateCalls)
@@ -729,7 +727,7 @@ func TestShouldTriggerAntigravitySmartRetry(t *testing.T) {
 	}
 }
 
-// TestSetModelRateLimitByModelName_UsesOfficialModelID 验证写入端使用官方模型 ID
+// TestSetModelRateLimitByModelName_UsesOfficialModelID
 func TestSetModelRateLimitByModelName_UsesOfficialModelID(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -785,7 +783,7 @@ func TestSetModelRateLimitByModelName_UsesOfficialModelID(t *testing.T) {
 				require.Len(t, repo.modelRateLimitCalls, 1)
 				call := repo.modelRateLimitCalls[0]
 				require.Equal(t, int64(123), call.accountID)
-				// 关键断言：存储的 key 应该是官方模型 ID，而不是 scope
+				//
 				require.Equal(t, tt.expectedModelKey, call.modelKey, "should store official model ID, not scope")
 				require.WithinDuration(t, resetAt, call.resetAt, time.Second)
 			} else {
@@ -795,17 +793,17 @@ func TestSetModelRateLimitByModelName_UsesOfficialModelID(t *testing.T) {
 	}
 }
 
-// TestSetModelRateLimitByModelName_NotConvertToScope 验证不会将模型名转换为 scope
+// TestSetModelRateLimitByModelName_NotConvertToScope
 func TestSetModelRateLimitByModelName_NotConvertToScope(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	resetAt := time.Now().Add(30 * time.Second)
 
-	// 调用 setModelRateLimitByModelName，传入官方模型 ID
+	//
 	success := setModelRateLimitByModelName(
 		context.Background(),
 		repo,
 		456,
-		"claude-sonnet-4-5", // 官方模型 ID
+		"claude-sonnet-4-5", // official model ID
 		"[test]",
 		429,
 		resetAt,
@@ -816,7 +814,7 @@ func TestSetModelRateLimitByModelName_NotConvertToScope(t *testing.T) {
 	require.Len(t, repo.modelRateLimitCalls, 1)
 
 	call := repo.modelRateLimitCalls[0]
-	// 关键断言：存储的应该是 "claude-sonnet-4-5"，而不是 "claude_sonnet"
+	// "claude-sonnet-4-5"，"claude_sonnet"
 	require.Equal(t, "claude-sonnet-4-5", call.modelKey, "should NOT convert to scope like claude_sonnet")
 	require.NotEqual(t, "claude_sonnet", call.modelKey, "should NOT be scope")
 }
@@ -1036,7 +1034,7 @@ func TestAntigravityAccountSwitchError_Error(t *testing.T) {
 	require.Contains(t, msg, "claude-opus-4-5")
 }
 
-// stubSchedulerCache 用于测试的 SchedulerCache 实现
+// stubSchedulerCache
 type stubSchedulerCache struct {
 	SchedulerCache
 	setAccountCalls []*Account
@@ -1048,7 +1046,7 @@ func (s *stubSchedulerCache) SetAccount(ctx context.Context, account *Account) e
 	return s.setAccountErr
 }
 
-// TestUpdateAccountModelRateLimitInCache_UpdatesExtraAndCallsCache 测试模型限流后更新缓存
+// TestUpdateAccountModelRateLimitInCache_UpdatesExtraAndCallsCache
 func TestUpdateAccountModelRateLimitInCache_UpdatesExtraAndCallsCache(t *testing.T) {
 	cache := &stubSchedulerCache{}
 	snapshotService := &SchedulerSnapshotService{cache: cache}
@@ -1066,7 +1064,7 @@ func TestUpdateAccountModelRateLimitInCache_UpdatesExtraAndCallsCache(t *testing
 
 	svc.updateAccountModelRateLimitInCache(context.Background(), account, modelKey, resetAt)
 
-	// 验证 Extra 字段被正确更新
+	//
 	require.NotNil(t, account.Extra)
 	limits, ok := account.Extra["model_rate_limits"].(map[string]any)
 	require.True(t, ok)
@@ -1075,12 +1073,12 @@ func TestUpdateAccountModelRateLimitInCache_UpdatesExtraAndCallsCache(t *testing
 	require.NotEmpty(t, modelLimit["rate_limited_at"])
 	require.NotEmpty(t, modelLimit["rate_limit_reset_at"])
 
-	// 验证 cache.SetAccount 被调用
+	//
 	require.Len(t, cache.setAccountCalls, 1)
 	require.Equal(t, account.ID, cache.setAccountCalls[0].ID)
 }
 
-// TestUpdateAccountModelRateLimitInCache_NilSchedulerSnapshot 测试 schedulerSnapshot 为 nil 时不 panic
+// TestUpdateAccountModelRateLimitInCache_NilSchedulerSnapshot
 func TestUpdateAccountModelRateLimitInCache_NilSchedulerSnapshot(t *testing.T) {
 	svc := &AntigravityGatewayService{
 		schedulerSnapshot: nil,
@@ -1088,14 +1086,14 @@ func TestUpdateAccountModelRateLimitInCache_NilSchedulerSnapshot(t *testing.T) {
 
 	account := &Account{ID: 1, Name: "test"}
 
-	// 不应 panic
+	//
 	svc.updateAccountModelRateLimitInCache(context.Background(), account, "claude-sonnet-4-5", time.Now().Add(30*time.Second))
 
-	// Extra 不应被更新（因为函数提前返回）
+	// Extra
 	require.Nil(t, account.Extra)
 }
 
-// TestUpdateAccountModelRateLimitInCache_PreservesExistingExtra 测试保留已有的 Extra 数据
+// TestUpdateAccountModelRateLimitInCache_PreservesExistingExtra
 func TestUpdateAccountModelRateLimitInCache_PreservesExistingExtra(t *testing.T) {
 	cache := &stubSchedulerCache{}
 	snapshotService := &SchedulerSnapshotService{cache: cache}
@@ -1120,14 +1118,13 @@ func TestUpdateAccountModelRateLimitInCache_PreservesExistingExtra(t *testing.T)
 
 	svc.updateAccountModelRateLimitInCache(context.Background(), account, "claude-sonnet-4-5", time.Now().Add(30*time.Second))
 
-	// 验证已有数据被保留
 	require.Equal(t, "existing_value", account.Extra["existing_key"])
 	limits := account.Extra["model_rate_limits"].(map[string]any)
 	require.NotNil(t, limits["gemini-3-flash"])
 	require.NotNil(t, limits["claude-sonnet-4-5"])
 }
 
-// TestSchedulerSnapshotService_UpdateAccountInCache 测试 UpdateAccountInCache 方法
+// TestSchedulerSnapshotService_UpdateAccountInCache
 func TestSchedulerSnapshotService_UpdateAccountInCache(t *testing.T) {
 	t.Run("calls cache.SetAccount", func(t *testing.T) {
 		cache := &stubSchedulerCache{}

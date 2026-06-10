@@ -6,13 +6,13 @@ import (
 	"sync"
 )
 
-// SubscriptionMaintenanceQueue 提供"有界队列 + 固定 worker"的后台执行器。
-// 用于从请求热路径触发维护动作时，避免无限 goroutine 膨胀。
+// SubscriptionMaintenanceQueue "+ "
+//
 type SubscriptionMaintenanceQueue struct {
 	queue  chan func()
 	wg     sync.WaitGroup
 	stop   sync.Once
-	mu     sync.RWMutex // 保护 closed 标志与 channel 操作的原子性
+	mu     sync.RWMutex // protects atomicity of closed flag and channel operations
 	closed bool
 }
 
@@ -48,9 +48,9 @@ func NewSubscriptionMaintenanceQueue(workerCount, queueSize int) *SubscriptionMa
 	return q
 }
 
-// TryEnqueue 尝试将任务入队。
-// 当队列已满时返回 error（调用方应该选择跳过并记录告警/限频日志）。
-// 当队列已关闭时返回 error，不会 panic。
+// TryEnqueue
+//
+//
 func (q *SubscriptionMaintenanceQueue) TryEnqueue(task func()) error {
 	if q == nil {
 		return fmt.Errorf("maintenance queue is nil")

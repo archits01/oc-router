@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestGeminiV1BetaHandler_PlatformRoutingInvariant 文档化并验证 Handler 层的平台路由逻辑不变量
-// 该测试确保 gemini 和 antigravity 平台的路由逻辑符合预期
+// TestGeminiV1BetaHandler_PlatformRoutingInvariant
+//
 func TestGeminiV1BetaHandler_PlatformRoutingInvariant(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -20,13 +20,13 @@ func TestGeminiV1BetaHandler_PlatformRoutingInvariant(t *testing.T) {
 		description     string
 	}{
 		{
-			name:            "Gemini平台使用ForwardNative",
+			name:            "Gemini platform uses ForwardNative",
 			platform:        service.PlatformGemini,
 			expectedService: "GeminiMessagesCompatService.ForwardNative",
 			description:     "Gemini OAuth 账户直接调用 Google API",
 		},
 		{
-			name:            "Antigravity平台使用ForwardGemini",
+			name:            "Antigravity platform uses ForwardGemini",
 			platform:        service.PlatformAntigravity,
 			expectedService: "AntigravityGatewayService.ForwardGemini",
 			description:     "Antigravity 账户通过 CRS 中转，支持 Gemini 协议",
@@ -35,7 +35,7 @@ func TestGeminiV1BetaHandler_PlatformRoutingInvariant(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// 模拟 GeminiV1BetaModels 中的路由决策 (lines 199-205 in gemini_v1beta_handler.go)
+			// (lines 199-205 in gemini_v1beta_handler.go)
 			var routedService string
 			if tt.platform == service.PlatformAntigravity {
 				routedService = "AntigravityGatewayService.ForwardGemini"
@@ -50,8 +50,8 @@ func TestGeminiV1BetaHandler_PlatformRoutingInvariant(t *testing.T) {
 	}
 }
 
-// TestGeminiV1BetaHandler_ListModelsAntigravityFallback 验证 ListModels 的 antigravity 降级逻辑
-// 当没有 gemini 账户但有 antigravity 账户时，应返回静态模型列表
+// TestGeminiV1BetaHandler_ListModelsAntigravityFallback
+//
 func TestGeminiV1BetaHandler_ListModelsAntigravityFallback(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -66,13 +66,13 @@ func TestGeminiV1BetaHandler_ListModelsAntigravityFallback(t *testing.T) {
 			expectedBehavior: "forward_to_upstream",
 		},
 		{
-			name:             "无Gemini有Antigravity-返回静态列表",
+			name:             "无Gemini有Antigravity-returned静态列表",
 			hasGeminiAccount: false,
 			hasAntigravity:   true,
 			expectedBehavior: "static_fallback",
 		},
 		{
-			name:             "无任何账户-返回503",
+			name:             "无任何账户-returned503",
 			hasGeminiAccount: false,
 			hasAntigravity:   false,
 			expectedBehavior: "service_unavailable",
@@ -81,7 +81,7 @@ func TestGeminiV1BetaHandler_ListModelsAntigravityFallback(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// 模拟 GeminiV1BetaListModels 的逻辑 (lines 33-44 in gemini_v1beta_handler.go)
+			// (lines 33-44 in gemini_v1beta_handler.go)
 			var behavior string
 
 			if tt.hasGeminiAccount {
@@ -97,7 +97,7 @@ func TestGeminiV1BetaHandler_ListModelsAntigravityFallback(t *testing.T) {
 	}
 }
 
-// TestGeminiV1BetaHandler_GetModelAntigravityFallback 验证 GetModel 的 antigravity 降级逻辑
+// TestGeminiV1BetaHandler_GetModelAntigravityFallback
 func TestGeminiV1BetaHandler_GetModelAntigravityFallback(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -112,13 +112,13 @@ func TestGeminiV1BetaHandler_GetModelAntigravityFallback(t *testing.T) {
 			expectedBehavior: "forward_to_upstream",
 		},
 		{
-			name:             "无Gemini有Antigravity-返回静态模型信息",
+			name:             "无Gemini有Antigravity-returned静态modelinfo",
 			hasGeminiAccount: false,
 			hasAntigravity:   true,
 			expectedBehavior: "static_model_info",
 		},
 		{
-			name:             "无任何账户-返回503",
+			name:             "无任何账户-returned503",
 			hasGeminiAccount: false,
 			hasAntigravity:   false,
 			expectedBehavior: "service_unavailable",
@@ -127,7 +127,7 @@ func TestGeminiV1BetaHandler_GetModelAntigravityFallback(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// 模拟 GeminiV1BetaGetModel 的逻辑 (lines 77-87 in gemini_v1beta_handler.go)
+			// (lines 77-87 in gemini_v1beta_handler.go)
 			var behavior string
 
 			if tt.hasGeminiAccount {

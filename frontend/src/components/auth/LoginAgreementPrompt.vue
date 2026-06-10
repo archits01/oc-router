@@ -42,9 +42,9 @@
     <div class="flex items-start gap-3">
       <Icon name="shield" size="sm" class="mt-0.5 flex-shrink-0 text-primary-600 dark:text-primary-300" />
       <div class="min-w-0 flex-1">
-        <p class="font-medium">继续登录前需要先同意最新条款。</p>
+        <p class="font-medium">继续Login前需要先同意最新条款。</p>
         <p class="mt-1 text-primary-700 dark:text-primary-200/80">
-          未同意前，账号密码输入和快捷登录会保持禁用。
+          未同意前，账号密码输入和快捷Login会保持Disable。
         </p>
       </div>
       <button

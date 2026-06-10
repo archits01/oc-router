@@ -214,7 +214,7 @@ func ResponsesEventToAnthropicEvents(
 	case "response.output_text.done":
 		return resToAnthHandleBlockDone(state)
 	case "response.function_call_arguments.delta",
-		// custom/freeform 工具的输入增量与 function_call 参数增量同形。
+		// custom/freeform
 		"response.custom_tool_call_input.delta":
 		return resToAnthHandleFuncArgsDelta(evt, state)
 	case "response.function_call_arguments.done":
@@ -222,13 +222,13 @@ func ResponsesEventToAnthropicEvents(
 	case "response.output_item.done":
 		return resToAnthHandleOutputItemDone(evt, state)
 	case "response.reasoning_summary_text.delta",
-		// 原始推理文本增量，与 reasoning summary 一样映射为 thinking。
+		//
 		"response.reasoning_text.delta":
 		return resToAnthHandleReasoningDelta(evt, state)
 	case "response.reasoning_summary_text.done":
 		return resToAnthHandleBlockDone(state)
-	// response.done 是 Realtime/WS 与项目透传路径使用的终止别名；
-	// 普通 Responses HTTP SSE 的公开终止事件仍以 response.completed 为主。
+	// response.done
+	//
 	case "response.completed", "response.done", "response.incomplete", "response.failed":
 		return resToAnthHandleCompleted(evt, state)
 	default:
@@ -316,8 +316,8 @@ func resToAnthHandleOutputItemAdded(evt *ResponsesStreamEvent, state *ResponsesE
 	}
 
 	switch evt.Item.Type {
-	// function_call 与 custom_tool_call（custom/freeform 工具，如新版 apply_patch）
-	// 同样映射为 Anthropic 的 tool_use 块。
+	// function_call
+	//
 	case "function_call", "custom_tool_call":
 		var events []AnthropicStreamEvent
 		events = append(events, closeCurrentBlock(state)...)

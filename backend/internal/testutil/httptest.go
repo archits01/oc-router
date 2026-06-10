@@ -15,8 +15,8 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
-// NewGinTestContext 创建一个 Gin 测试上下文和 ResponseRecorder。
-// body 为空字符串时创建无 body 的请求。
+// NewGinTestContext
+// body
 func NewGinTestContext(method, path, body string) (*gin.Context, *httptest.ResponseRecorder) {
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)

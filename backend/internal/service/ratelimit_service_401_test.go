@@ -107,8 +107,8 @@ func TestRateLimitService_HandleUpstreamError_OAuth401SetsTempUnschedulable(t *t
 	})
 
 	t.Run("antigravity_401_uses_SetError", func(t *testing.T) {
-		// Antigravity 401 由 applyErrorPolicy 的 temp_unschedulable_rules 控制，
-		// HandleUpstreamError 中走 SetError 路径。
+		// Antigravity 401
+		// HandleUpstreamError
 		repo := &rateLimitAccountRepoStub{}
 		invalidator := &tokenCacheInvalidatorRecorder{}
 		service := NewRateLimitService(repo, nil, &config.Config{}, nil, nil)
@@ -129,10 +129,10 @@ func TestRateLimitService_HandleUpstreamError_OAuth401SetsTempUnschedulable(t *t
 }
 
 // TestRateLimitService_HandleUpstreamError_OAuth401InvalidatorError
-// OpenAI OAuth 401 缓存失效出错时仍走 temp_unschedulable。
-// 注意：401 handler 不再回写 credentials(避免请求开始时的快照整列覆盖 DB
-// 把另一个 worker 刚刷新出来的新 refresh_token 回滚为旧值),
-// 因此 updateCredentialsCalls 应当为 0。
+// OpenAI OAuth 401
+// (
+// ),
+//
 func TestRateLimitService_HandleUpstreamError_OAuth401InvalidatorError(t *testing.T) {
 	repo := &rateLimitAccountRepoStub{}
 	invalidator := &tokenCacheInvalidatorRecorder{err: errors.New("boom")}
@@ -175,10 +175,10 @@ func TestRateLimitService_HandleUpstreamError_NonOAuth401(t *testing.T) {
 }
 
 // TestRateLimitService_HandleUpstreamError_OAuth401DoesNotOverwriteCredentials
-// 回归测试:确保 401 handler 不再使用请求开始时的 account 快照写回 credentials。
-// 原实现会通过 persistAccountCredentials → UpdateCredentials → SetCredentials
-// 整列覆盖 credentials JSONB,在另一个 worker 刚刷新完 refresh_token 的窄窗口内
-// 会把新 refresh_token 回滚为快照中的旧值,导致下一周期拿 invalid_grant 被错误 disable。
+//
+// → UpdateCredentials → SetCredentials
+//
+//
 func TestRateLimitService_HandleUpstreamError_OAuth401DoesNotOverwriteCredentials(t *testing.T) {
 	repo := &rateLimitAccountRepoStub{}
 	service := NewRateLimitService(repo, nil, &config.Config{}, nil, nil)
@@ -200,8 +200,8 @@ func TestRateLimitService_HandleUpstreamError_OAuth401DoesNotOverwriteCredential
 	require.Nil(t, repo.lastCredentials, "no credentials should have been persisted")
 }
 
-// 缺少 refresh_token 的 OAuth 账号 401 应直接 SetError 永久禁用，
-// 不再走 10 分钟冷却（冷却期内无人能刷新它，结束后还会被选中再 502 一次）。
+//
+//
 func TestRateLimitService_HandleUpstreamError_OAuth401NoRefreshTokenSetsError(t *testing.T) {
 	t.Run("openai_no_refresh_token", func(t *testing.T) {
 		repo := &rateLimitAccountRepoStub{}

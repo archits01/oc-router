@@ -16,7 +16,6 @@ import (
 )
 
 // =====================
-// 保留原有测试
 // =====================
 
 func TestGeminiOAuthService_GenerateAuthURL_RedirectURIStrategy(t *testing.T) {
@@ -142,7 +141,7 @@ func TestGeminiOAuthService_GenerateAuthURL_RedirectURIStrategy(t *testing.T) {
 }
 
 // =====================
-// 新增测试：validateTierID
+//
 // =====================
 
 func TestValidateTierID(t *testing.T) {
@@ -153,7 +152,7 @@ func TestValidateTierID(t *testing.T) {
 		tierID  string
 		wantErr bool
 	}{
-		{name: "空字符串合法", tierID: "", wantErr: false},
+		{name: "empty string合法", tierID: "", wantErr: false},
 		{name: "正常 tier_id", tierID: "google_one_free", wantErr: false},
 		{name: "包含斜杠", tierID: "tier/sub", wantErr: false},
 		{name: "包含连字符", tierID: "gcp-standard", wantErr: false},
@@ -172,17 +171,17 @@ func TestValidateTierID(t *testing.T) {
 			t.Parallel()
 			err := validateTierID(tt.tierID)
 			if tt.wantErr && err == nil {
-				t.Fatalf("期望返回错误，但返回 nil")
+				t.Fatalf("期望returnederror，但returned nil")
 			}
 			if !tt.wantErr && err != nil {
-				t.Fatalf("不期望返回错误，但返回: %v", err)
+				t.Fatalf("不期望returnederror，但returned: %v", err)
 			}
 		})
 	}
 }
 
 // =====================
-// 新增测试：canonicalGeminiTierID
+//
 // =====================
 
 func TestCanonicalGeminiTierID(t *testing.T) {
@@ -193,11 +192,9 @@ func TestCanonicalGeminiTierID(t *testing.T) {
 		raw  string
 		want string
 	}{
-		// 空值
-		{name: "空字符串", raw: "", want: ""},
+		{name: "empty string", raw: "", want: ""},
 		{name: "纯空白", raw: "   ", want: ""},
 
-		// 已规范化的值（直接返回）
 		{name: "google_one_free", raw: "google_one_free", want: GeminiTierGoogleOneFree},
 		{name: "google_ai_pro", raw: "google_ai_pro", want: GeminiTierGoogleAIPro},
 		{name: "google_ai_ultra", raw: "google_ai_ultra", want: GeminiTierGoogleAIUltra},
@@ -207,11 +204,10 @@ func TestCanonicalGeminiTierID(t *testing.T) {
 		{name: "aistudio_paid", raw: "aistudio_paid", want: GeminiTierAIStudioPaid},
 		{name: "google_one_unknown", raw: "google_one_unknown", want: GeminiTierGoogleOneUnknown},
 
-		// 大小写不敏感
 		{name: "Google_One_Free 大写", raw: "Google_One_Free", want: GeminiTierGoogleOneFree},
 		{name: "GCP_STANDARD 全大写", raw: "GCP_STANDARD", want: GeminiTierGCPStandard},
 
-		// legacy 映射: Google One
+		// legacy
 		{name: "AI_PREMIUM -> google_ai_pro", raw: "AI_PREMIUM", want: GeminiTierGoogleAIPro},
 		{name: "FREE -> google_one_free", raw: "FREE", want: GeminiTierGoogleOneFree},
 		{name: "GOOGLE_ONE_BASIC -> google_one_free", raw: "GOOGLE_ONE_BASIC", want: GeminiTierGoogleOneFree},
@@ -219,7 +215,7 @@ func TestCanonicalGeminiTierID(t *testing.T) {
 		{name: "GOOGLE_ONE_UNLIMITED -> google_ai_ultra", raw: "GOOGLE_ONE_UNLIMITED", want: GeminiTierGoogleAIUltra},
 		{name: "GOOGLE_ONE_UNKNOWN -> google_one_unknown", raw: "GOOGLE_ONE_UNKNOWN", want: GeminiTierGoogleOneUnknown},
 
-		// legacy 映射: Code Assist
+		// legacy
 		{name: "STANDARD -> gcp_standard", raw: "STANDARD", want: GeminiTierGCPStandard},
 		{name: "PRO -> gcp_standard", raw: "PRO", want: GeminiTierGCPStandard},
 		{name: "LEGACY -> gcp_standard", raw: "LEGACY", want: GeminiTierGCPStandard},
@@ -231,11 +227,9 @@ func TestCanonicalGeminiTierID(t *testing.T) {
 		{name: "pro-tier -> gcp_standard", raw: "pro-tier", want: GeminiTierGCPStandard},
 		{name: "ultra-tier -> gcp_enterprise", raw: "ultra-tier", want: GeminiTierGCPEnterprise},
 
-		// 未知值
 		{name: "unknown_value -> 空", raw: "unknown_value", want: ""},
 		{name: "random-text -> 空", raw: "random-text", want: ""},
 
-		// 带空白
 		{name: "带前后空白", raw: "  google_one_free  ", want: GeminiTierGoogleOneFree},
 	}
 
@@ -252,7 +246,7 @@ func TestCanonicalGeminiTierID(t *testing.T) {
 }
 
 // =====================
-// 新增测试：canonicalGeminiTierIDForOAuthType
+//
 // =====================
 
 func TestCanonicalGeminiTierIDForOAuthType(t *testing.T) {
@@ -264,7 +258,7 @@ func TestCanonicalGeminiTierIDForOAuthType(t *testing.T) {
 		tierID    string
 		want      string
 	}{
-		// google_one 类型过滤
+		// google_one
 		{name: "google_one + google_one_free", oauthType: "google_one", tierID: "google_one_free", want: GeminiTierGoogleOneFree},
 		{name: "google_one + google_ai_pro", oauthType: "google_one", tierID: "google_ai_pro", want: GeminiTierGoogleAIPro},
 		{name: "google_one + google_ai_ultra", oauthType: "google_one", tierID: "google_ai_ultra", want: GeminiTierGoogleAIUltra},
@@ -272,7 +266,7 @@ func TestCanonicalGeminiTierIDForOAuthType(t *testing.T) {
 		{name: "google_one + aistudio_free 被过滤", oauthType: "google_one", tierID: "aistudio_free", want: ""},
 		{name: "google_one + AI_PREMIUM 遗留映射", oauthType: "google_one", tierID: "AI_PREMIUM", want: GeminiTierGoogleAIPro},
 
-		// code_assist 类型过滤
+		// code_assist
 		{name: "code_assist + gcp_standard", oauthType: "code_assist", tierID: "gcp_standard", want: GeminiTierGCPStandard},
 		{name: "code_assist + gcp_enterprise", oauthType: "code_assist", tierID: "gcp_enterprise", want: GeminiTierGCPEnterprise},
 		{name: "code_assist + google_one_free 被过滤", oauthType: "code_assist", tierID: "google_one_free", want: ""},
@@ -280,18 +274,17 @@ func TestCanonicalGeminiTierIDForOAuthType(t *testing.T) {
 		{name: "code_assist + STANDARD 遗留映射", oauthType: "code_assist", tierID: "STANDARD", want: GeminiTierGCPStandard},
 		{name: "code_assist + standard-tier kebab", oauthType: "code_assist", tierID: "standard-tier", want: GeminiTierGCPStandard},
 
-		// ai_studio 类型过滤
+		// ai_studio
 		{name: "ai_studio + aistudio_free", oauthType: "ai_studio", tierID: "aistudio_free", want: GeminiTierAIStudioFree},
 		{name: "ai_studio + aistudio_paid", oauthType: "ai_studio", tierID: "aistudio_paid", want: GeminiTierAIStudioPaid},
 		{name: "ai_studio + gcp_standard 被过滤", oauthType: "ai_studio", tierID: "gcp_standard", want: ""},
 		{name: "ai_studio + google_one_free 被过滤", oauthType: "ai_studio", tierID: "google_one_free", want: ""},
 
-		// 空值
 		{name: "空 tierID", oauthType: "google_one", tierID: "", want: ""},
-		{name: "空 oauthType + 有效 tierID", oauthType: "", tierID: "gcp_standard", want: GeminiTierGCPStandard},
+		{name: "空 oauthType + valid tierID", oauthType: "", tierID: "gcp_standard", want: GeminiTierGCPStandard},
 		{name: "未知 oauthType 接受规范化值", oauthType: "unknown_type", tierID: "gcp_standard", want: GeminiTierGCPStandard},
 
-		// oauthType 大小写和空白
+		// oauthType
 		{name: "GOOGLE_ONE 大写", oauthType: "GOOGLE_ONE", tierID: "google_one_free", want: GeminiTierGoogleOneFree},
 		{name: "oauthType 带空白", oauthType: "  code_assist  ", tierID: "gcp_standard", want: GeminiTierGCPStandard},
 	}
@@ -309,7 +302,7 @@ func TestCanonicalGeminiTierIDForOAuthType(t *testing.T) {
 }
 
 // =====================
-// 新增测试：extractTierIDFromAllowedTiers
+//
 // =====================
 
 func TestExtractTierIDFromAllowedTiers(t *testing.T) {
@@ -321,12 +314,12 @@ func TestExtractTierIDFromAllowedTiers(t *testing.T) {
 		want         string
 	}{
 		{
-			name:         "nil 列表返回 LEGACY",
+			name:         "nil 列表returned LEGACY",
 			allowedTiers: nil,
 			want:         "LEGACY",
 		},
 		{
-			name:         "空列表返回 LEGACY",
+			name:         "空列表returned LEGACY",
 			allowedTiers: []geminicli.AllowedTier{},
 			want:         "LEGACY",
 		},
@@ -356,7 +349,7 @@ func TestExtractTierIDFromAllowedTiers(t *testing.T) {
 			want: "PRO",
 		},
 		{
-			name: "所有 ID 都为空返回 LEGACY",
+			name: "所有 ID 都为空returned LEGACY",
 			allowedTiers: []geminicli.AllowedTier{
 				{ID: "", IsDefault: false},
 				{ID: "   ", IsDefault: false},
@@ -399,7 +392,7 @@ func TestExtractTierIDFromAllowedTiers(t *testing.T) {
 }
 
 // =====================
-// 新增测试：inferGoogleOneTier
+//
 // =====================
 
 func TestInferGoogleOneTier(t *testing.T) {
@@ -410,7 +403,7 @@ func TestInferGoogleOneTier(t *testing.T) {
 		storageBytes int64
 		want         string
 	}{
-		// 边界：<= 0
+		// <= 0
 		{name: "0 bytes -> unknown", storageBytes: 0, want: GeminiTierGoogleOneUnknown},
 		{name: "负数 -> unknown", storageBytes: -1, want: GeminiTierGoogleOneUnknown},
 
@@ -418,12 +411,12 @@ func TestInferGoogleOneTier(t *testing.T) {
 		{name: "> 100TB -> ultra", storageBytes: int64(StorageTierUnlimited) + 1, want: GeminiTierGoogleAIUltra},
 		{name: "200TB -> ultra", storageBytes: 200 * int64(TB), want: GeminiTierGoogleAIUltra},
 
-		// >= 2TB -> pro (但 <= 100TB)
+		// >= 2TB -> pro (<= 100TB)
 		{name: "正好 2TB -> pro", storageBytes: int64(StorageTierAIPremium), want: GeminiTierGoogleAIPro},
 		{name: "5TB -> pro", storageBytes: 5 * int64(TB), want: GeminiTierGoogleAIPro},
 		{name: "100TB 正好 -> pro (不是 > 100TB)", storageBytes: int64(StorageTierUnlimited), want: GeminiTierGoogleAIPro},
 
-		// >= 15GB -> free (但 < 2TB)
+		// >= 15GB -> free (< 2TB)
 		{name: "正好 15GB -> free", storageBytes: int64(StorageTierFree), want: GeminiTierGoogleOneFree},
 		{name: "100GB -> free", storageBytes: 100 * int64(GB), want: GeminiTierGoogleOneFree},
 		{name: "略低于 2TB -> free", storageBytes: int64(StorageTierAIPremium) - 1, want: GeminiTierGoogleOneFree},
@@ -447,7 +440,7 @@ func TestInferGoogleOneTier(t *testing.T) {
 }
 
 // =====================
-// 新增测试：isNonRetryableGeminiOAuthError
+//
 // =====================
 
 func TestIsNonRetryableGeminiOAuthError(t *testing.T) {
@@ -462,9 +455,9 @@ func TestIsNonRetryableGeminiOAuthError(t *testing.T) {
 		{name: "invalid_client", err: fmt.Errorf("oauth error: invalid_client"), want: true},
 		{name: "unauthorized_client", err: fmt.Errorf("unauthorized_client: mismatch"), want: true},
 		{name: "access_denied", err: fmt.Errorf("access_denied by user"), want: true},
-		{name: "普通网络错误", err: fmt.Errorf("connection timeout"), want: false},
-		{name: "HTTP 500 错误", err: fmt.Errorf("server error 500"), want: false},
-		{name: "空错误信息", err: fmt.Errorf(""), want: false},
+		{name: "普通网络error", err: fmt.Errorf("connection timeout"), want: false},
+		{name: "HTTP 500 error", err: fmt.Errorf("server error 500"), want: false},
+		{name: "空errorinfo", err: fmt.Errorf(""), want: false},
 		{name: "包含 invalid 但不是完整匹配", err: fmt.Errorf("invalid request"), want: false},
 	}
 
@@ -481,7 +474,7 @@ func TestIsNonRetryableGeminiOAuthError(t *testing.T) {
 }
 
 // =====================
-// 新增测试：BuildAccountCredentials
+//
 // =====================
 
 func TestGeminiOAuthService_BuildAccountCredentials(t *testing.T) {
@@ -535,7 +528,6 @@ func TestGeminiOAuthService_BuildAccountCredentials(t *testing.T) {
 		assertCredStr(t, creds, "access_token", "token-only")
 		assertCredStr(t, creds, "expires_at", "1700000000")
 
-		// 可选字段不应存在
 		for _, key := range []string{"refresh_token", "token_type", "scope", "project_id", "tier_id", "oauth_type"} {
 			if _, ok := creds[key]; ok {
 				t.Fatalf("不应包含空字段 %q", key)
@@ -583,15 +575,14 @@ func TestGeminiOAuthService_BuildAccountCredentials(t *testing.T) {
 
 		creds := svc.BuildAccountCredentials(tokenInfo)
 
-		// 仅包含基础字段
 		if len(creds) != 3 { // access_token, expires_at, refresh_token
-			t.Fatalf("creds 字段数量不匹配: got=%d want=3, keys=%v", len(creds), credKeys(creds))
+			t.Fatalf("creds 字段count mismatch: got=%d want=3, keys=%v", len(creds), credKeys(creds))
 		}
 	})
 }
 
 // =====================
-// 新增测试：GetOAuthConfig
+//
 // =====================
 
 func TestGeminiOAuthService_GetOAuthConfig(t *testing.T) {
@@ -670,7 +661,7 @@ func TestGeminiOAuthService_GetOAuthConfig(t *testing.T) {
 			wantEnabled: true,
 		},
 		{
-			name: "纯空白字符串不算配置",
+			name: "纯whitespace string不算configuration",
 			cfg: &config.Config{
 				Gemini: config.GeminiConfig{
 					OAuth: config.GeminiOAuthConfig{
@@ -694,16 +685,16 @@ func TestGeminiOAuthService_GetOAuthConfig(t *testing.T) {
 			if result.AIStudioOAuthEnabled != tt.wantEnabled {
 				t.Fatalf("AIStudioOAuthEnabled = %v, want %v", result.AIStudioOAuthEnabled, tt.wantEnabled)
 			}
-			// RequiredRedirectURIs 始终包含 AI Studio redirect URI
+			// RequiredRedirectURIs
 			if len(result.RequiredRedirectURIs) != 1 || result.RequiredRedirectURIs[0] != geminicli.AIStudioOAuthRedirectURI {
-				t.Fatalf("RequiredRedirectURIs 不匹配: got=%v", result.RequiredRedirectURIs)
+				t.Fatalf("RequiredRedirectURIs mismatch: got=%v", result.RequiredRedirectURIs)
 			}
 		})
 	}
 }
 
 // =====================
-// 新增测试：GeminiOAuthService.Stop
+//
 // =====================
 
 func TestGeminiOAuthService_Stop_NoPanic(t *testing.T) {
@@ -711,9 +702,9 @@ func TestGeminiOAuthService_Stop_NoPanic(t *testing.T) {
 
 	svc := NewGeminiOAuthService(nil, nil, nil, nil, &config.Config{})
 
-	// 调用 Stop 不应 panic
+	//
 	svc.Stop()
-	// 多次调用也不应 panic
+	//
 	svc.Stop()
 }
 
@@ -764,7 +755,7 @@ func (m *mockGeminiCodeAssistClient) OnboardUser(ctx context.Context, accessToke
 }
 
 // =====================
-// mock: ProxyRepository (最小实现)
+// mock: ProxyRepository ()
 // =====================
 
 type mockGeminiProxyRepo struct {
@@ -831,7 +822,7 @@ func (m *mockDriveClient) GetStorageQuota(ctx context.Context, accessToken, prox
 }
 
 // =====================
-// 新增测试：GeminiOAuthService.RefreshToken（含重试逻辑）
+//
 // =====================
 
 func TestGeminiOAuthService_RefreshToken_Success(t *testing.T) {
@@ -854,13 +845,13 @@ func TestGeminiOAuthService_RefreshToken_Success(t *testing.T) {
 
 	info, err := svc.RefreshToken(context.Background(), "code_assist", "old-refresh", "")
 	if err != nil {
-		t.Fatalf("RefreshToken 返回错误: %v", err)
+		t.Fatalf("RefreshToken returnederror: %v", err)
 	}
 	if info.AccessToken != "new-access" {
-		t.Fatalf("AccessToken 不匹配: got=%q", info.AccessToken)
+		t.Fatalf("AccessToken mismatch: got=%q", info.AccessToken)
 	}
 	if info.RefreshToken != "new-refresh" {
-		t.Fatalf("RefreshToken 不匹配: got=%q", info.RefreshToken)
+		t.Fatalf("RefreshToken mismatch: got=%q", info.RefreshToken)
 	}
 	if info.ExpiresAt == 0 {
 		t.Fatal("ExpiresAt 不应为 0")
@@ -881,10 +872,10 @@ func TestGeminiOAuthService_RefreshToken_NonRetryableError(t *testing.T) {
 
 	_, err := svc.RefreshToken(context.Background(), "code_assist", "revoked-token", "")
 	if err == nil {
-		t.Fatal("RefreshToken 应返回错误（不可重试的 invalid_grant）")
+		t.Fatal("RefreshToken 应returnederror（不可retry的 invalid_grant）")
 	}
 	if !strings.Contains(err.Error(), "invalid_grant") {
-		t.Fatalf("错误应包含 invalid_grant: got=%q", err.Error())
+		t.Fatalf("error应包含 invalid_grant: got=%q", err.Error())
 	}
 }
 
@@ -910,18 +901,18 @@ func TestGeminiOAuthService_RefreshToken_RetryableError(t *testing.T) {
 
 	info, err := svc.RefreshToken(context.Background(), "code_assist", "rt", "")
 	if err != nil {
-		t.Fatalf("RefreshToken 应在重试后成功: %v", err)
+		t.Fatalf("RefreshToken 应在retry后success: %v", err)
 	}
 	if info.AccessToken != "recovered" {
-		t.Fatalf("AccessToken 不匹配: got=%q", info.AccessToken)
+		t.Fatalf("AccessToken mismatch: got=%q", info.AccessToken)
 	}
 	if callCount < 3 {
-		t.Fatalf("应至少调用 3 次（2 次失败 + 1 次成功）: got=%d", callCount)
+		t.Fatalf("应至少调用 3 次（2 次failed + 1 次success）: got=%d", callCount)
 	}
 }
 
 // =====================
-// 新增测试：GeminiOAuthService.RefreshAccountToken
+//
 // =====================
 
 func TestGeminiOAuthService_RefreshAccountToken_NotGeminiOAuth(t *testing.T) {
@@ -937,10 +928,10 @@ func TestGeminiOAuthService_RefreshAccountToken_NotGeminiOAuth(t *testing.T) {
 
 	_, err := svc.RefreshAccountToken(context.Background(), account)
 	if err == nil {
-		t.Fatal("应返回错误（非 Gemini OAuth 账号）")
+		t.Fatal("应returnederror（非 Gemini OAuth 账号）")
 	}
 	if !strings.Contains(err.Error(), "not a Gemini OAuth account") {
-		t.Fatalf("错误信息不匹配: got=%q", err.Error())
+		t.Fatalf("errorinfomismatch: got=%q", err.Error())
 	}
 }
 
@@ -961,10 +952,10 @@ func TestGeminiOAuthService_RefreshAccountToken_NoRefreshToken(t *testing.T) {
 
 	_, err := svc.RefreshAccountToken(context.Background(), account)
 	if err == nil {
-		t.Fatal("应返回错误（无 refresh_token）")
+		t.Fatal("应returnederror（无 refresh_token）")
 	}
 	if !strings.Contains(err.Error(), "no refresh token") {
-		t.Fatalf("错误信息不匹配: got=%q", err.Error())
+		t.Fatalf("errorinfomismatch: got=%q", err.Error())
 	}
 }
 
@@ -998,13 +989,13 @@ func TestGeminiOAuthService_RefreshAccountToken_AIStudio(t *testing.T) {
 
 	info, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
 	if info.AccessToken != "refreshed-at" {
-		t.Fatalf("AccessToken 不匹配: got=%q", info.AccessToken)
+		t.Fatalf("AccessToken mismatch: got=%q", info.AccessToken)
 	}
 	if info.OAuthType != "ai_studio" {
-		t.Fatalf("OAuthType 不匹配: got=%q", info.OAuthType)
+		t.Fatalf("OAuthType mismatch: got=%q", info.OAuthType)
 	}
 }
 
@@ -1038,16 +1029,16 @@ func TestGeminiOAuthService_RefreshAccountToken_CodeAssist_WithProjectID(t *test
 
 	info, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
 	if info.ProjectID != "my-project" {
 		t.Fatalf("ProjectID 应保留: got=%q", info.ProjectID)
 	}
 	if info.TierID != GeminiTierGCPStandard {
-		t.Fatalf("TierID 不匹配: got=%q want=%q", info.TierID, GeminiTierGCPStandard)
+		t.Fatalf("TierID mismatch: got=%q want=%q", info.TierID, GeminiTierGCPStandard)
 	}
 	if info.OAuthType != "code_assist" {
-		t.Fatalf("OAuthType 不匹配: got=%q", info.OAuthType)
+		t.Fatalf("OAuthType mismatch: got=%q", info.OAuthType)
 	}
 }
 
@@ -1069,7 +1060,7 @@ func TestGeminiOAuthService_RefreshAccountToken_DefaultOAuthType(t *testing.T) {
 	svc := NewGeminiOAuthService(&mockGeminiProxyRepo{}, client, nil, nil, &config.Config{})
 	defer svc.Stop()
 
-	// 无 oauth_type 凭据的旧账号
+	//
 	account := &Account{
 		Platform: PlatformGemini,
 		Type:     AccountTypeOAuth,
@@ -1082,7 +1073,7 @@ func TestGeminiOAuthService_RefreshAccountToken_DefaultOAuthType(t *testing.T) {
 
 	info, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
 	if info.OAuthType != "code_assist" {
 		t.Fatalf("OAuthType 应默认为 code_assist: got=%q", info.OAuthType)
@@ -1105,7 +1096,7 @@ func TestGeminiOAuthService_RefreshAccountToken_WithProxy(t *testing.T) {
 	client := &mockGeminiOAuthClient{
 		refreshTokenFunc: func(ctx context.Context, oauthType, refreshToken, proxyURL string) (*geminicli.TokenResponse, error) {
 			if proxyURL != "http://proxy.test:3128" {
-				t.Errorf("proxyURL 不匹配: got=%q", proxyURL)
+				t.Errorf("proxyURL mismatch: got=%q", proxyURL)
 			}
 			return &geminicli.TokenResponse{
 				AccessToken: "refreshed",
@@ -1131,7 +1122,7 @@ func TestGeminiOAuthService_RefreshAccountToken_WithProxy(t *testing.T) {
 
 	_, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
 }
 
@@ -1165,19 +1156,19 @@ func TestGeminiOAuthService_RefreshAccountToken_CodeAssist_NoProjectID_AutoDetec
 		Credentials: map[string]any{
 			"refresh_token": "rt",
 			"oauth_type":    "code_assist",
-			// 无 project_id，触发 fetchProjectID
+			//
 		},
 	}
 
 	info, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
 	if info.ProjectID != "auto-project-123" {
 		t.Fatalf("ProjectID 应为自动检测值: got=%q", info.ProjectID)
 	}
 	if info.TierID != GeminiTierGCPStandard {
-		t.Fatalf("TierID 不匹配: got=%q", info.TierID)
+		t.Fatalf("TierID mismatch: got=%q", info.TierID)
 	}
 }
 
@@ -1193,14 +1184,14 @@ func TestGeminiOAuthService_RefreshAccountToken_CodeAssist_NoProjectID_FailsEmpt
 		},
 	}
 
-	// 返回有 currentTier 但无 cloudaicompanionProject 的响应，
-	// 使 fetchProjectID 走"已注册用户"路径（尝试 Cloud Resource Manager -> 失败 -> 返回错误），
-	// 避免走 onboardUser 路径（5 次重试 x 2 秒 = 10 秒超时）
+	//
+	// ""> >
+	// = 10
 	codeAssist := &mockGeminiCodeAssistClient{
 		loadCodeAssistFunc: func(ctx context.Context, accessToken, proxyURL string, req *geminicli.LoadCodeAssistRequest) (*geminicli.LoadCodeAssistResponse, error) {
 			return &geminicli.LoadCodeAssistResponse{
 				CurrentTier: &geminicli.TierInfo{ID: "STANDARD"},
-				// 无 CloudAICompanionProject
+				//
 			}, nil
 		},
 	}
@@ -1219,10 +1210,10 @@ func TestGeminiOAuthService_RefreshAccountToken_CodeAssist_NoProjectID_FailsEmpt
 
 	_, err := svc.RefreshAccountToken(context.Background(), account)
 	if err == nil {
-		t.Fatal("应返回错误（无法检测 project_id）")
+		t.Fatal("应returnederror（无法检测 project_id）")
 	}
 	if !strings.Contains(err.Error(), "project_id") {
-		t.Fatalf("错误信息应包含 project_id: got=%q", err.Error())
+		t.Fatalf("error message should contain project_id: got=%q", err.Error())
 	}
 }
 
@@ -1251,16 +1242,15 @@ func TestGeminiOAuthService_RefreshAccountToken_GoogleOne_FreshCache(t *testing.
 			"tier_id":       "google_ai_pro",
 		},
 		Extra: map[string]any{
-			// 缓存刷新时间在 24 小时内
 			"drive_tier_updated_at": time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
 		},
 	}
 
 	info, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
-	// 缓存新鲜，应使用已有的 tier_id
+	//
 	if info.TierID != GeminiTierGoogleAIPro {
 		t.Fatalf("TierID 应使用缓存值: got=%q want=%q", info.TierID, GeminiTierGoogleAIPro)
 	}
@@ -1288,17 +1278,17 @@ func TestGeminiOAuthService_RefreshAccountToken_GoogleOne_NoTierID_DefaultsFree(
 			"refresh_token": "rt",
 			"oauth_type":    "google_one",
 			"project_id":    "proj",
-			// 无 tier_id
+			//
 		},
 	}
 
 	info, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 返回错误: %v", err)
+		t.Fatalf("RefreshAccountToken returnederror: %v", err)
 	}
-	// FetchGoogleOneTier 会被调用但 oauthClient（此处 mock）不实现 Drive API，
-	// svc.FetchGoogleOneTier 使用真实 DriveClient 会失败，最终回退到默认值。
-	// 由于没有 tier_id 且 FetchGoogleOneTier 失败，应默认为 google_one_free
+	// FetchGoogleOneTier
+	// svc.FetchGoogleOneTier
+	//
 	if info.TierID != GeminiTierGoogleOneFree {
 		t.Fatalf("TierID 应为默认 free: got=%q", info.TierID)
 	}
@@ -1314,7 +1304,7 @@ func TestGeminiOAuthService_RefreshAccountToken_UnauthorizedClient_Fallback(t *t
 			if oauthType == "code_assist" {
 				return nil, fmt.Errorf("unauthorized_client: client mismatch")
 			}
-			// ai_studio 路径成功
+			// ai_studio
 			return &geminicli.TokenResponse{
 				AccessToken: "recovered",
 				ExpiresIn:   3600,
@@ -1322,7 +1312,7 @@ func TestGeminiOAuthService_RefreshAccountToken_UnauthorizedClient_Fallback(t *t
 		},
 	}
 
-	// 启用自定义 OAuth 客户端以触发 fallback 路径
+	//
 	cfg := &config.Config{
 		Gemini: config.GeminiConfig{
 			OAuth: config.GeminiOAuthConfig{
@@ -1348,10 +1338,10 @@ func TestGeminiOAuthService_RefreshAccountToken_UnauthorizedClient_Fallback(t *t
 
 	info, err := svc.RefreshAccountToken(context.Background(), account)
 	if err != nil {
-		t.Fatalf("RefreshAccountToken 应在 fallback 后成功: %v", err)
+		t.Fatalf("RefreshAccountToken should succeed after fallback: %v", err)
 	}
 	if info.AccessToken != "recovered" {
-		t.Fatalf("AccessToken 不匹配: got=%q", info.AccessToken)
+		t.Fatalf("AccessToken mismatch: got=%q", info.AccessToken)
 	}
 }
 
@@ -1364,7 +1354,7 @@ func TestGeminiOAuthService_RefreshAccountToken_UnauthorizedClient_NoFallback(t 
 		},
 	}
 
-	// 无自定义 OAuth 客户端，无法 fallback
+	//
 	svc := NewGeminiOAuthService(&mockGeminiProxyRepo{}, client, nil, nil, &config.Config{})
 	defer svc.Stop()
 
@@ -1380,15 +1370,15 @@ func TestGeminiOAuthService_RefreshAccountToken_UnauthorizedClient_NoFallback(t 
 
 	_, err := svc.RefreshAccountToken(context.Background(), account)
 	if err == nil {
-		t.Fatal("应返回错误（无 fallback）")
+		t.Fatal("应returnederror（无 fallback）")
 	}
 	if !strings.Contains(err.Error(), "OAuth client mismatch") {
-		t.Fatalf("错误应包含 OAuth client mismatch: got=%q", err.Error())
+		t.Fatalf("error应包含 OAuth client mismatch: got=%q", err.Error())
 	}
 }
 
 // =====================
-// 新增测试：GeminiOAuthService.ExchangeCode
+//
 // =====================
 
 func TestGeminiOAuthService_ExchangeCode_SessionNotFound(t *testing.T) {
@@ -1403,10 +1393,10 @@ func TestGeminiOAuthService_ExchangeCode_SessionNotFound(t *testing.T) {
 		Code:      "some-code",
 	})
 	if err == nil {
-		t.Fatal("应返回错误（session 不存在）")
+		t.Fatal("应returnederror（session does not exist）")
 	}
 	if !strings.Contains(err.Error(), "session not found") {
-		t.Fatalf("错误信息不匹配: got=%q", err.Error())
+		t.Fatalf("errorinfomismatch: got=%q", err.Error())
 	}
 }
 
@@ -1416,7 +1406,7 @@ func TestGeminiOAuthService_ExchangeCode_InvalidState(t *testing.T) {
 	svc := NewGeminiOAuthService(nil, nil, nil, nil, &config.Config{})
 	defer svc.Stop()
 
-	// 手动创建 session（必须设置 CreatedAt，否则会因 TTL 过期被拒绝）
+	//
 	svc.sessionStore.Set("test-session", &geminicli.OAuthSession{
 		State:        "correct-state",
 		CodeVerifier: "verifier",
@@ -1430,10 +1420,10 @@ func TestGeminiOAuthService_ExchangeCode_InvalidState(t *testing.T) {
 		Code:      "code",
 	})
 	if err == nil {
-		t.Fatal("应返回错误（state 不匹配）")
+		t.Fatal("应returnederror（state mismatch）")
 	}
 	if !strings.Contains(err.Error(), "invalid state") {
-		t.Fatalf("错误信息不匹配: got=%q", err.Error())
+		t.Fatalf("errorinfomismatch: got=%q", err.Error())
 	}
 }
 
@@ -1455,12 +1445,11 @@ func TestGeminiOAuthService_ExchangeCode_EmptyState(t *testing.T) {
 		Code:      "code",
 	})
 	if err == nil {
-		t.Fatal("应返回错误（空 state）")
+		t.Fatal("应returnederror（空 state）")
 	}
 }
 
 // =====================
-// 辅助函数
 // =====================
 
 func assertCredStr(t *testing.T, creds map[string]any, key, want string) {

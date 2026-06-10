@@ -309,7 +309,7 @@ func TestAPIContracts(t *testing.T) {
 			name: "GET /api/v1/groups/available",
 			setup: func(t *testing.T, deps *contractDeps) {
 				t.Helper()
-				// 普通用户可见的分组列表不应包含内部字段（如 model_routing/account_count）。
+				//
 				deps.groupRepo.SetActive([]service.Group{
 					{
 						ID:                  10,
@@ -373,7 +373,7 @@ func TestAPIContracts(t *testing.T) {
 			name: "GET /api/v1/subscriptions",
 			setup: func(t *testing.T, deps *contractDeps) {
 				t.Helper()
-				// 普通用户订阅接口不应包含 assigned_* / notes 等管理员字段。
+				// * / notes
 				deps.userSubRepo.SetByUserID(1, []service.UserSubscription{
 					{
 						ID:              501,
@@ -423,7 +423,7 @@ func TestAPIContracts(t *testing.T) {
 			name: "GET /api/v1/redeem/history",
 			setup: func(t *testing.T, deps *contractDeps) {
 				t.Helper()
-				// 普通用户兑换历史不应包含 notes 等内部字段。
+				//
 				deps.redeemRepo.SetByUser(1, []service.RedeemCode{
 					{
 						ID:        900,
@@ -714,13 +714,13 @@ func TestAPIContracts(t *testing.T) {
 						"dingtalk_connect_corp_restriction_policy": "",
 						"dingtalk_connect_sync_corp_email": false,
 						"dingtalk_connect_sync_corp_email_attr_key": "dingtalk_email",
-						"dingtalk_connect_sync_corp_email_attr_name": "钉钉企业邮箱",
+						"dingtalk_connect_sync_corp_email_attr_name": "DingTalk企业邮箱",
 						"dingtalk_connect_sync_dept": false,
 						"dingtalk_connect_sync_dept_attr_key": "dingtalk_department",
-						"dingtalk_connect_sync_dept_attr_name": "钉钉部门",
+						"dingtalk_connect_sync_dept_attr_name": "DingTalk部门",
 						"dingtalk_connect_sync_display_name": false,
 						"dingtalk_connect_sync_display_name_attr_key": "dingtalk_name",
-						"dingtalk_connect_sync_display_name_attr_name": "钉钉姓名",
+						"dingtalk_connect_sync_display_name_attr_name": "DingTalk姓名",
 						"oidc_connect_enabled": false,
 						"oidc_connect_provider_name": "OIDC",
 						"oidc_connect_client_id": "",
@@ -987,13 +987,13 @@ func TestAPIContracts(t *testing.T) {
 					"dingtalk_connect_corp_restriction_policy": "",
 					"dingtalk_connect_sync_corp_email": false,
 					"dingtalk_connect_sync_corp_email_attr_key": "dingtalk_email",
-					"dingtalk_connect_sync_corp_email_attr_name": "钉钉企业邮箱",
+					"dingtalk_connect_sync_corp_email_attr_name": "DingTalk企业邮箱",
 					"dingtalk_connect_sync_dept": false,
 					"dingtalk_connect_sync_dept_attr_key": "dingtalk_department",
-					"dingtalk_connect_sync_dept_attr_name": "钉钉部门",
+					"dingtalk_connect_sync_dept_attr_name": "DingTalk部门",
 					"dingtalk_connect_sync_display_name": false,
 					"dingtalk_connect_sync_display_name_attr_key": "dingtalk_name",
-					"dingtalk_connect_sync_display_name_attr_name": "钉钉姓名",
+					"dingtalk_connect_sync_display_name_attr_name": "DingTalk姓名",
 					"oidc_connect_enabled": true,
 					"oidc_connect_provider_name": "ConfigOIDC",
 					"oidc_connect_client_id": "oidc-config-client",

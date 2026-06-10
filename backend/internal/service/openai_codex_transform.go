@@ -112,7 +112,7 @@ func applyCodexOAuthTransform(reqBody map[string]any, isCodexCLI bool, isCompact
 
 func applyCodexOAuthTransformWithOptions(reqBody map[string]any, opts codexOAuthTransformOptions) codexTransformResult {
 	result := codexTransformResult{}
-	// 工具续链需求会影响存储策略与 input 过滤逻辑。
+	//
 	needsToolContinuation := NeedsToolContinuation(reqBody)
 
 	model := ""
@@ -138,8 +138,8 @@ func applyCodexOAuthTransformWithOptions(reqBody map[string]any, opts codexOAuth
 			result.Modified = true
 		}
 	} else {
-		// OAuth 走 ChatGPT internal API 时，store 必须为 false；显式 true 也会强制覆盖。
-		// 避免上游返回 "Store must be set to false"。
+		// OAuth
+		// "Store must be set to false"。
 		if v, ok := reqBody["store"].(bool); !ok || v {
 			reqBody["store"] = false
 			result.Modified = true
@@ -158,13 +158,13 @@ func applyCodexOAuthTransformWithOptions(reqBody map[string]any, opts codexOAuth
 		}
 	}
 
-	// 请求带 reasoning 时补齐 include:["reasoning.encrypted_content"]，与真实 Codex 对齐
-	// （compact 端点形态不同，单独处理，此处跳过）。
+	// ["reasoning.encrypted_content"]，
+	// （compact
 	if !opts.IsCompact && ensureCodexReasoningInclude(reqBody) {
 		result.Modified = true
 	}
 
-	// 兼容遗留的 functions 和 function_call，转换为 tools 和 tool_choice
+	//
 	if functionsRaw, ok := reqBody["functions"]; ok {
 		if functions, k := functionsRaw.([]any); k {
 			tools := make([]any, 0, len(functions))
@@ -212,12 +212,12 @@ func applyCodexOAuthTransformWithOptions(reqBody map[string]any, opts codexOAuth
 		}
 	}
 
-	// 提取 input 中 role:"system" 消息至 instructions（OAuth 上游不支持 system role）。
+	// "system"
 	if extractSystemMessagesFromInput(reqBody) {
 		result.Modified = true
 	}
 
-	// instructions 处理逻辑：根据是否是 Codex CLI 分别调用不同方法
+	// instructions
 	if !opts.SkipDefaultInstructions && applyInstructions(reqBody, opts.IsCodexCLI) {
 		result.Modified = true
 	}
@@ -225,7 +225,7 @@ func applyCodexOAuthTransformWithOptions(reqBody map[string]any, opts codexOAuth
 		result.Modified = true
 	}
 
-	// 续链场景保留 item_reference 与 id，避免 call_id 上下文丢失。
+	//
 	if input, ok := reqBody["input"].([]any); ok {
 		if normalizedInput, modified := normalizeCodexToolRoleMessages(input); modified {
 			input = normalizedInput
@@ -972,11 +972,11 @@ func extractPromptLikeInstructionsFromInput(reqBody map[string]any) string {
 	return strings.Join(texts, "\n\n")
 }
 
-// defaultCodexSynthInstructions 返回合成路径在 instructions 为空时应填入的默认提示词。
+// defaultCodexSynthInstructions
 //
-// 按 model 选择真实 Codex CLI 的 base instructions（codex 系→GPT-5-Codex，
-// gpt-5.2→GPT-5.2，gpt-5.1/gpt-5→GPT-5.1），使合成请求在提示词层面贴近真实 Codex 行为；
-// 若内嵌 prompt 意外为空，回退到最小占位符以保证字段非空。
+// →GPT-5-Codex，
+// gpt-5.2→GPT-5.2，gpt-5.1/gpt-5→GPT-5.1），
+//
 func defaultCodexSynthInstructions(model string) string {
 	if instructions := strings.TrimSpace(openai.CodexBaseInstructionsForModel(model)); instructions != "" {
 		return instructions
@@ -984,10 +984,10 @@ func defaultCodexSynthInstructions(model string) string {
 	return "You are a helpful coding assistant."
 }
 
-// ensureCodexReasoningInclude 在请求带 reasoning 时补齐 include:["reasoning.encrypted_content"]。
+// ensureCodexReasoningInclude ["reasoning.encrypted_content"]。
 //
-// 真实 Codex 在 reasoning 存在时总会请求加密推理内容（ChatGPT/store=false 场景下用于上下文回放）。
-// 该函数为加法式、幂等：仅在 include 缺失或未包含该项时追加；对非数组的异常 include 不做破坏性改写。
+// =false
+//
 func ensureCodexReasoningInclude(reqBody map[string]any) bool {
 	reasoning, ok := reqBody["reasoning"].(map[string]any)
 	if !ok || len(reasoning) == 0 {
@@ -1007,16 +1007,16 @@ func ensureCodexReasoningInclude(reqBody map[string]any) bool {
 		reqBody["include"] = append(existing, encrypted)
 		return true
 	default:
-		// include 为非预期类型时保持原样，避免破坏调用方意图。
+		// include
 		return false
 	}
 }
 
-// applyCodexClientMetadata 在请求体补齐 client_metadata["x-codex-installation-id"]，
-// 取值为账号真实的 openai_device_id（最新 Codex 在请求体携带的安装标识）。
+// applyCodexClientMetadata ["x-codex-installation-id"]，
 //
-// 加法式、幂等：仅在账号存在 device_id 且该键缺失时注入，绝不覆盖既有 client_metadata
-// （如 turn metadata），也不伪造——无 device_id 时不写入。
+//
+//
+// （——
 func applyCodexClientMetadata(reqBody map[string]any, account *Account) bool {
 	if account == nil {
 		return false
@@ -1053,7 +1053,7 @@ func applyCodexClientMetadata(reqBody map[string]any, account *Account) bool {
 	}
 }
 
-// applyInstructions 处理 instructions 字段：仅在 instructions 为空时填充默认值。
+// applyInstructions
 func applyInstructions(reqBody map[string]any, isCodexCLI bool) bool {
 	if !isInstructionsEmpty(reqBody) {
 		return false
@@ -1063,8 +1063,8 @@ func applyInstructions(reqBody map[string]any, isCodexCLI bool) bool {
 	return true
 }
 
-// isInstructionsEmpty 检查 instructions 字段是否为空
-// 处理以下情况：字段不存在、nil、空字符串、纯空白字符串
+// isInstructionsEmpty
+//
 func isInstructionsEmpty(reqBody map[string]any) bool {
 	val, exists := reqBody["instructions"]
 	if !exists {
@@ -1085,8 +1085,8 @@ type codexInputFilterOptions struct {
 	PreserveCallIDs    bool
 }
 
-// filterCodexInput 按需过滤 item_reference 与 id。
-// preserveReferences 为 true 时保持引用与 id，以满足续链请求对上下文的依赖。
+// filterCodexInput
+// preserveReferences
 func filterCodexInput(input []any, preserveReferences bool) []any {
 	return filterCodexInputWithOptions(input, codexInputFilterOptions{
 		PreserveReferences: preserveReferences,
@@ -1111,8 +1111,8 @@ func filterCodexInputWithOptions(input []any, opts codexInputFilterOptions) []an
 			continue
 		}
 
-		// 仅修正真正的 tool/function call 标识，避免误改普通 message/reasoning id；
-		// 若 item_reference 指向 legacy call_* 标识，则仅修正该引用本身。
+		//
+		// *
 		fixCallIDPrefix := func(id string) string {
 			if opts.PreserveCallIDs {
 				return id
@@ -1143,7 +1143,6 @@ func filterCodexInputWithOptions(input []any, opts codexInputFilterOptions) []an
 
 		newItem := m
 		copied := false
-		// 仅在需要修改字段时创建副本，避免直接改写原始输入。
 		ensureCopy := func() {
 			if copied {
 				return

@@ -142,7 +142,7 @@ func TestUpdateRuntimeLogConfig_InvalidConfigShouldNotApply(t *testing.T) {
 		t.Fatalf("logger level changed unexpectedly: %s", logger.CurrentLevel())
 	}
 	if repo.setCalls != 1 {
-		// GetRuntimeLogConfig() 会在 key 缺失时写入默认值，此处应只有这一次持久化。
+		// GetRuntimeLogConfig()
 		t.Fatalf("unexpected set calls: %d", repo.setCalls)
 	}
 }

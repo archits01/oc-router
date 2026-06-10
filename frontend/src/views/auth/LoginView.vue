@@ -218,7 +218,7 @@ import { extractI18nErrorMessage } from '@/utils/apiError'
 import { clearAllAffiliateReferralCodes } from '@/utils/oauthAffiliate'
 
 const { t } = useI18n()
-const LOGIN_AGREEMENT_STORAGE_KEY = 'sub2api_login_agreement_consent'
+const LOGIN_AGREEMENT_STORAGE_KEY = 'oc_router_login_agreement_consent'
 
 // ==================== Router & Stores ====================
 
@@ -397,7 +397,7 @@ function rejectLoginAgreement(): void {
   localStorage.removeItem(LOGIN_AGREEMENT_STORAGE_KEY)
   agreementAccepted.value = false
   showAgreementModal.value = false
-  appStore.showWarning('未同意最新条款前，无法输入账号密码或使用快捷登录。')
+  appStore.showWarning('未同意最新条款前，无法输入账号密码或使用快捷Login。')
 }
 
 // ==================== Turnstile Handlers ====================
@@ -428,7 +428,7 @@ function validateForm(): boolean {
   let isValid = true
 
   if (agreementGateActive.value) {
-    appStore.showWarning('请先阅读并同意最新条款后再登录。')
+    appStore.showWarning('请先阅读并同意最新条款后再Login。')
     if (loginAgreementMode.value !== 'checkbox') {
       showAgreementModal.value = true
     }

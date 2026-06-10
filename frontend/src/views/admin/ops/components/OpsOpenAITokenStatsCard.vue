@@ -123,8 +123,8 @@ watch(
     refreshToken: props.refreshToken
   }),
   (next, prev) => {
-    // 避免“筛选变化 -> 重置页码 -> 触发两次请求”：
-    // 先只重置页码，等待下一次 watch（仅 page 变化）再发起请求。
+    // 避免“Filter变化 -> Reset页码 -> 触发两次请求”：
+    // 先只Reset页码，等待下一次 watch（仅 page 变化）再发起请求。
     const filtersChanged = !prev ||
       next.timeRange !== prev.timeRange ||
       next.viewMode !== prev.viewMode ||

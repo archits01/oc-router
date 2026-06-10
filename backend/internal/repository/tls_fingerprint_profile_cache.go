@@ -24,14 +24,14 @@ type tlsFingerprintProfileCache struct {
 	localMu    sync.RWMutex
 }
 
-// NewTLSFingerprintProfileCache 创建 TLS 指纹模板缓存
+// NewTLSFingerprintProfileCache
 func NewTLSFingerprintProfileCache(rdb *redis.Client) service.TLSFingerprintProfileCache {
 	return &tlsFingerprintProfileCache{
 		rdb: rdb,
 	}
 }
 
-// Get 从缓存获取模板列表
+// Get
 func (c *tlsFingerprintProfileCache) Get(ctx context.Context) ([]*model.TLSFingerprintProfile, bool) {
 	c.localMu.RLock()
 	if c.localCache != nil {
@@ -62,7 +62,7 @@ func (c *tlsFingerprintProfileCache) Get(ctx context.Context) ([]*model.TLSFinge
 	return profiles, true
 }
 
-// Set 设置缓存
+// Set
 func (c *tlsFingerprintProfileCache) Set(ctx context.Context, profiles []*model.TLSFingerprintProfile) error {
 	data, err := json.Marshal(profiles)
 	if err != nil {
@@ -80,7 +80,7 @@ func (c *tlsFingerprintProfileCache) Set(ctx context.Context, profiles []*model.
 	return nil
 }
 
-// Invalidate 使缓存失效
+// Invalidate
 func (c *tlsFingerprintProfileCache) Invalidate(ctx context.Context) error {
 	c.localMu.Lock()
 	c.localCache = nil
@@ -89,12 +89,12 @@ func (c *tlsFingerprintProfileCache) Invalidate(ctx context.Context) error {
 	return c.rdb.Del(ctx, tlsFPProfileCacheKey).Err()
 }
 
-// NotifyUpdate 通知其他实例刷新缓存
+// NotifyUpdate
 func (c *tlsFingerprintProfileCache) NotifyUpdate(ctx context.Context) error {
 	return c.rdb.Publish(ctx, tlsFPProfilePubSubKey, "refresh").Err()
 }
 
-// SubscribeUpdates 订阅缓存更新通知
+// SubscribeUpdates
 func (c *tlsFingerprintProfileCache) SubscribeUpdates(ctx context.Context, handler func()) {
 	go func() {
 		sub := c.rdb.Subscribe(ctx, tlsFPProfilePubSubKey)

@@ -5,17 +5,17 @@ import (
 	"strings"
 )
 
-// headerWireCasing 定义每个白名单 header 在真实 Claude CLI 抓包中的准确大小写。
-// Go 的 HTTP server 解析请求时会将所有 header key 转为 Canonical 形式（如 x-app → X-App），
-// 此 map 用于在转发时恢复到真实的 wire format。
+// headerWireCasing
+// Go → X-App），
 //
-// 来源：对真实 Claude CLI (claude-cli/2.1.81) 到 api.anthropic.com 的 HTTPS 流量抓包。
+//
+// (claude-cli/2.1.81)
 var headerWireCasing = map[string]string{
 	// Title case
 	"accept":     "Accept",
 	"user-agent": "User-Agent",
 
-	// X-Stainless-* 保持 SDK 原始大小写
+	// X-Stainless-*
 	"x-stainless-retry-count":     "X-Stainless-Retry-Count",
 	"x-stainless-timeout":         "X-Stainless-Timeout",
 	"x-stainless-lang":            "X-Stainless-Lang",
@@ -26,7 +26,7 @@ var headerWireCasing = map[string]string{
 	"x-stainless-runtime-version": "X-Stainless-Runtime-Version",
 	"x-stainless-helper-method":   "x-stainless-helper-method",
 
-	// Anthropic SDK 自身设置的 header，全小写
+	// Anthropic SDK
 	"anthropic-dangerous-direct-browser-access": "anthropic-dangerous-direct-browser-access",
 	"anthropic-version":                         "anthropic-version",
 	"anthropic-beta":                            "anthropic-beta",
@@ -37,14 +37,14 @@ var headerWireCasing = map[string]string{
 	"accept-encoding":                           "accept-encoding",
 	"authorization":                             "authorization",
 
-	// Claude Code 2.1.87+ 新增 header
+	// Claude Code 2.1.87+
 	"x-claude-code-session-id": "X-Claude-Code-Session-Id",
 	"x-client-request-id":      "x-client-request-id",
 	"content-length":           "content-length",
 }
 
-// headerWireOrder 定义真实 Claude CLI 发送 header 的顺序（基于抓包）。
-// 用于 debug log 按此顺序输出，便于与抓包结果直接对比。
+// headerWireOrder
+//
 var headerWireOrder = []string{
 	"Accept",
 	"X-Stainless-Retry-Count",
@@ -71,7 +71,7 @@ var headerWireOrder = []string{
 	"x-stainless-helper-method",
 }
 
-// headerWireOrderSet 用于快速判断某个 key 是否在 headerWireOrder 中（按 lowercase 匹配）。
+// headerWireOrderSet
 var headerWireOrderSet map[string]struct{}
 
 func init() {
@@ -81,8 +81,8 @@ func init() {
 	}
 }
 
-// resolveWireCasing 将 Go canonical key（如 X-Stainless-Os）映射为真实 wire casing（如 X-Stainless-OS）。
-// 如果 map 中没有对应条目，返回原始 key 不变。
+// resolveWireCasing
+//
 func resolveWireCasing(key string) string {
 	if wk, ok := headerWireCasing[strings.ToLower(key)]; ok {
 		return wk
@@ -143,10 +143,10 @@ func getHeaderRaw(h http.Header, key string) string {
 	return h.Get(key)
 }
 
-// sortHeadersByWireOrder 按照真实 Claude CLI 的 header 顺序返回排序后的 key 列表。
-// 在 headerWireOrder 中定义的 key 按其顺序排列，未定义的 key 追加到末尾。
+// sortHeadersByWireOrder
+//
 func sortHeadersByWireOrder(h http.Header) []string {
-	// 构建 lowercase -> actual map key 的映射
+	// > actual map key
 	present := make(map[string]string, len(h))
 	for k := range h {
 		present[strings.ToLower(k)] = k
@@ -155,7 +155,7 @@ func sortHeadersByWireOrder(h http.Header) []string {
 	result := make([]string, 0, len(h))
 	seen := make(map[string]struct{}, len(h))
 
-	// 先按 wire order 输出
+	//
 	for _, wk := range headerWireOrder {
 		lk := strings.ToLower(wk)
 		if actual, ok := present[lk]; ok {
@@ -166,7 +166,7 @@ func sortHeadersByWireOrder(h http.Header) []string {
 		}
 	}
 
-	// 再追加不在 wire order 中的 header
+	//
 	for k := range h {
 		lk := strings.ToLower(k)
 		if _, ok := seen[lk]; !ok {

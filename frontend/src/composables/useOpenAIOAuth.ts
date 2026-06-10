@@ -175,7 +175,7 @@ export function useOpenAIOAuth() {
       expires_at: tokenInfo.expires_at
     }
 
-    // 仅在返回了新的 refresh_token 时才写入，防止用空值覆盖已有令牌
+    // 仅在Back了新的 refresh_token 时才写入，防止用空值覆盖已有令牌
     if (tokenInfo.refresh_token) {
       creds.refresh_token = tokenInfo.refresh_token
     }

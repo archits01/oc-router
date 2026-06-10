@@ -1,8 +1,7 @@
 //go:build unit
 
-// Package service 提供 API 网关核心服务。
-// 本文件包含 shouldClearStickySession 函数的单元测试，
-// 验证粘性会话清理逻辑在各种账号状态下的正确行为。
+// Package service
+//
 //
 // This file contains unit tests for the shouldClearStickySession function,
 // verifying correct sticky session clearing behavior under various account states.
@@ -22,9 +21,7 @@ func TestShouldClearStickySession(t *testing.T) {
 	future := now.Add(1 * time.Hour)
 	past := now.Add(-1 * time.Hour)
 
-	// 短限流时间（有限流即清除粘性会话）
 	shortRateLimitReset := now.Add(5 * time.Second).Format(time.RFC3339)
-	// 长限流时间（有限流即清除粘性会话）
 	longRateLimitReset := now.Add(30 * time.Second).Format(time.RFC3339)
 
 	tests := []struct {
@@ -40,7 +37,6 @@ func TestShouldClearStickySession(t *testing.T) {
 		{name: "temp unschedulable", account: &Account{Status: StatusActive, Schedulable: true, TempUnschedulableUntil: &future}, requestedModel: "", want: true},
 		{name: "temp unschedulable expired", account: &Account{Status: StatusActive, Schedulable: true, TempUnschedulableUntil: &past}, requestedModel: "", want: false},
 		{name: "active schedulable", account: &Account{Status: StatusActive, Schedulable: true}, requestedModel: "", want: false},
-		// 模型限流测试：有限流即清除
 		{
 			name: "model rate limited short duration",
 			account: &Account{
@@ -86,8 +82,8 @@ func TestShouldClearStickySession(t *testing.T) {
 					},
 				},
 			},
-			requestedModel: "claude-opus-4", // 请求不同模型
-			want:           false,           // 不同模型不受影响
+			requestedModel: "claude-opus-4", // 请求不同model
+			want:           false,           // 不同model不受影响
 		},
 		{
 			name: "apikey quota exceeded",

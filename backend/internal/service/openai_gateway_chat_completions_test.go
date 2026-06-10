@@ -43,7 +43,7 @@ func TestNormalizeResponsesRequestServiceTier(t *testing.T) {
 	normalizeResponsesRequestServiceTier(req)
 	require.Equal(t, "flex", req.ServiceTier)
 
-	// OpenAI 官方合法 tier 应被透传保留。
+	// OpenAI
 	req.ServiceTier = "auto"
 	normalizeResponsesRequestServiceTier(req)
 	require.Equal(t, "auto", req.ServiceTier)
@@ -56,7 +56,6 @@ func TestNormalizeResponsesRequestServiceTier(t *testing.T) {
 	normalizeResponsesRequestServiceTier(req)
 	require.Equal(t, "scale", req.ServiceTier)
 
-	// 真未知值仍被剥离。
 	req.ServiceTier = "turbo"
 	normalizeResponsesRequestServiceTier(req)
 	require.Empty(t, req.ServiceTier)
@@ -75,7 +74,7 @@ func TestNormalizeResponsesBodyServiceTier(t *testing.T) {
 	require.Equal(t, "flex", tier)
 	require.Equal(t, "flex", gjson.GetBytes(body, "service_tier").String())
 
-	// OpenAI 官方 tier 直接保留在 body 中（透传上游）。
+	// OpenAI
 	body, tier, err = normalizeResponsesBodyServiceTier([]byte(`{"model":"gpt-5.1","service_tier":"auto"}`))
 	require.NoError(t, err)
 	require.Equal(t, "auto", tier)
@@ -91,7 +90,6 @@ func TestNormalizeResponsesBodyServiceTier(t *testing.T) {
 	require.Equal(t, "scale", tier)
 	require.Equal(t, "scale", gjson.GetBytes(body, "service_tier").String())
 
-	// 真未知值才会被删除。
 	body, tier, err = normalizeResponsesBodyServiceTier([]byte(`{"model":"gpt-5.1","service_tier":"turbo"}`))
 	require.NoError(t, err)
 	require.Empty(t, tier)

@@ -170,7 +170,7 @@ func TestGeminiForwardAsChatCompletions_StreamsOpenAIChunksFromGeminiSSE(t *test
 	require.Contains(t, out, "data: [DONE]")
 }
 
-// TestConvertClaudeToolsToGeminiTools_CustomType 测试custom类型工具转换
+// TestConvertClaudeToolsToGeminiTools_CustomType
 func TestConvertClaudeToolsToGeminiTools_CustomType(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -188,7 +188,7 @@ func TestConvertClaudeToolsToGeminiTools_CustomType(t *testing.T) {
 				},
 			},
 			expectedLen: 1,
-			description: "标准工具格式应该正常转换",
+			description: "standard tool format should convert correctly",
 		},
 		{
 			name: "Custom type tool (MCP format)",
@@ -231,11 +231,11 @@ func TestConvertClaudeToolsToGeminiTools_CustomType(t *testing.T) {
 				map[string]any{
 					"type": "custom",
 					"name": "invalid_custom",
-					// 缺少 custom 字段
+					//
 				},
 			},
-			expectedLen: 0, // 应该被跳过
-			description: "缺少custom字段的custom工具应该被跳过",
+			expectedLen: 0, // should be skipped
+			description: "缺少custom字段的custom工具should be skipped",
 		},
 	}
 
@@ -274,7 +274,7 @@ func TestConvertClaudeToolsToGeminiTools_CustomType(t *testing.T) {
 			for _, tool := range toolsArr {
 				toolMap, _ := tool.(map[string]any)
 				if toolMap["name"] != "" {
-					// 检查是否为有效的custom工具
+					//
 					if toolMap["type"] == "custom" {
 						if toolMap["custom"] != nil {
 							expectedFuncCount++
@@ -351,7 +351,7 @@ func TestGeminiHandleNativeNonStreamingResponse_DebugDisabledDoesNotEmitHeaderLo
 	usage, err := svc.handleNativeNonStreamingResponse(c, resp, false)
 	require.NoError(t, err)
 	require.NotNil(t, usage)
-	require.False(t, logSink.ContainsMessage("[GeminiAPI]"), "debug 关闭时不应输出 Gemini 响应头日志")
+	require.False(t, logSink.ContainsMessage("[GeminiAPI]"), "debug shutting down时不应输出 Gemini 响应头日志")
 }
 
 func TestGeminiMessagesCompatServiceForward_PreservesRequestedModelAndMappedUpstreamModel(t *testing.T) {
@@ -512,10 +512,10 @@ func TestEnsureGeminiFunctionCallThoughtSignatures_InsertsWhenMissing(t *testing
 	}
 }
 
-// TestUnwrapGeminiResponse 测试 unwrapGeminiResponse 的各种输入场景
-// 关键区别：只有 response 为 JSON 对象/数组时才解包
+// TestUnwrapGeminiResponse
+//
 func TestUnwrapGeminiResponse(t *testing.T) {
-	// 构造 >50KB 的大型 JSON 对象
+	// >50KB
 	largePadding := strings.Repeat("x", 50*1024)
 	largeInput := []byte(fmt.Sprintf(`{"response":{"id":"big","pad":"%s"}}`, largePadding))
 	largeExpected := fmt.Sprintf(`{"id":"big","pad":"%s"}`, largePadding)
@@ -532,7 +532,7 @@ func TestUnwrapGeminiResponse(t *testing.T) {
 			expected: `{"key":"val"}`,
 		},
 		{
-			name:     "无包装直接返回",
+			name:     "无包装直接returned",
 			input:    []byte(`{"key":"val"}`),
 			expected: `{"key":"val"}`,
 		},
@@ -542,17 +542,17 @@ func TestUnwrapGeminiResponse(t *testing.T) {
 			expected: `{}`,
 		},
 		{
-			name:     "null response 返回原始 body",
+			name:     "null response returned原始 body",
 			input:    []byte(`{"response":null}`),
 			expected: `{"response":null}`,
 		},
 		{
-			name:     "非法 JSON 返回原始 body",
+			name:     "非法 JSON returned原始 body",
 			input:    []byte(`not json`),
 			expected: `not json`,
 		},
 		{
-			name:     "response 为基础类型 string 返回原始 body",
+			name:     "response 为基础类型 string returned原始 body",
 			input:    []byte(`{"response":"hello"}`),
 			expected: `{"response":"hello"}`,
 		},
@@ -582,7 +582,7 @@ func TestUnwrapGeminiResponse(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Task 8.1 — extractGeminiUsage 测试
+// Task 8.1 — extractGeminiUsage
 // ---------------------------------------------------------------------------
 
 func TestExtractGeminiUsage(t *testing.T) {
@@ -638,8 +638,8 @@ func TestExtractGeminiUsage(t *testing.T) {
 			wantNil: true,
 		},
 		{
-			// gjson 对 null 返回 Exists()=true，因此函数不会返回 nil，
-			// 而是返回全零的 ClaudeUsage。
+			// gjson ()=true，
+			//
 			name:    "null usageMetadata — gjson Exists 为 true",
 			input:   `{"usageMetadata":null}`,
 			wantNil: false,
@@ -650,7 +650,7 @@ func TestExtractGeminiUsage(t *testing.T) {
 			},
 		},
 		{
-			name:    "零值字段",
+			name:    "zero值字段",
 			input:   `{"usageMetadata":{"promptTokenCount":0,"candidatesTokenCount":0,"cachedContentTokenCount":0}}`,
 			wantNil: false,
 			wantUsage: &ClaudeUsage{
@@ -666,12 +666,12 @@ func TestExtractGeminiUsage(t *testing.T) {
 			got := extractGeminiUsage([]byte(tt.input))
 			if tt.wantNil {
 				if got != nil {
-					t.Fatalf("期望返回 nil，实际返回 %+v", got)
+					t.Fatalf("期望returned nil，实际returned %+v", got)
 				}
 				return
 			}
 			if got == nil {
-				t.Fatalf("期望返回非 nil，实际返回 nil")
+				t.Fatalf("期望returned非 nil，实际returned nil")
 			}
 			if got.InputTokens != tt.wantUsage.InputTokens {
 				t.Errorf("InputTokens: 期望 %d，实际 %d", tt.wantUsage.InputTokens, got.InputTokens)
@@ -687,7 +687,7 @@ func TestExtractGeminiUsage(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Task 8.2 — estimateGeminiCountTokens 测试
+// Task 8.2 — estimateGeminiCountTokens
 // ---------------------------------------------------------------------------
 
 func TestEstimateGeminiCountTokens(t *testing.T) {
@@ -713,7 +713,7 @@ func TestEstimateGeminiCountTokens(t *testing.T) {
 			wantGt0: true,
 		},
 		{
-			name:      "空 parts",
+			name:      "empty parts",
 			input:     `{"contents":[{"parts":[]}]}`,
 			wantGt0:   false,
 			wantExact: intPtr(0),
@@ -742,17 +742,17 @@ func TestEstimateGeminiCountTokens(t *testing.T) {
 				return
 			}
 			if tt.wantGt0 && got <= 0 {
-				t.Errorf("期望返回 > 0，实际 %d", got)
+				t.Errorf("期望returned > 0，实际 %d", got)
 			}
 			if !tt.wantGt0 && got != 0 {
-				t.Errorf("期望返回 0，实际 %d", got)
+				t.Errorf("期望returned 0，实际 %d", got)
 			}
 		})
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Task 8.3 — ParseGeminiRateLimitResetTime 测试
+// Task 8.3 — ParseGeminiRateLimitResetTime
 // ---------------------------------------------------------------------------
 
 func TestParseGeminiRateLimitResetTime(t *testing.T) {
@@ -760,7 +760,7 @@ func TestParseGeminiRateLimitResetTime(t *testing.T) {
 		name        string
 		input       string
 		wantNil     bool
-		approxDelta int64 // 预期的 (返回值 - now) 大约是多少秒
+		approxDelta int64 // 预期的 (returned值 - now) 大约是多少seconds
 	}{
 		{
 			name:        "正常 quotaResetDelay",
@@ -780,7 +780,7 @@ func TestParseGeminiRateLimitResetTime(t *testing.T) {
 			wantNil: true,
 		},
 		{
-			name:        "regex 回退匹配",
+			name:        "regex fallback匹配",
 			input:       `Please retry in 30s`,
 			wantNil:     false,
 			approxDelta: 30,
@@ -791,7 +791,7 @@ func TestParseGeminiRateLimitResetTime(t *testing.T) {
 			wantNil: true,
 		},
 		{
-			name:        "非法 JSON 但 regex 回退仍工作",
+			name:        "非法 JSON 但 regex fallback仍工作",
 			input:       `not json but Please retry in 10s`,
 			wantNil:     false,
 			approxDelta: 10,
@@ -805,28 +805,27 @@ func TestParseGeminiRateLimitResetTime(t *testing.T) {
 
 			if tt.wantNil {
 				if got != nil {
-					t.Fatalf("期望返回 nil，实际返回 %d", *got)
+					t.Fatalf("期望returned nil，实际returned %d", *got)
 				}
 				return
 			}
 
 			if got == nil {
-				t.Fatalf("期望返回非 nil，实际返回 nil")
+				t.Fatalf("期望returned非 nil，实际returned nil")
 			}
 
-			// approxDelta == -1 表示只检查非 nil，不检查具体值（如 daily quota 场景）
+			// approxDelta == -1
 			if tt.approxDelta == -1 {
-				// 仅验证返回的时间戳在合理范围内（未来的某个时间）
 				if *got < now {
-					t.Errorf("期望返回的时间戳 >= now(%d)，实际 %d", now, *got)
+					t.Errorf("期望returned的时间戳 >= now(%d)，实际 %d", now, *got)
 				}
 				return
 			}
 
-			// 使用 +/-2 秒容差进行范围检查
+			// +/-2
 			delta := *got - now
 			if delta < tt.approxDelta-2 || delta > tt.approxDelta+2 {
-				t.Errorf("期望 delta 约为 %d 秒（+/-2），实际 delta = %d 秒（返回值=%d, now=%d）",
+				t.Errorf("期望 delta 约为 %d seconds（+/-2），实际 delta = %d seconds（returned值=%d, now=%d）",
 					tt.approxDelta, delta, *got, now)
 			}
 		})

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 
-// 需要在导入 client 之前设置 mock
+// 需要在Import client 之前Settings mock
 vi.mock('@/i18n', () => ({
   getLocale: () => 'zh-CN',
 }))
@@ -12,7 +12,6 @@ describe('API Client', () => {
 
   beforeEach(async () => {
     localStorage.clear()
-    // 每次测试重新导入以获取干净的模块状态
     vi.resetModules()
     const mod = await import('@/api/client')
     apiClient = mod.apiClient
@@ -28,7 +27,6 @@ describe('API Client', () => {
     it('自动附加 Authorization 头', async () => {
       localStorage.setItem('auth_token', 'my-jwt-token')
 
-      // 拦截实际请求
       const adapter = vi.fn().mockResolvedValue({
         status: 200,
         data: { code: 0, data: {} },
@@ -126,7 +124,7 @@ describe('API Client', () => {
       expect(response.data).toEqual({ name: 'test' })
     })
 
-    it('code!=0 时拒绝并返回结构化错误', async () => {
+    it('code!=0 时拒绝并Back结构化错误', async () => {
       const adapter = vi.fn().mockResolvedValue({
         status: 200,
         data: { code: 1001, message: '参数错误', data: null },
@@ -144,7 +142,7 @@ describe('API Client', () => {
       )
     })
 
-    it('部署与运营合规未确认时广播事件且保留登录态', async () => {
+    it('部署与运营合规未Confirm时广播事件且保留Login态', async () => {
       localStorage.setItem('auth_token', 'admin-token')
       const listener = vi.fn()
       window.addEventListener('admin-compliance-required', listener)
@@ -192,12 +190,12 @@ describe('API Client', () => {
     })
   })
 
-  // --- 401 Token 刷新 ---
+  // --- 401 Token Refresh ---
 
-  describe('401 Token 刷新', () => {
+  describe('401 Token Refresh', () => {
     it('无 refresh_token 时 401 清除 localStorage', async () => {
       localStorage.setItem('auth_token', 'expired-token')
-      // 不设置 refresh_token
+      // 不Settings refresh_token
 
       // Mock window.location
       const originalLocation = window.location
@@ -234,7 +232,7 @@ describe('API Client', () => {
   // --- 网络错误 ---
 
   describe('网络错误', () => {
-    it('网络错误返回 status 0 的错误', async () => {
+    it('网络错误Back status 0 的错误', async () => {
       const adapter = vi.fn().mockRejectedValue({
         code: 'ERR_NETWORK',
         message: 'Network Error',
@@ -252,10 +250,10 @@ describe('API Client', () => {
     })
   })
 
-  // --- 请求取消 ---
+  // --- 请求Cancel ---
 
-  describe('请求取消', () => {
-    it('取消的请求保持原始取消错误', async () => {
+  describe('请求Cancel', () => {
+    it('Cancel的请求保持原始Cancel错误', async () => {
       const source = axios.CancelToken.source()
 
       const adapter = vi.fn().mockRejectedValue(

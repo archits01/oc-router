@@ -171,7 +171,7 @@ func TestSetClaudeCodeClientContext_FastPathAndStrictPath(t *testing.T) {
 	t.Run("cli_messages_path_invalid_body_sets_false", func(t *testing.T) {
 		c, _ := newHelperTestContext(http.MethodPost, "/v1/messages")
 		c.Request.Header.Set("User-Agent", "claude-cli/1.0.1")
-		// 缺少严格校验所需 header + body 字段
+		// + body
 		SetClaudeCodeClientContext(c, []byte(`{"model":"x"}`), nil)
 		require.False(t, service.IsClaudeCodeClient(c.Request.Context()))
 	})
@@ -188,7 +188,7 @@ func TestSetClaudeCodeClientContext_ReuseParsedRequest(t *testing.T) {
 		parsedReq, err := service.ParseGatewayRequest(service.NewRequestBodyRef(validClaudeCodeBodyJSON()), "")
 		require.NoError(t, err)
 
-		// body 非法 JSON，如果函数复用 parsedReq 成功则仍应判定为 Claude Code。
+		// body
 		SetClaudeCodeClientContext(c, []byte(`{invalid`), parsedReq)
 		require.True(t, service.IsClaudeCodeClient(c.Request.Context()))
 	})

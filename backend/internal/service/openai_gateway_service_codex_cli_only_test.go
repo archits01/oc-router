@@ -35,13 +35,13 @@ func TestOpenAIGatewayService_GetCodexClientRestrictionDetector(t *testing.T) {
 		require.Same(t, expected, got)
 	})
 
-	t.Run("service 为 nil 时返回默认 detector", func(t *testing.T) {
+	t.Run("service 为 nil 时returned默认 detector", func(t *testing.T) {
 		var svc *OpenAIGatewayService
 		got := svc.getCodexClientRestrictionDetector()
 		require.NotNil(t, got)
 	})
 
-	t.Run("service 未注入 detector 时返回默认 detector", func(t *testing.T) {
+	t.Run("service 未注入 detector 时returned默认 detector", func(t *testing.T) {
 		svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{ForceCodexCLI: true}}}
 		got := svc.getCodexClientRestrictionDetector()
 		require.NotNil(t, got)
@@ -72,7 +72,7 @@ func TestGetAPIKeyIDFromContext(t *testing.T) {
 		require.Equal(t, int64(0), getAPIKeyIDFromContext(c))
 	})
 
-	t.Run("api_key 类型错误", func(t *testing.T) {
+	t.Run("api_key 类型error", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(rec)
 		c.Set("api_key", "not-api-key")
@@ -96,7 +96,7 @@ func TestGetAPIKeyIDFromContext(t *testing.T) {
 }
 
 func TestLogCodexCLIOnlyDetection_NilSafety(t *testing.T) {
-	// 不校验日志内容，仅保证在 nil 入参下不会 panic。
+	//
 	require.NotPanics(t, func() {
 		logCodexCLIOnlyDetection(context.TODO(), nil, nil, 0, CodexClientRestrictionDetectionResult{Enabled: true, Matched: false, Reason: "test"}, nil)
 		logCodexCLIOnlyDetection(context.Background(), nil, nil, 0, CodexClientRestrictionDetectionResult{Enabled: false, Matched: false, Reason: "disabled"}, nil)
@@ -181,7 +181,7 @@ func TestLogOpenAIInstructionsRequiredDebug_LogsRequestDetails(t *testing.T) {
 		[]byte(`{"error":{"message":"Instructions are required","type":"invalid_request_error","param":"instructions","code":"missing_required_parameter"}}`),
 	)
 
-	require.True(t, logSink.ContainsMessageAtLevel("OpenAI 上游返回 Instructions are required，已记录请求详情用于排查", "warn"))
+	require.True(t, logSink.ContainsMessageAtLevel("OpenAI 上游returned Instructions are required，已记录请求详情用于排查", "warn"))
 	require.True(t, logSink.ContainsFieldValue("request_user_agent", "curl/8.0"))
 	require.True(t, logSink.ContainsFieldValue("request_model", "gpt-5.1-codex"))
 	require.True(t, logSink.ContainsFieldValue("request_query", "trace=1"))
@@ -212,7 +212,7 @@ func TestLogOpenAIInstructionsRequiredDebug_NonTargetErrorSkipped(t *testing.T) 
 		[]byte(`{"error":{"message":"forbidden"}}`),
 	)
 
-	require.False(t, logSink.ContainsMessage("OpenAI 上游返回 Instructions are required，已记录请求详情用于排查"))
+	require.False(t, logSink.ContainsMessage("OpenAI 上游returned Instructions are required，已记录请求详情用于排查"))
 }
 
 func TestIsOpenAITransientProcessingError(t *testing.T) {
@@ -287,7 +287,7 @@ func TestOpenAIGatewayService_Forward_LogsInstructionsRequiredDetails(t *testing
 	require.Equal(t, http.StatusBadGateway, rec.Code)
 	require.Contains(t, err.Error(), "upstream error: 400")
 
-	require.True(t, logSink.ContainsMessageAtLevel("OpenAI 上游返回 Instructions are required，已记录请求详情用于排查", "warn"))
+	require.True(t, logSink.ContainsMessageAtLevel("OpenAI 上游returned Instructions are required，已记录请求详情用于排查", "warn"))
 	require.True(t, logSink.ContainsFieldValue("request_user_agent", "codex_cli_rs/0.1.0"))
 	require.True(t, logSink.ContainsFieldValue("request_model", "gpt-5.1-codex"))
 	require.True(t, logSink.ContainsFieldValue("request_headers", "openai-beta"))
@@ -340,7 +340,7 @@ func TestOpenAIGatewayService_Forward_TransientProcessingErrorTriggersFailover(t
 	require.ErrorAs(t, err, &failoverErr)
 	require.Equal(t, http.StatusBadRequest, failoverErr.StatusCode)
 	require.Contains(t, string(failoverErr.ResponseBody), "An error occurred while processing your request")
-	require.False(t, c.Writer.Written(), "service 层应返回 failover 错误给上层换号，而不是直接向客户端写响应")
+	require.False(t, c.Writer.Written(), "service 层应returned failover error给上层换号，而不是直接向客户端写响应")
 }
 
 func TestOpenAIGatewayService_Forward_ModelCapacityErrorTriggersFailoverAndSameAccountRetry(t *testing.T) {
@@ -392,5 +392,5 @@ func TestOpenAIGatewayService_Forward_ModelCapacityErrorTriggersFailoverAndSameA
 	require.Equal(t, http.StatusBadRequest, failoverErr.StatusCode)
 	require.True(t, failoverErr.RetryableOnSameAccount)
 	require.Contains(t, string(failoverErr.ResponseBody), "Selected model is at capacity")
-	require.False(t, c.Writer.Written(), "service 层应返回 failover 错误给上层重试/换号，而不是直接向客户端写响应")
+	require.False(t, c.Writer.Written(), "service 层应returned failover error给上层retry/换号，而不是直接向客户端写响应")
 }

@@ -281,7 +281,7 @@ func TestOpenAIGatewayService_SelectAccountByPreviousResponseID_BusyKeepsSticky(
 	concurrencyCache := stubConcurrencyCache{
 		acquireResults: map[int64]bool{
 			21: false, // previous_response 命中的账号繁忙
-			22: true,  // 次优账号可用（若回退会命中）
+			22: true,  // 次优账号可用（若fallback会命中）
 		},
 		waitCounts: map[int64]int{
 			21: 999,

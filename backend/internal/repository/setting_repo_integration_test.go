@@ -106,10 +106,10 @@ func (s *SettingRepoSuite) TestSetMultiple_Upsert() {
 	s.Require().Equal("new_val", got2)
 }
 
-// TestSet_EmptyValue 测试保存空字符串值
-// 这是一个回归测试，确保可选设置（如站点Logo、API端点地址等）可以保存为空字符串
+// TestSet_EmptyValue
+//
 func (s *SettingRepoSuite) TestSet_EmptyValue() {
-	// 测试 Set 方法保存空值
+	//
 	s.Require().NoError(s.repo.Set(s.ctx, "empty_key", ""), "Set with empty value should succeed")
 
 	got, err := s.repo.GetValue(s.ctx, "empty_key")
@@ -117,22 +117,19 @@ func (s *SettingRepoSuite) TestSet_EmptyValue() {
 	s.Require().Equal("", got, "empty value should be preserved")
 }
 
-// TestSetMultiple_WithEmptyValues 测试批量保存包含空字符串的设置
-// 模拟用户保存站点设置时部分字段为空的场景
+// TestSetMultiple_WithEmptyValues
 func (s *SettingRepoSuite) TestSetMultiple_WithEmptyValues() {
-	// 模拟保存站点设置，部分字段有值，部分字段为空
 	settings := map[string]string{
 		"site_name":     "Sub2api",
 		"site_subtitle": "Subscription to API",
-		"site_logo":     "", // 用户未上传Logo
-		"api_base_url":  "", // 用户未设置API地址
-		"contact_info":  "", // 用户未设置联系方式
-		"doc_url":       "", // 用户未设置文档链接
+		"site_logo":     "", // user has not uploaded a logo
+		"api_base_url":  "", // user has not set API address
+		"contact_info":  "", // user has not set contact info
+		"doc_url":       "", // user has not set documentation link
 	}
 
 	s.Require().NoError(s.repo.SetMultiple(s.ctx, settings), "SetMultiple with empty values should succeed")
 
-	// 验证所有值都正确保存
 	result, err := s.repo.GetMultiple(s.ctx, []string{"site_name", "site_subtitle", "site_logo", "api_base_url", "contact_info", "doc_url"})
 	s.Require().NoError(err, "GetMultiple after SetMultiple with empty values")
 
@@ -144,17 +141,14 @@ func (s *SettingRepoSuite) TestSetMultiple_WithEmptyValues() {
 	s.Require().Equal("", result["doc_url"], "empty doc_url should be preserved")
 }
 
-// TestSetMultiple_UpdateToEmpty 测试将已有值更新为空字符串
-// 确保用户可以清空之前设置的值
+// TestSetMultiple_UpdateToEmpty
 func (s *SettingRepoSuite) TestSetMultiple_UpdateToEmpty() {
-	// 先设置非空值
 	s.Require().NoError(s.repo.Set(s.ctx, "clearable_key", "initial_value"))
 
 	got, err := s.repo.GetValue(s.ctx, "clearable_key")
 	s.Require().NoError(err)
 	s.Require().Equal("initial_value", got)
 
-	// 更新为空值
 	s.Require().NoError(s.repo.SetMultiple(s.ctx, map[string]string{"clearable_key": ""}), "Update to empty should succeed")
 
 	got, err = s.repo.GetValue(s.ctx, "clearable_key")

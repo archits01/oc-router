@@ -237,7 +237,7 @@ func TestUsageBillingRepositoryApply_EnqueuesSchedulerOutboxOnQuotaCrossing(t *t
 		apiKeyID, accountID := newFixture(t, map[string]any{
 			"quota_daily_limit": 10.0,
 		})
-		// 第一次低于日限额：不应入队 outbox
+		//
 		_, err := repo.Apply(ctx, &service.UsageBillingCommand{
 			RequestID:        uuid.NewString(),
 			APIKeyID:         apiKeyID,
@@ -248,7 +248,7 @@ func TestUsageBillingRepositoryApply_EnqueuesSchedulerOutboxOnQuotaCrossing(t *t
 		require.NoError(t, err)
 		require.Equal(t, 0, outboxCountFor(t, accountID), "below limit should not enqueue")
 
-		// 第二次跨越日限额：应入队一次 outbox
+		//
 		_, err = repo.Apply(ctx, &service.UsageBillingCommand{
 			RequestID:        uuid.NewString(),
 			APIKeyID:         apiKeyID,
@@ -259,7 +259,6 @@ func TestUsageBillingRepositoryApply_EnqueuesSchedulerOutboxOnQuotaCrossing(t *t
 		require.NoError(t, err)
 		require.Equal(t, 1, outboxCountFor(t, accountID), "crossing daily limit should enqueue once")
 
-		// 再次递增（已超）：不应重复入队
 		_, err = repo.Apply(ctx, &service.UsageBillingCommand{
 			RequestID:        uuid.NewString(),
 			APIKeyID:         apiKeyID,
@@ -280,7 +279,7 @@ func TestUsageBillingRepositoryApply_EnqueuesSchedulerOutboxOnQuotaCrossing(t *t
 			APIKeyID:         apiKeyID,
 			AccountID:        accountID,
 			AccountType:      service.AccountTypeAPIKey,
-			AccountQuotaCost: 15, // 单次即跨越
+			AccountQuotaCost: 15, // single request crosses the threshold
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, outboxCountFor(t, accountID), "single-shot crossing weekly limit should enqueue once")

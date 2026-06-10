@@ -73,11 +73,10 @@ func ProvideTokenRefreshService(
 	runtimeBlocker AccountRuntimeBlocker,
 ) *TokenRefreshService {
 	svc := NewTokenRefreshService(accountRepo, oauthService, openaiOAuthService, geminiOAuthService, antigravityOAuthService, cacheInvalidator, schedulerCache, cfg, tempUnschedCache)
-	// 注入 OpenAI privacy opt-out 依赖
+	//
 	svc.SetPrivacyDeps(privacyClientFactory, proxyRepo)
-	// 注入统一 OAuth 刷新 API（消除 TokenRefreshService 与 TokenProvider 之间的竞争条件）
+	//
 	svc.SetRefreshAPI(refreshAPI)
-	// 调用侧显式注入后台刷新策略，避免策略漂移
 	svc.SetRefreshPolicy(DefaultBackgroundRefreshPolicy())
 	svc.SetAccountRuntimeBlocker(runtimeBlocker)
 	svc.Start()
@@ -142,7 +141,7 @@ func ProvideAntigravityTokenProvider(
 	return p
 }
 
-// ProvideDashboardAggregationService 创建并启动仪表盘聚合服务
+// ProvideDashboardAggregationService
 func ProvideDashboardAggregationService(repo DashboardAggregationRepository, timingWheel *TimingWheelService, lockCache LeaderLockCache, db *sql.DB, cfg *config.Config) *DashboardAggregationService {
 	svc := NewDashboardAggregationService(repo, timingWheel, cfg)
 	svc.SetLeaderLock(lockCache, db)
@@ -150,7 +149,7 @@ func ProvideDashboardAggregationService(repo DashboardAggregationRepository, tim
 	return svc
 }
 
-// ProvideUsageCleanupService 创建并启动使用记录清理任务服务
+// ProvideUsageCleanupService
 func ProvideUsageCleanupService(repo UsageCleanupRepository, timingWheel *TimingWheelService, dashboardAgg *DashboardAggregationService, cfg *config.Config) *UsageCleanupService {
 	svc := NewUsageCleanupService(repo, timingWheel, dashboardAgg, cfg)
 	svc.Start()
@@ -211,7 +210,7 @@ func ProvideConcurrencyService(cache ConcurrencyCache, accountRepo AccountReposi
 	return svc
 }
 
-// ProvideUserMessageQueueService 创建用户消息串行队列服务并启动清理 worker
+// ProvideUserMessageQueueService
 func ProvideUserMessageQueueService(cache UserMsgQueueCache, rpmCache RPMCache, cfg *config.Config) *UserMessageQueueService {
 	svc := NewUserMessageQueueService(cache, rpmCache, &cfg.Gateway.UserMessageQueue)
 	if cfg.Gateway.UserMessageQueue.CleanupIntervalSeconds > 0 {
@@ -296,10 +295,10 @@ func ProvideOpsAlertEvaluatorService(
 }
 
 // ProvideOpsCleanupService creates and starts OpsCleanupService (cron scheduled).
-// channelMonitorSvc 让维护任务（聚合 + 历史/聚合软删）跟随 ops 清理 cron 一起跑，
-// 共享 leader lock + heartbeat。
-// settingRepo 让 cleanup service 自己读 ops_advanced_settings.data_retention 覆盖 cfg；
-// opsService 用来反向注入 cleanup hook，以便 UI 改清理设置时能 Reload cron。
+// channelMonitorSvc +
+// + heartbeat。
+// settingRepo
+// opsService
 func ProvideOpsCleanupService(
 	opsRepo OpsRepository,
 	db *sql.DB,
@@ -397,7 +396,7 @@ func ProvideOpsScheduledReportService(
 	return svc
 }
 
-// ProvideAPIKeyAuthCacheInvalidator 提供 API Key 认证缓存失效能力
+// ProvideAPIKeyAuthCacheInvalidator
 func ProvideAPIKeyAuthCacheInvalidator(apiKeyService *APIKeyService) APIKeyAuthCacheInvalidator {
 	// Start Pub/Sub subscriber for L1 cache invalidation across instances
 	apiKeyService.StartAuthCacheInvalidationSubscriber(context.Background())
@@ -596,7 +595,7 @@ var ProviderSet = wire.NewSet(
 	ProvideUserPlatformQuotaUsageFlusher,
 )
 
-// ProvideUserPlatformQuotaUsageFlusher 创建并启动 UserPlatformQuotaUsageFlusher。
+// ProvideUserPlatformQuotaUsageFlusher
 func ProvideUserPlatformQuotaUsageFlusher(cfg *config.Config, cache BillingCache, quotaRepo UserPlatformQuotaRepository, tw *TimingWheelService) *UserPlatformQuotaUsageFlusher {
 	svc := NewUserPlatformQuotaUsageFlusher(cfg, cache, quotaRepo, tw)
 	svc.Start()
@@ -631,8 +630,8 @@ func ProvidePaymentOrderExpiryService(paymentSvc *PaymentService, lockCache Lead
 	return svc
 }
 
-// ProvideChannelMonitorService 创建渠道监控服务（CRUD + RunCheck + 用户视图聚合）。
-// 加密器复用 wire 中已注入的 SecretEncryptor（AES-256-GCM）。
+// ProvideChannelMonitorService + RunCheck +
+//
 func ProvideChannelMonitorService(
 	repo ChannelMonitorRepository,
 	encryptor SecretEncryptor,
@@ -640,10 +639,10 @@ func ProvideChannelMonitorService(
 	return NewChannelMonitorService(repo, encryptor)
 }
 
-// ProvideChannelMonitorRunner 创建并启动渠道监控调度器。
-// 通过 SetScheduler 注入回 service 后再 Start，确保启动时加载所有 enabled monitor，
-// 后续 CRUD 也能即时同步任务表。Runner.Stop 由 cleanup function 调用。
-// settingService 用于 runner 每次 fire 读取功能开关。
+// ProvideChannelMonitorRunner
+//
+//
+// settingService
 func ProvideChannelMonitorRunner(svc *ChannelMonitorService, settingService *SettingService) *ChannelMonitorRunner {
 	r := NewChannelMonitorRunner(svc, settingService)
 	svc.SetScheduler(r)

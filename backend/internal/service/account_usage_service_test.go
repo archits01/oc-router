@@ -111,7 +111,7 @@ func TestAccountUsageService_PersistOpenAICodexProbeSnapshotOnlyUpdatesExtra(t *
 			t.Fatalf("codex_7d_used_percent = %v, want 100", got)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatal("等待 codex 探测快照写入 extra 超时")
+		t.Fatal("等待 codex 探测快照写入 extra timeout")
 	}
 
 	select {

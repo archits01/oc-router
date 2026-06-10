@@ -146,7 +146,6 @@ func TestSelectByLRU(t *testing.T) {
 			{account: &Account{ID: 2, LastUsedAt: nil, Type: "session"}, loadInfo: &AccountLoadInfo{}},
 			{account: &Account{ID: 3, LastUsedAt: nil, Type: "session"}, loadInfo: &AccountLoadInfo{}},
 		}
-		// 多次调用应该随机选择，验证结果都在候选范围内
 		validIDs := map[int64]bool{1: true, 2: true, 3: true}
 		for i := 0; i < 10; i++ {
 			result := selectByLRU(accounts, false)
@@ -161,7 +160,6 @@ func TestSelectByLRU(t *testing.T) {
 			{account: &Account{ID: 1, LastUsedAt: &sameTime}, loadInfo: &AccountLoadInfo{}},
 			{account: &Account{ID: 2, LastUsedAt: &sameTime}, loadInfo: &AccountLoadInfo{}},
 		}
-		// 多次调用应该随机选择
 		validIDs := map[int64]bool{1: true, 2: true}
 		for i := 0; i < 10; i++ {
 			result := selectByLRU(accounts, false)
@@ -176,7 +174,7 @@ func TestSelectByLRU(t *testing.T) {
 			{account: &Account{ID: 2, LastUsedAt: nil, Type: AccountTypeOAuth}, loadInfo: &AccountLoadInfo{}},
 			{account: &Account{ID: 3, LastUsedAt: nil, Type: AccountTypeOAuth}, loadInfo: &AccountLoadInfo{}},
 		}
-		// preferOAuth 时，应该从 OAuth 类型中选择
+		// preferOAuth
 		oauthIDs := map[int64]bool{2: true, 3: true}
 		for i := 0; i < 10; i++ {
 			result := selectByLRU(accounts, true)
@@ -190,7 +188,7 @@ func TestSelectByLRU(t *testing.T) {
 			{account: &Account{ID: 1, LastUsedAt: nil, Type: "session"}, loadInfo: &AccountLoadInfo{}},
 			{account: &Account{ID: 2, LastUsedAt: nil, Type: "session"}, loadInfo: &AccountLoadInfo{}},
 		}
-		// 没有 OAuth 时，从所有候选中选择
+		//
 		validIDs := map[int64]bool{1: true, 2: true}
 		for i := 0; i < 10; i++ {
 			result := selectByLRU(accounts, true)
@@ -206,7 +204,7 @@ func TestSelectByLRU(t *testing.T) {
 		}
 		result := selectByLRU(accounts, true)
 		require.NotNil(t, result)
-		// 有不同 LastUsedAt 时，按时间选择最早的，不受 preferOAuth 影响
+		//
 		require.Equal(t, int64(1), result.account.ID)
 	})
 }
@@ -217,27 +215,25 @@ func TestLayeredFilterIntegration(t *testing.T) {
 	muchEarlier := now.Add(-2 * time.Hour)
 
 	t.Run("full layered selection", func(t *testing.T) {
-		// 模拟真实场景：多个账号，不同优先级、负载率、最后使用时间
 		accounts := []accountWithLoad{
-			// 优先级 1，负载 50%
+			// %
 			{account: &Account{ID: 1, Priority: 1, LastUsedAt: &now}, loadInfo: &AccountLoadInfo{LoadRate: 50}},
-			// 优先级 1，负载 20%（最低）
+			// %（
 			{account: &Account{ID: 2, Priority: 1, LastUsedAt: &earlier}, loadInfo: &AccountLoadInfo{LoadRate: 20}},
-			// 优先级 1，负载 20%（最低），更早使用
+			// %（
 			{account: &Account{ID: 3, Priority: 1, LastUsedAt: &muchEarlier}, loadInfo: &AccountLoadInfo{LoadRate: 20}},
-			// 优先级 2（较低优先）
 			{account: &Account{ID: 4, Priority: 2, LastUsedAt: &muchEarlier}, loadInfo: &AccountLoadInfo{LoadRate: 0}},
 		}
 
-		// 1. 取优先级最小的集合 → ID: 1, 2, 3
+		// 1. → ID: 1, 2, 3
 		step1 := filterByMinPriority(accounts)
 		require.Len(t, step1, 3)
 
-		// 2. 取负载率最低的集合 → ID: 2, 3
+		// 2. → ID: 2, 3
 		step2 := filterByMinLoadRate(step1)
 		require.Len(t, step2, 2)
 
-		// 3. LRU 选择 → ID: 3（muchEarlier 最早）
+		// 3. LRU → ID: 3（muchEarlier
 		selected := selectByLRU(step2, false)
 		require.NotNil(t, selected)
 		require.Equal(t, int64(3), selected.account.ID)
@@ -256,7 +252,7 @@ func TestLayeredFilterIntegration(t *testing.T) {
 		step2 := filterByMinLoadRate(step1)
 		require.Len(t, step2, 3)
 
-		// LRU 选择最早的
+		// LRU
 		selected := selectByLRU(step2, false)
 		require.NotNil(t, selected)
 		require.Equal(t, int64(3), selected.account.ID)

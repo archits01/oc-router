@@ -109,11 +109,11 @@ type CreateAccountRequest struct {
 	GroupIDs                []int64        `json:"group_ids"`
 	ExpiresAt               *int64         `json:"expires_at"`
 	AutoPauseOnExpired      *bool          `json:"auto_pause_on_expired"`
-	ConfirmMixedChannelRisk *bool          `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
+	ConfirmMixedChannelRisk *bool          `json:"confirm_mixed_channel_risk"` // user确认混合渠道风险
 }
 
 // UpdateAccountRequest represents update account request
-// 使用指针类型来区分"未提供"和"设置为0"
+// """"
 type UpdateAccountRequest struct {
 	Name                    string         `json:"name"`
 	Notes                   *string        `json:"notes"`
@@ -129,7 +129,7 @@ type UpdateAccountRequest struct {
 	GroupIDs                *[]int64       `json:"group_ids"`
 	ExpiresAt               *int64         `json:"expires_at"`
 	AutoPauseOnExpired      *bool          `json:"auto_pause_on_expired"`
-	ConfirmMixedChannelRisk *bool          `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
+	ConfirmMixedChannelRisk *bool          `json:"confirm_mixed_channel_risk"` // user确认混合渠道风险
 }
 
 // BulkUpdateAccountsRequest represents the payload for bulk editing accounts
@@ -147,7 +147,7 @@ type BulkUpdateAccountsRequest struct {
 	GroupIDs                *[]int64                  `json:"group_ids"`
 	Credentials             map[string]any            `json:"credentials"`
 	Extra                   map[string]any            `json:"extra"`
-	ConfirmMixedChannelRisk *bool                     `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
+	ConfirmMixedChannelRisk *bool                     `json:"confirm_mixed_channel_risk"` // user确认混合渠道风险
 }
 
 type BulkUpdateAccountFilters struct {
@@ -170,10 +170,10 @@ type CheckMixedChannelRequest struct {
 type AccountWithConcurrency struct {
 	*dto.Account
 	CurrentConcurrency int `json:"current_concurrency"`
-	// 以下字段仅对 Anthropic OAuth/SetupToken 账号有效，且仅在启用相应功能时返回
+	//
 	CurrentWindowCost *float64 `json:"current_window_cost,omitempty"` // 当前窗口费用
 	ActiveSessions    *int     `json:"active_sessions,omitempty"`     // 当前活跃会话数
-	CurrentRPM        *int     `json:"current_rpm,omitempty"`         // 当前分钟 RPM 计数
+	CurrentRPM        *int     `json:"current_rpm,omitempty"`         // 当前minutes RPM 计数
 }
 
 const accountListGroupUngroupedQueryValue = "ungrouped"
@@ -233,7 +233,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 	privacyMode := strings.TrimSpace(c.Query("privacy_mode"))
 	sortBy := c.DefaultQuery("sort_by", "name")
 	sortOrder := c.DefaultQuery("sort_order", "asc")
-	// 标准化和验证 search 参数
+	//
 	search = strings.TrimSpace(search)
 	if len(search) > 100 {
 		search = search[:100]
@@ -275,18 +275,18 @@ func (h *AccountHandler) List(c *gin.Context) {
 	var activeSessions map[int64]int
 	var rpmCounts map[int64]int
 
-	// 始终获取并发数（Redis ZCARD，极低开销）
+	//
 	if h.concurrencyService != nil {
 		if cc, ccErr := h.concurrencyService.GetAccountConcurrencyBatch(c.Request.Context(), accountIDs); ccErr == nil && cc != nil {
 			concurrencyCounts = cc
 		}
 	}
 
-	// 识别需要查询窗口费用、会话数和 RPM 的账号（Anthropic OAuth/SetupToken 且启用了相应功能）
+	//
 	windowCostAccountIDs := make([]int64, 0)
 	sessionLimitAccountIDs := make([]int64, 0)
 	rpmAccountIDs := make([]int64, 0)
-	sessionIdleTimeouts := make(map[int64]time.Duration) // 各账号的会话空闲超时配置
+	sessionIdleTimeouts := make(map[int64]time.Duration) // 各账号的会话空闲timeoutconfiguration
 	for i := range accounts {
 		acc := &accounts[i]
 		if acc.IsAnthropicOAuthOrSetupToken() {
@@ -303,7 +303,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 		}
 	}
 
-	// 始终获取 RPM 计数（Redis GET，极低开销）
+	//
 	if len(rpmAccountIDs) > 0 && h.rpmCache != nil {
 		rpmCounts, _ = h.rpmCache.GetRPMBatch(c.Request.Context(), rpmAccountIDs)
 		if rpmCounts == nil {
@@ -311,7 +311,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 		}
 	}
 
-	// 始终获取活跃会话数（Redis ZCARD，低开销）
+	//
 	if len(sessionLimitAccountIDs) > 0 && h.sessionLimitCache != nil {
 		activeSessions, _ = h.sessionLimitCache.GetActiveSessionCountBatch(c.Request.Context(), sessionLimitAccountIDs, sessionIdleTimeouts)
 		if activeSessions == nil {
@@ -319,7 +319,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 		}
 	}
 
-	// 始终获取窗口费用（PostgreSQL 聚合查询）
+	//
 	if len(windowCostAccountIDs) > 0 {
 		windowCosts = make(map[int64]float64)
 		var mu sync.Mutex
@@ -333,7 +333,6 @@ func (h *AccountHandler) List(c *gin.Context) {
 			}
 			accCopy := acc // 闭包捕获
 			g.Go(func() error {
-				// 使用统一的窗口开始时间计算逻辑（考虑窗口过期情况）
 				startTime := accCopy.GetCurrentWindowStartTime()
 				stats, err := h.accountUsageService.GetAccountWindowStats(gctx, accCopy.ID, startTime)
 				if err == nil && stats != nil {
@@ -341,7 +340,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 					windowCosts[accCopy.ID] = stats.StandardCost // 使用标准费用
 					mu.Unlock()
 				}
-				return nil // 不返回错误，允许部分失败
+				return nil // 不returnederror，允许部分failed
 			})
 		}
 		_ = g.Wait()
@@ -356,21 +355,19 @@ func (h *AccountHandler) List(c *gin.Context) {
 			CurrentConcurrency: concurrencyCounts[acc.ID],
 		}
 
-		// 添加窗口费用（仅当启用时）
 		if windowCosts != nil {
 			if cost, ok := windowCosts[acc.ID]; ok {
 				item.CurrentWindowCost = &cost
 			}
 		}
 
-		// 添加活跃会话数（仅当启用时）
 		if activeSessions != nil {
 			if count, ok := activeSessions[acc.ID]; ok {
 				item.ActiveSessions = &count
 			}
 		}
 
-		// 添加 RPM 计数（仅当启用时）
+		//
 		if rpmCounts != nil {
 			if rpm, ok := rpmCounts[acc.ID]; ok {
 				item.CurrentRPM = &rpm
@@ -522,14 +519,12 @@ func (h *AccountHandler) Create(c *gin.Context) {
 		response.BadRequest(c, "rate_multiplier must be >= 0")
 		return
 	}
-	// base_rpm 输入校验：负值归零，超过 10000 截断
+	// base_rpm
 	sanitizeExtraBaseRPM(req.Extra)
 
-	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
 
-	// 捕获闭包内创建的账号引用，用于创建成功后触发异步探测。
-	// 幂等重放时闭包不会执行 → createdAccount 为 nil → 不重复调度。
+	// → createdAccount →
 	var createdAccount *service.Account
 
 	result, err := executeAdminIdempotent(c, "admin.accounts.create", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
@@ -554,17 +549,15 @@ func (h *AccountHandler) Create(c *gin.Context) {
 			return nil, execErr
 		}
 		createdAccount = account
-		// Antigravity OAuth: 新账号直接设置隐私
+		// Antigravity OAuth:
 		h.adminService.ForceAntigravityPrivacy(ctx, account)
-		// OpenAI OAuth: 新账号直接设置隐私
+		// OpenAI OAuth:
 		h.adminService.ForceOpenAIPrivacy(ctx, account)
 		return h.buildAccountResponseWithRuntime(ctx, account), nil
 	})
 	if err != nil {
-		// 检查是否为混合渠道错误
 		var mixedErr *service.MixedChannelError
 		if errors.As(err, &mixedErr) {
-			// 创建接口仅返回最小必要字段，详细信息由专门检查接口提供
 			c.JSON(409, gin.H{
 				"error":   "mixed_channel_warning",
 				"message": mixedErr.Error(),
@@ -582,8 +575,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 	if result != nil && result.Replayed {
 		c.Header("X-Idempotency-Replayed", "true")
 	}
-	// OpenAI APIKey 账号创建后异步探测上游 /v1/responses 能力。
-	// 探测失败不影响账号创建响应。
+	// OpenAI APIKey
 	h.scheduleOpenAIResponsesProbe(createdAccount)
 	response.Success(c, result.Data)
 }
@@ -606,10 +598,9 @@ func (h *AccountHandler) Update(c *gin.Context) {
 		response.BadRequest(c, "rate_multiplier must be >= 0")
 		return
 	}
-	// base_rpm 输入校验：负值归零，超过 10000 截断
+	// base_rpm
 	sanitizeExtraBaseRPM(req.Extra)
 
-	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
 
 	account, err := h.adminService.UpdateAccount(c.Request.Context(), accountID, &service.UpdateAccountInput{
@@ -630,10 +621,8 @@ func (h *AccountHandler) Update(c *gin.Context) {
 		SkipMixedChannelCheck: skipCheck,
 	})
 	if err != nil {
-		// 检查是否为混合渠道错误
 		var mixedErr *service.MixedChannelError
 		if errors.As(err, &mixedErr) {
-			// 更新接口仅返回最小必要字段，详细信息由专门检查接口提供
 			c.JSON(409, gin.H{
 				"error":   "mixed_channel_warning",
 				"message": mixedErr.Error(),
@@ -645,8 +634,7 @@ func (h *AccountHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// OpenAI APIKey: credentials 修改后重新探测上游能力（base_url/api_key 可能变更）。
-	// 异步执行，探测失败不影响账号更新响应。
+	// OpenAI APIKey: credentials
 	if len(req.Credentials) > 0 {
 		h.scheduleOpenAIResponsesProbe(account)
 	}
@@ -654,12 +642,11 @@ func (h *AccountHandler) Update(c *gin.Context) {
 	response.Success(c, h.buildAccountResponseWithRuntime(c.Request.Context(), account))
 }
 
-// scheduleOpenAIResponsesProbe 异步触发 OpenAI APIKey 账号的 Responses API 能力探测。
+// scheduleOpenAIResponsesProbe
 //
-// 仅对 platform=openai && type=apikey 账号生效；其他账号无操作。
-// 探测本身在 goroutine 中执行（会发一次 HTTP 请求到上游），不会阻塞
-// 当前请求。探测错误仅记录日志，不向上下文传播：探测失败时标记保持缺失，
-// 网关会按"现状即证据"默认走 Responses。
+// =openai && type=apikey
+//
+// ""
 func (h *AccountHandler) scheduleOpenAIResponsesProbe(account *service.Account) {
 	if account == nil || account.Platform != service.PlatformOpenAI || account.Type != service.AccountTypeAPIKey {
 		return
@@ -838,7 +825,7 @@ func (h *AccountHandler) refreshSingleAccount(ctx context.Context, account *serv
 	if account.IsOpenAI() {
 		tokenInfo, err := h.openaiOAuthService.RefreshAccountToken(ctx, account)
 		if err != nil {
-			// 刷新失败但 access_token 可能仍有效，尝试设置隐私
+			//
 			h.adminService.EnsureOpenAIPrivacy(ctx, account)
 			return nil, "", err
 		}
@@ -874,15 +861,15 @@ func (h *AccountHandler) refreshSingleAccount(ctx context.Context, account *serv
 			}
 		}
 
-		// 特殊处理 project_id：如果新值为空但旧值非空，保留旧值
-		// 这确保了即使 LoadCodeAssist 失败，project_id 也不会丢失
+		//
+		//
 		if newProjectID, _ := newCredentials["project_id"].(string); newProjectID == "" {
 			if oldProjectID := strings.TrimSpace(account.GetCredential("project_id")); oldProjectID != "" {
 				newCredentials["project_id"] = oldProjectID
 			}
 		}
 
-		// 如果 project_id 获取失败，更新凭证但不标记为 error
+		//
 		if tokenInfo.ProjectIDMissing {
 			updatedAccount, updateErr := h.adminService.UpdateAccount(ctx, account.ID, &service.UpdateAccountInput{
 				Credentials: newCredentials,
@@ -894,7 +881,7 @@ func (h *AccountHandler) refreshSingleAccount(ctx context.Context, account *serv
 			return updatedAccount, "missing_project_id_temporary", nil
 		}
 
-		// 成功获取到 project_id，如果之前是 missing_project_id 错误则清除
+		//
 		if account.Status == service.StatusError && strings.Contains(account.ErrorMessage, "missing_project_id:") {
 			if _, clearErr := h.adminService.ClearAccountError(ctx, account.ID); clearErr != nil {
 				return nil, "", fmt.Errorf("failed to clear account error: %w", clearErr)
@@ -933,16 +920,16 @@ func (h *AccountHandler) refreshSingleAccount(ctx context.Context, account *serv
 		return nil, "", err
 	}
 
-	// 刷新成功后，清除 token 缓存，确保下次请求使用新 token
+	//
 	if h.tokenCacheInvalidator != nil {
 		if invalidateErr := h.tokenCacheInvalidator.InvalidateToken(ctx, updatedAccount); invalidateErr != nil {
 			log.Printf("[WARN] Failed to invalidate token cache for account %d: %v", updatedAccount.ID, invalidateErr)
 		}
 	}
 
-	// OpenAI OAuth: 刷新成功后检查并设置 privacy_mode
+	// OpenAI OAuth:
 	h.adminService.EnsureOpenAIPrivacy(ctx, updatedAccount)
-	// Antigravity OAuth: 刷新成功后检查并设置 privacy_mode
+	// Antigravity OAuth:
 	h.adminService.EnsureAntigravityPrivacy(ctx, updatedAccount)
 
 	return updatedAccount, "", nil
@@ -988,19 +975,18 @@ type ApplyOAuthCredentialsRequest struct {
 	Extra       map[string]any `json:"extra"`
 }
 
-// ApplyOAuthCredentials 将"重新授权"得到的新凭据原子落库。
+// ApplyOAuthCredentials ""
 // POST /api/v1/admin/accounts/:id/apply-oauth-credentials
 //
-// 与通用 PUT /:id (Update) 接口的关键区别：
-//   - 仅接收 type / credentials / extra 三个字段（不接受 concurrency / rpm / quota_* 等可能误传的字段）
-//   - Extra 走 UpdateAccountExtra(JSONB key 级合并)，**绝不**全量覆盖；
-//     避免 base_rpm / window_cost_limit / max_sessions / quota_* / privacy_mode
-//     等持久化配置在重新授权后丢失
-//   - 内置 ClearError + InvalidateToken，避免前端额外两次调用，
-//     并修复旧路径未失效 token 缓存导致重新授权后立即 401 的隐性 bug
+// (Update)
+//   - *
+//   - Extra (JSONB key )，****
+//     * / privacy_mode
+//   - + InvalidateToken，
 //
-// 与 /refresh 的区别：/refresh 用现有 refresh_token 换 access_token（无用户交互），
-// 本接口承接前端完成完整 OAuth 流程后的落库步骤。
+//
+//
+//
 func (h *AccountHandler) ApplyOAuthCredentials(c *gin.Context) {
 	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -1016,7 +1002,7 @@ func (h *AccountHandler) ApplyOAuthCredentials(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	// 预检查账号存在 + OAuth 类型（与 Refresh handler 语义一致，提供更友好的错误信息）。
+	// + OAuth
 	existing, err := h.adminService.GetAccount(ctx, accountID)
 	if err != nil {
 		response.NotFound(c, "Account not found")
@@ -1036,10 +1022,10 @@ func (h *AccountHandler) ApplyOAuthCredentials(c *gin.Context) {
 		return
 	}
 
-	// 增量合并 Extra（JSONB key 级 merge，绝不覆盖 base_rpm / window_cost_limit /
-	// max_sessions / quota_* / privacy_mode 等持久化键）。
-	// best-effort：失败仅记日志；下方 ClearAccountError 会从 DB 重新读取最新 account，
-	// 因此响应里的 extra 始终以 DB 为准——这里不需要手动维护内存快照。
+	//
+	// max_sessions / quota_* / privacy_mode
+	// best-effort：
+	// ——
 	if len(req.Extra) > 0 {
 		if extraErr := h.adminService.UpdateAccountExtra(ctx, accountID, req.Extra); extraErr != nil {
 			extraKeys := make([]string, 0, len(req.Extra))
@@ -1121,8 +1107,8 @@ func (h *AccountHandler) ClearError(c *gin.Context) {
 		return
 	}
 
-	// 清除错误后，同时清除 token 缓存，确保下次请求会获取最新的 token（触发刷新或从 DB 读取）
-	// 这解决了管理员重置账号状态后，旧的失效 token 仍在缓存中导致立即再次 401 的问题
+	//
+	//
 	if h.tokenCacheInvalidator != nil && account.IsOAuth() {
 		if invalidateErr := h.tokenCacheInvalidator.InvalidateToken(c.Request.Context(), account); invalidateErr != nil {
 			log.Printf("[WARN] Failed to invalidate token cache for account %d: %v", accountID, invalidateErr)
@@ -1172,7 +1158,7 @@ func (h *AccountHandler) BatchClearError(c *gin.Context) {
 	var successCount, failedCount int
 	var errors []gin.H
 
-	// 注意：所有 goroutine 必须 return nil，避免 errgroup cancel 其他并发任务
+	//
 	for _, id := range req.AccountIDs {
 		accountID := id // 闭包捕获
 		g.Go(func() error {
@@ -1188,7 +1174,7 @@ func (h *AccountHandler) BatchClearError(c *gin.Context) {
 				return nil
 			}
 
-			// 清除错误后，同时清除 token 缓存
+			//
 			if h.tokenCacheInvalidator != nil && account.IsOAuth() {
 				if invalidateErr := h.tokenCacheInvalidator.InvalidateToken(gctx, account); invalidateErr != nil {
 					log.Printf("[WARN] Failed to invalidate token cache for account %d: %v", accountID, invalidateErr)
@@ -1238,7 +1224,7 @@ func (h *AccountHandler) BatchRefresh(c *gin.Context) {
 		return
 	}
 
-	// 建立已获取账号的 ID 集合，检测缺失的 ID
+	//
 	foundIDs := make(map[int64]bool, len(accounts))
 	for _, acc := range accounts {
 		if acc != nil {
@@ -1255,7 +1241,6 @@ func (h *AccountHandler) BatchRefresh(c *gin.Context) {
 	var errors []gin.H
 	var warnings []gin.H
 
-	// 将不存在的账号 ID 标记为失败
 	for _, id := range req.AccountIDs {
 		if !foundIDs[id] {
 			failedCount++
@@ -1266,7 +1251,7 @@ func (h *AccountHandler) BatchRefresh(c *gin.Context) {
 		}
 	}
 
-	// 注意：所有 goroutine 必须 return nil，避免 errgroup cancel 其他并发任务
+	//
 	for _, account := range accounts {
 		acc := account // 闭包捕获
 		if acc == nil {
@@ -1324,7 +1309,7 @@ func (h *AccountHandler) BatchCreate(c *gin.Context) {
 		success := 0
 		failed := 0
 		results := make([]gin.H, 0, len(req.Accounts))
-		// 收集需要异步设置隐私的 OAuth 账号
+		//
 		var antigravityPrivacyAccounts []*service.Account
 		var openaiPrivacyAccounts []*service.Account
 
@@ -1339,7 +1324,7 @@ func (h *AccountHandler) BatchCreate(c *gin.Context) {
 				continue
 			}
 
-			// base_rpm 输入校验：负值归零，超过 10000 截断
+			// base_rpm
 			sanitizeExtraBaseRPM(item.Extra)
 
 			skipCheck := item.ConfirmMixedChannelRisk != nil && *item.ConfirmMixedChannelRisk
@@ -1369,7 +1354,7 @@ func (h *AccountHandler) BatchCreate(c *gin.Context) {
 				})
 				continue
 			}
-			// 收集需要异步设置隐私的 OAuth 账号
+			//
 			if account.Type == service.AccountTypeOAuth {
 				switch account.Platform {
 				case service.PlatformAntigravity:
@@ -1378,7 +1363,7 @@ func (h *AccountHandler) BatchCreate(c *gin.Context) {
 					openaiPrivacyAccounts = append(openaiPrivacyAccounts, account)
 				}
 			}
-			// OpenAI APIKey 账号异步探测 /v1/responses 能力。
+			// OpenAI APIKey
 			h.scheduleOpenAIResponsesProbe(account)
 			success++
 			results = append(results, gin.H{
@@ -1388,7 +1373,6 @@ func (h *AccountHandler) BatchCreate(c *gin.Context) {
 			})
 		}
 
-		// 异步设置隐私，避免批量创建时阻塞请求
 		adminSvc := h.adminService
 		if len(antigravityPrivacyAccounts) > 0 {
 			accounts := antigravityPrivacyAccounts
@@ -1462,7 +1446,7 @@ func (h *AccountHandler) BatchUpdateCredentials(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	// 阶段一：预验证所有账号存在，收集 credentials
+	//
 	type accountUpdate struct {
 		ID          int64
 		Credentials map[string]any
@@ -1481,7 +1465,6 @@ func (h *AccountHandler) BatchUpdateCredentials(c *gin.Context) {
 		updates = append(updates, accountUpdate{ID: accountID, Credentials: account.Credentials})
 	}
 
-	// 阶段二：依次更新，返回每个账号的成功/失败明细，便于调用方重试
 	success := 0
 	failed := 0
 	successIDs := make([]int64, 0, len(updates))
@@ -1532,10 +1515,9 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 		response.BadRequest(c, "account_ids or filters is required")
 		return
 	}
-	// base_rpm 输入校验：负值归零，超过 10000 截断
+	// base_rpm
 	sanitizeExtraBaseRPM(req.Extra)
 
-	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
 
 	hasUpdates := req.Name != "" ||
@@ -1885,12 +1867,12 @@ func (h *AccountHandler) GetTodayStats(c *gin.Context) {
 	response.Success(c, stats)
 }
 
-// BatchTodayStatsRequest 批量今日统计请求体。
+// BatchTodayStatsRequest
 type BatchTodayStatsRequest struct {
 	AccountIDs []int64 `json:"account_ids" binding:"required"`
 }
 
-// GetBatchTodayStats 批量获取多个账号的今日统计。
+// GetBatchTodayStats
 // POST /api/v1/admin/accounts/today-stats/batch
 func (h *AccountHandler) GetBatchTodayStats(c *gin.Context) {
 	var req BatchTodayStatsRequest
@@ -1982,7 +1964,7 @@ func (h *AccountHandler) GetAvailableModels(c *gin.Context) {
 
 	// Handle OpenAI accounts
 	if account.IsOpenAI() {
-		// OpenAI 自动透传会绕过常规模型改写，测试/模型列表也应回落到默认模型集。
+		// OpenAI
 		if account.IsOpenAIPassthroughEnabled() {
 			response.Success(c, openai.DefaultModels)
 			return
@@ -2058,7 +2040,7 @@ func (h *AccountHandler) GetAvailableModels(c *gin.Context) {
 
 	// Handle Antigravity accounts: return Claude + Gemini models
 	if account.Platform == service.PlatformAntigravity {
-		// 直接复用 antigravity.DefaultModels()，与 /v1/models 端点保持同步
+		// ()，
 		response.Success(c, antigravity.DefaultModels())
 		return
 	}
@@ -2227,10 +2209,8 @@ func (h *AccountHandler) SetPrivacy(c *gin.Context) {
 		response.BadRequest(c, "Cannot set privacy: missing access_token")
 		return
 	}
-	// 从 DB 重新读取以确保返回最新状态
 	updated, err := h.adminService.GetAccount(c.Request.Context(), accountID)
 	if err != nil {
-		// 隐私已设置成功但读取失败，回退到内存更新
 		if account.Extra == nil {
 			account.Extra = make(map[string]any)
 		}
@@ -2402,14 +2382,14 @@ func (h *AccountHandler) BatchRefreshTier(c *gin.Context) {
 	response.Success(c, results)
 }
 
-// GetAntigravityDefaultModelMapping 获取 Antigravity 平台的默认模型映射
+// GetAntigravityDefaultModelMapping
 // GET /api/v1/admin/accounts/antigravity/default-model-mapping
 func (h *AccountHandler) GetAntigravityDefaultModelMapping(c *gin.Context) {
 	response.Success(c, domain.DefaultAntigravityModelMapping)
 }
 
-// sanitizeExtraBaseRPM 对 extra map 中的 base_rpm 值进行范围校验和归一化。
-// 负值归零，超过 10000 截断为 10000。extra 为 nil 或不含 base_rpm 时无操作。
+// sanitizeExtraBaseRPM
+//
 func sanitizeExtraBaseRPM(extra map[string]any) {
 	if extra == nil {
 		return

@@ -15,30 +15,30 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// UserMsgQueueCache 用户消息串行队列 Redis 缓存接口
+// UserMsgQueueCache
 type UserMsgQueueCache interface {
-	// AcquireLock 尝试获取账号级串行锁
+	// AcquireLock
 	AcquireLock(ctx context.Context, accountID int64, requestID string, lockTtlMs int) (acquired bool, err error)
-	// ReleaseLock 释放锁并记录完成时间
+	// ReleaseLock
 	ReleaseLock(ctx context.Context, accountID int64, requestID string) (released bool, err error)
-	// GetLastCompletedMs 获取上次完成时间（毫秒时间戳，Redis TIME 源）
+	// GetLastCompletedMs
 	GetLastCompletedMs(ctx context.Context, accountID int64) (int64, error)
-	// GetCurrentTimeMs 获取 Redis 服务器当前时间（毫秒），与 ReleaseLock 记录的时间源一致
+	// GetCurrentTimeMs
 	GetCurrentTimeMs(ctx context.Context) (int64, error)
-	// ForceReleaseLock 强制释放锁（孤儿锁清理）
+	// ForceReleaseLock
 	ForceReleaseLock(ctx context.Context, accountID int64) error
-	// ScanLockKeys 扫描 PTTL == -1 的孤儿锁 key，返回 accountID 列表
+	// ScanLockKeys == -1
 	ScanLockKeys(ctx context.Context, maxCount int) ([]int64, error)
 }
 
-// QueueLockResult 锁获取结果
+// QueueLockResult
 type QueueLockResult struct {
 	Acquired  bool
 	RequestID string
 }
 
-// UserMessageQueueService 用户消息串行队列服务
-// 对真实用户消息实施账号级串行化 + RPM 自适应延迟
+// UserMessageQueueService
+// + RPM
 type UserMessageQueueService struct {
 	cache    UserMsgQueueCache
 	rpmCache RPMCache
@@ -47,7 +47,7 @@ type UserMessageQueueService struct {
 	stopOnce sync.Once     // 确保 Stop() 并发安全
 }
 
-// NewUserMessageQueueService 创建用户消息串行队列服务
+// NewUserMessageQueueService
 func NewUserMessageQueueService(cache UserMsgQueueCache, rpmCache RPMCache, cfg *config.UserMessageQueueConfig) *UserMessageQueueService {
 	return &UserMessageQueueService{
 		cache:    cache,
@@ -57,11 +57,11 @@ func NewUserMessageQueueService(cache UserMsgQueueCache, rpmCache RPMCache, cfg 
 	}
 }
 
-// IsRealUserMessage 检测是否为真实用户消息（非 tool_result）
-// 与 claude-relay-service 的检测逻辑一致：
-// 1. messages 非空
-// 2. 最后一条消息 role == "user"
-// 3. 最后一条消息 content（如果是数组）中不含 type:"tool_result" / "tool_use_result"
+// IsRealUserMessage
+//
+// 1. messages
+// 2. == "user"
+// 3. "tool_result" / "tool_use_result"
 func IsRealUserMessage(parsed *ParsedRequest) bool {
 	if parsed == nil {
 		return false
@@ -107,7 +107,7 @@ func IsRealUserMessage(parsed *ParsedRequest) bool {
 	return isReal
 }
 
-// TryAcquire 尝试立即获取串行锁
+// TryAcquire
 func (s *UserMessageQueueService) TryAcquire(ctx context.Context, accountID int64) (*QueueLockResult, error) {
 	if s.cache == nil {
 		return &QueueLockResult{Acquired: true}, nil // fail-open
@@ -131,7 +131,7 @@ func (s *UserMessageQueueService) TryAcquire(ctx context.Context, accountID int6
 	}, nil
 }
 
-// Release 释放串行锁
+// Release
 func (s *UserMessageQueueService) Release(ctx context.Context, accountID int64, requestID string) error {
 	if s.cache == nil || requestID == "" {
 		return nil
@@ -147,14 +147,14 @@ func (s *UserMessageQueueService) Release(ctx context.Context, accountID int64, 
 	return nil
 }
 
-// EnforceDelay 根据 RPM 负载执行自适应延迟
-// 使用 Redis TIME 确保与 releaseLockScript 记录的时间源一致
+// EnforceDelay
+//
 func (s *UserMessageQueueService) EnforceDelay(ctx context.Context, accountID int64, baseRPM int) error {
 	if s.cache == nil {
 		return nil
 	}
 
-	// 先检查历史记录：没有历史则无需延迟，避免不必要的 RPM 查询
+	//
 	lastMs, err := s.cache.GetLastCompletedMs(ctx, accountID)
 	if err != nil {
 		logger.LegacyPrintf("service.umq", "GetLastCompletedMs failed for account %d: %v", accountID, err)
@@ -169,7 +169,7 @@ func (s *UserMessageQueueService) EnforceDelay(ctx context.Context, accountID in
 		return nil
 	}
 
-	// 获取 Redis 当前时间（与 lastMs 同源，避免时钟偏差）
+	//
 	nowMs, err := s.cache.GetCurrentTimeMs(ctx)
 	if err != nil {
 		logger.LegacyPrintf("service.umq", "GetCurrentTimeMs failed: %v", err)
@@ -178,7 +178,7 @@ func (s *UserMessageQueueService) EnforceDelay(ctx context.Context, accountID in
 
 	elapsed := time.Duration(nowMs-lastMs) * time.Millisecond
 	if elapsed < 0 {
-		// 时钟异常（Redis 故障转移等），fail-open
+		//
 		return nil
 	}
 	remaining := delay - elapsed
@@ -186,7 +186,6 @@ func (s *UserMessageQueueService) EnforceDelay(ctx context.Context, accountID in
 		return nil
 	}
 
-	// 执行延迟
 	timer := time.NewTimer(remaining)
 	defer timer.Stop()
 	select {
@@ -197,12 +196,12 @@ func (s *UserMessageQueueService) EnforceDelay(ctx context.Context, accountID in
 	}
 }
 
-// CalculateRPMAwareDelay 根据当前 RPM 负载计算自适应延迟
+// CalculateRPMAwareDelay
 // ratio = currentRPM / baseRPM
 // ratio < 0.5  → MinDelay
-// 0.5 ≤ ratio < 0.8 → 线性插值 MinDelay..MaxDelay
+// 0.5 ≤ ratio < 0.8 →
 // ratio ≥ 0.8 → MaxDelay
-// 返回值包含 ±15% 随机抖动（anti-detection + 避免惊群效应）
+// ±15% +
 func (s *UserMessageQueueService) CalculateRPMAwareDelay(ctx context.Context, accountID int64, baseRPM int) time.Duration {
 	minDelay := time.Duration(s.cfg.MinDelayMs) * time.Millisecond
 	maxDelay := time.Duration(s.cfg.MaxDelayMs) * time.Millisecond
@@ -213,7 +212,7 @@ func (s *UserMessageQueueService) CalculateRPMAwareDelay(ctx context.Context, ac
 	if maxDelay <= 0 {
 		maxDelay = 2000 * time.Millisecond
 	}
-	// 防止配置错误：minDelay > maxDelay 时交换
+	// > maxDelay
 	if minDelay > maxDelay {
 		minDelay, maxDelay = maxDelay, minDelay
 	}
@@ -234,7 +233,7 @@ func (s *UserMessageQueueService) CalculateRPMAwareDelay(ctx context.Context, ac
 			} else if ratio >= 0.8 {
 				baseDelay = maxDelay
 			} else {
-				// 线性插值: 0.5 → minDelay, 0.8 → maxDelay
+				// → minDelay, 0.8 → maxDelay
 				t := (ratio - 0.5) / 0.3
 				interpolated := float64(minDelay) + t*(float64(maxDelay)-float64(minDelay))
 				baseDelay = time.Duration(math.Round(interpolated))
@@ -242,12 +241,12 @@ func (s *UserMessageQueueService) CalculateRPMAwareDelay(ctx context.Context, ac
 		}
 	}
 
-	// ±15% 随机抖动
+	// ±15%
 	return applyJitter(baseDelay, 0.15)
 }
 
-// StartCleanupWorker 启动孤儿锁清理 worker
-// 定期 SCAN umq:*:lock 并清理 PTTL == -1 的异常锁（PTTL 检查在 cache.ScanLockKeys 内完成）
+// StartCleanupWorker
+// *:lock == -1
 func (s *UserMessageQueueService) StartCleanupWorker(interval time.Duration) {
 	if s == nil || s.cache == nil || interval <= 0 {
 		return
@@ -293,7 +292,7 @@ func (s *UserMessageQueueService) StartCleanupWorker(interval time.Duration) {
 	}()
 }
 
-// Stop 停止后台 cleanup worker
+// Stop
 func (s *UserMessageQueueService) Stop() {
 	if s != nil && s.stopCh != nil {
 		s.stopOnce.Do(func() {
@@ -302,9 +301,9 @@ func (s *UserMessageQueueService) Stop() {
 	}
 }
 
-// applyJitter 对延迟值施加 ±jitterPct 的随机抖动
-// 使用 math/rand/v2（Go 1.22+ 自动使用 crypto/rand 种子），与 nextBackoff 一致
-// 例如 applyJitter(200ms, 0.15) 返回 170ms ~ 230ms
+// applyJitter ±jitterPct
+// +
+// (200ms, 0.15) ~ 230ms
 func applyJitter(d time.Duration, jitterPct float64) time.Duration {
 	if d <= 0 || jitterPct <= 0 {
 		return d
@@ -314,7 +313,7 @@ func applyJitter(d time.Duration, jitterPct float64) time.Duration {
 	return time.Duration(float64(d) * (1 + jitter))
 }
 
-// generateUMQRequestID 生成唯一请求 ID（与 generateRequestID 一致的 fallback 模式）
+// generateUMQRequestID
 func generateUMQRequestID() string {
 	b := make([]byte, 16)
 	if _, err := cryptorand.Read(b); err != nil {

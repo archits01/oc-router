@@ -194,7 +194,7 @@ const activeModelStatuses = computed<AccountModelStatusItem[]>(() => {
 
   if (!modelLimits) return items
 
-  // 检查 AICredits key 是否生效（积分是否耗尽）
+  // 检查 AICredits key YesNo生效（积分YesNo耗尽）
   const aiCreditsEntry = modelLimits['AICredits']
   const hasActiveAICredits = aiCreditsEntry && new Date(aiCreditsEntry.rate_limit_reset_at) > now
   const allowOverages = !!(extra?.allow_overages)
@@ -206,10 +206,9 @@ const activeModelStatuses = computed<AccountModelStatusItem[]>(() => {
       // AICredits key → 积分已用尽
       items.push({ kind: 'credits_exhausted', model, reset_at: info.rate_limit_reset_at })
     } else if (allowOverages && !hasActiveAICredits) {
-      // 普通模型限流 + overages 启用 + 积分可用 → 正在走积分
+      // 普通模型限流 + overages Enable + 积分可用 → 正在走积分
       items.push({ kind: 'credits_active', model, reset_at: info.rate_limit_reset_at })
     } else {
-      // 普通模型限流
       items.push({ kind: 'rate_limit', model, reset_at: info.rate_limit_reset_at })
     }
   }
@@ -242,7 +241,6 @@ const formatScopeName = (scope: string): string => {
     'gemini-3.1-pro-low': 'G3PL',
     'gemini-3-pro-image': 'G3PI',
     'gemini-3.1-flash-image': 'G31FI',
-    // 其他
     'gpt-oss-120b-medium': 'GPT120',
     'tab_flash_lite_preview': 'TabFL',
     // 旧版 scope 别名（兼容）

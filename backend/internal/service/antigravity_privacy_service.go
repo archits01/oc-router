@@ -14,12 +14,11 @@ const (
 	AntigravityPrivacyFailed = "privacy_set_failed"
 )
 
-// setAntigravityPrivacy 调用 Antigravity API 设置隐私并验证结果。
-// 流程：
-//  1. setUserSettings 清空设置 → 检查返回值 {"userSettings":{}}
-//  2. fetchUserInfo 二次验证隐私是否已生效（需要 project_id）
+// setAntigravityPrivacy
+//  1. setUserSettings → {"userSettings":{}}
+//  2. fetchUserInfo
 //
-// 返回 privacy_mode 值："privacy_set" 成功，"privacy_set_failed" 失败，空串表示无法执行。
+// "privacy_set" "privacy_set_failed"
 func setAntigravityPrivacy(ctx context.Context, accessToken, projectID, proxyURL string) string {
 	if accessToken == "" {
 		return ""
@@ -34,7 +33,7 @@ func setAntigravityPrivacy(ctx context.Context, accessToken, projectID, proxyURL
 		return AntigravityPrivacyFailed
 	}
 
-	// 第 1 步：调用 setUserSettings，检查返回值
+	//
 	setResp, err := client.SetUserSettings(ctx, accessToken)
 	if err != nil {
 		slog.Warn("antigravity_privacy_set_failed", "error", err.Error())
@@ -47,7 +46,7 @@ func setAntigravityPrivacy(ctx context.Context, accessToken, projectID, proxyURL
 		return AntigravityPrivacyFailed
 	}
 
-	// 第 2 步：调用 fetchUserInfo 二次验证隐私是否已生效
+	//
 	if strings.TrimSpace(projectID) == "" {
 		slog.Warn("antigravity_privacy_missing_project_id")
 		return AntigravityPrivacyFailed

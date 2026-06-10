@@ -112,7 +112,7 @@ func TestOpenAIGatewayService_Forward_HTTPPatchPathKeepsLargeInputRaw(t *testing
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.NotNil(t, upstream.lastReq)
-	// 合成路径默认 instructions 现按模型填入真实 Codex base prompt（此处 inbound model=gpt-5）。
+	// =gpt-5）。
 	encodedInstr, _ := json.Marshal(defaultCodexSynthInstructions("gpt-5"))
 	expectedBody := fmt.Sprintf(`{"model":"gpt-5","stream":false,"reasoning":{"effort":"none"},"instructions":%s,"input":[{"type":"message","content":[{"type":"input_text","text":"hi","nonce":9007199254740993}]}]}`, string(encodedInstr))
 	require.JSONEq(t, expectedBody, string(upstream.lastBody))
@@ -555,7 +555,7 @@ func TestExtractOpenAIRequestMetaFromBody(t *testing.T) {
 			wantPromptKey: "",
 		},
 		{
-			name:          "空请求体",
+			name:          "empty request body",
 			body:          nil,
 			wantModel:     "",
 			wantStream:    false,
@@ -602,14 +602,14 @@ func TestExtractOpenAIReasoningEffortFromBody(t *testing.T) {
 			wantNil: true,
 		},
 		{
-			name:      "缺失字段时从模型后缀推导",
+			name:      "缺失字段时从model后缀推导",
 			body:      []byte(`{"input":"hi"}`),
 			model:     "gpt-5-high",
 			wantNil:   false,
 			wantValue: "high",
 		},
 		{
-			name:    "未知后缀不返回",
+			name:    "未知后缀不returned",
 			body:    []byte(`{"input":"hi"}`),
 			model:   "gpt-5-unknown",
 			wantNil: true,

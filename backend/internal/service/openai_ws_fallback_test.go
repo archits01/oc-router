@@ -243,7 +243,7 @@ func TestShouldLogOpenAIWSPayloadSchema(t *testing.T) {
 	svc := &OpenAIGatewayService{cfg: &config.Config{}}
 
 	svc.cfg.Gateway.OpenAIWS.PayloadLogSampleRate = 0
-	require.True(t, svc.shouldLogOpenAIWSPayloadSchema(1), "首次尝试应始终记录 payload_schema")
+	require.True(t, svc.shouldLogOpenAIWSPayloadSchema(1), "first attempt should always log payload_schema")
 	require.False(t, svc.shouldLogOpenAIWSPayloadSchema(2))
 
 	svc.cfg.Gateway.OpenAIWS.PayloadLogSampleRate = 1

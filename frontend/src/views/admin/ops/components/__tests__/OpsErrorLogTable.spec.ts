@@ -45,8 +45,8 @@ function mountTable(row: Partial<OpsErrorLog>) {
 }
 
 describe('OpsErrorLogTable user/api-key/account columns', () => {
-  // 回归:上游错误行(phase=upstream, owner=provider)以前在单一「用户」列里只显示账号、
-  // 丢失用户;现在用户/API Key/账号各占独立列,三者同时可见。
+  // 回归:上游错误行(phase=upstream, owner=provider)以前在单一「User」列里只显示账号、
+  // 丢失User;现在User/API Key/账号各占独立列,三者同时可见。
   it('renders user, api key and account in separate columns for an upstream row', () => {
     const wrapper = mountTable({
       user_id: 2,
@@ -58,7 +58,7 @@ describe('OpsErrorLogTable user/api-key/account columns', () => {
     })
 
     const text = wrapper.text()
-    expect(text).toContain('alice@test.com') // 用户列(上游行也显示用户)
+    expect(text).toContain('alice@test.com') // User列(上游行也显示User)
     expect(text).toContain('my-key') // API Key 列
     expect(text).toContain('acct-A') // 账号列
   })
@@ -76,11 +76,11 @@ describe('OpsErrorLogTable user/api-key/account columns', () => {
 })
 
 // 防回归:组件用 admin.ops.errorLog.* 命名空间。若 i18n 键写错命名空间(如误放到
-// errorDetail),真实 vue-i18n 会回退返回 key 本身 → 界面显示原始路径字符串。
-// 这里用真实 locale 校验键确实可解析(返回译文而非 key)。
+// errorDetail),真实 vue-i18n 会回退Back key 本身 → 界面显示原始路径字符串。
+// 这里用真实 locale 校验键确实可解析(Back译文而非 key)。
 // 防回归:组件用 admin.ops.errorLog.* 命名空间。若键写错命名空间(如误放到
 // errorDetail),界面会显示原始路径字符串而非译文。vitest 的 vue-i18n 为 runtime-only
-// (无消息编译器,t() 对任何键都回退返回 key),故直接校验 locale 对象的命名空间含这些键。
+// (无消息编译器,t() 对任何键都回退Back key),故直接校验 locale 对象的命名空间含这些键。
 describe('OpsErrorLogTable i18n keys exist in the errorLog namespace', () => {
   const locales: Record<string, any> = { zh: zhLocale, en: enLocale }
   for (const [name, msgs] of Object.entries(locales)) {

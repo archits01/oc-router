@@ -230,9 +230,8 @@ func (f *fakePassthroughFrameConn) Close() error {
 	return nil
 }
 
-// gpt55WhitelistFastPolicy 返回一份强制带 model whitelist 的策略，用于
-// 验证 capturedSessionModel fallback 的语义（默认配置没有规则，fallback
-// 路径无法被观察到）。
+// gpt55WhitelistFastPolicy
+//
 func gpt55WhitelistFastPolicy() *OpenAIFastPolicySettings {
 	return &OpenAIFastPolicySettings{
 		Rules: []OpenAIFastPolicyRule{{
@@ -252,9 +251,8 @@ func gpt55WhitelistFastPolicy() *OpenAIFastPolicySettings {
 // would miss a model whitelist and silently leak service_tier=priority
 // through to the upstream.
 func TestPolicyEnforcingFrameConn_FollowupFrameWithoutModelUsesCapturedModel(t *testing.T) {
-	// 此处特意使用带 whitelist 的策略，以便观察 capturedSessionModel
-	// fallback 是否生效（默认配置没有规则，fallback 与否结果一致，
-	// 不能用来覆盖此回归）。
+	//
+	// fallback
 	svc := newOpenAIGatewayServiceWithSettings(t, gpt55WhitelistFastPolicy())
 	account := &Account{Platform: PlatformOpenAI, Type: AccountTypeAPIKey}
 
@@ -299,7 +297,7 @@ func TestPolicyEnforcingFrameConn_FollowupFrameWithoutModelUsesCapturedModel(t *
 // the model whitelist and the frame leaks through unchanged. This documents
 // exactly the leak the D5 fix prevents.
 func TestPolicyEnforcingFrameConn_WithoutCapturedFallbackPolicyMisses(t *testing.T) {
-	// 同样使用带 whitelist 的策略以观察 leak。
+	//
 	svc := newOpenAIGatewayServiceWithSettings(t, gpt55WhitelistFastPolicy())
 	account := &Account{Platform: PlatformOpenAI, Type: AccountTypeAPIKey}
 
@@ -435,13 +433,13 @@ func TestWSResponseCreate_IngressFiltersServiceTierBeforeUpstream(t *testing.T) 
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
-	require.Len(t, captureConn.writes, 1, "上游应只收到一条 response.create")
+	require.Len(t, captureConn.writes, 1, "上游应只received一条 response.create")
 	upstream := captureConn.writes[0]
 	_, hasServiceTier := upstream["service_tier"]
-	require.False(t, hasServiceTier, "上游收到的 response.create 不应包含 service_tier 字段（已被 fast policy filter 删除）")
+	require.False(t, hasServiceTier, "上游received的 response.create 不应包含 service_tier 字段（已被 fast policy filter delete）")
 	require.Equal(t, "response.create", upstream["type"])
 	require.Equal(t, "gpt-5.5", upstream["model"])
 }
@@ -598,16 +596,16 @@ func TestWSResponseCreate_IngressBlockSendsErrorEventAndSkipsUpstream(t *testing
 		// here we just assert it surfaced as the typed close error.
 		require.Error(t, serverErr)
 		var closeErr *OpenAIWSClientCloseError
-		require.True(t, errors.As(serverErr, &closeErr), "block 应返回 OpenAIWSClientCloseError，得到 %T: %v", serverErr, serverErr)
+		require.True(t, errors.As(serverErr, &closeErr), "block 应returned OpenAIWSClientCloseError，得到 %T: %v", serverErr, serverErr)
 		require.Equal(t, coderws.StatusPolicyViolation, closeErr.StatusCode())
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress 关闭超时")
+		t.Fatal("等待 ingress shutting downtimeout")
 	}
 
 	// Critical: the offending frame must NEVER reach the upstream.
 	// captureDialer.DialCount may legitimately be 0 or 1 depending on whether
 	// the lease was acquired before policy fired; either way, no writes.
-	require.Empty(t, captureConn.writes, "block 命中后上游不应收到 response.create")
+	require.Empty(t, captureConn.writes, "block 命中后上游不应received response.create")
 }
 
 // --- HTTP-side gap-filling tests (already covered by existing tests but

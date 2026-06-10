@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AffiliateHandler handles admin affiliate (邀请返利) management:
+// AffiliateHandler handles admin affiliate () management:
 // listing users with custom settings, updating per-user invite codes
 // and exclusive rebate rates, and batch operations.
 type AffiliateHandler struct {

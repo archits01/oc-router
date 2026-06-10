@@ -37,8 +37,8 @@ func TestUsageLog_GetStatsWithFilters_AggregatesAndEndpoints(t *testing.T) {
 
 	start := now.Add(-1 * time.Hour)
 	end := now.Add(1 * time.Hour)
-	// 按本测试创建的 user 维度过滤:集成库为共享实例,其它用 testEntClient 的兄弟测试会留下
-	// 已提交的 usage_log 行(含零 token 的失败请求),不限定 user 会把它们计入 TotalRequests。
+	//
+	// (),
 	stats, err := repo.GetStatsWithFilters(ctx, usagestats.UsageLogFilters{UserID: user.ID, StartTime: &start, EndTime: &end})
 	require.NoError(t, err)
 	require.Equal(t, int64(3), stats.TotalRequests)

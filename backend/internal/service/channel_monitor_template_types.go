@@ -5,9 +5,8 @@ import (
 	"time"
 )
 
-// ChannelMonitorRequestTemplate 请求模板（service 层模型）。
-// 作用：把一组可复用的 headers + 可选 body 覆盖配置抽出来管理，
-// 被监控「应用」时以快照方式拷贝到监控本身的同名字段。
+// ChannelMonitorRequestTemplate
+// +
 type ChannelMonitorRequestTemplate struct {
 	ID               int64
 	Name             string
@@ -21,13 +20,13 @@ type ChannelMonitorRequestTemplate struct {
 	UpdatedAt        time.Time
 }
 
-// ChannelMonitorRequestTemplateListParams 列表过滤。
+// ChannelMonitorRequestTemplateListParams
 type ChannelMonitorRequestTemplateListParams struct {
 	Provider string // 空 = 全部；非空则按 provider 过滤
 	APIMode  string // 空 = 全部；非空则按 api_mode 过滤
 }
 
-// ChannelMonitorRequestTemplateCreateParams 创建参数。
+// ChannelMonitorRequestTemplateCreateParams
 type ChannelMonitorRequestTemplateCreateParams struct {
 	Name             string
 	Provider         string
@@ -38,8 +37,8 @@ type ChannelMonitorRequestTemplateCreateParams struct {
 	BodyOverride     map[string]any
 }
 
-// ChannelMonitorRequestTemplateUpdateParams 更新参数（指针字段 = 不修改）。
-// 注意 Provider 不可修改：改 provider 会让已关联监控的 body 黑名单语义错乱。
+// ChannelMonitorRequestTemplateUpdateParams =
+//
 type ChannelMonitorRequestTemplateUpdateParams struct {
 	Name             *string
 	APIMode          *string
@@ -49,7 +48,7 @@ type ChannelMonitorRequestTemplateUpdateParams struct {
 	BodyOverride     *map[string]any
 }
 
-// 模板相关错误（命名与现有 ErrChannelMonitor* 风格保持一致）。
+// *
 var (
 	ErrChannelMonitorTemplateNotFound = infraerrors.NotFound(
 		"CHANNEL_MONITOR_TEMPLATE_NOT_FOUND", "channel monitor request template not found",

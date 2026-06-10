@@ -19,7 +19,7 @@ func (r *opsRepository) GetOpenAITokenStats(ctx context.Context, filter *service
 	if filter.StartTime.IsZero() || filter.EndTime.IsZero() {
 		return nil, fmt.Errorf("start_time/end_time required")
 	}
-	// 允许 start_time == end_time（结果为空），与 service 层校验口径保持一致。
+	// == end_time（
 	if filter.StartTime.After(filter.EndTime) {
 		return nil, fmt.Errorf("start_time must be <= end_time")
 	}

@@ -1199,7 +1199,6 @@ const customKeyError = computed(() => {
   if (key.length < 16) {
     return t('keys.customKeyTooShort')
   }
-  // 检查字符：只允许字母、数字、下划线、连字符
   if (!/^[a-zA-Z0-9_-]+$/.test(key)) {
     return t('keys.customKeyInvalidChars')
   }
@@ -1585,9 +1584,9 @@ const handleSubmit = async () => {
 }
 
 /**
- * 处理删除 API Key 的操作
- * 优化：错误处理改进，优先显示后端返回的具体错误消息（如权限不足等），
- * 若后端未返回消息则显示默认的国际化文本
+ * 处理Delete API Key 的Actions
+ * 优化：错误处理改进，优先显示后端Back的具体错误消息（如权限不足等），
+ * 若后端未Back消息则显示默认的国际化文本
  */
 const handleDelete = async () => {
   if (!selectedKey.value) return
@@ -1598,7 +1597,6 @@ const handleDelete = async () => {
     showDeleteDialog.value = false
     loadApiKeys()
   } catch (error: any) {
-    // 优先使用后端返回的错误消息，提供更具体的错误信息给用户
     const errorMsg = error?.message || t('keys.failedToDelete')
     appStore.showError(errorMsg)
   }
@@ -1724,7 +1722,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
       };
     }
   })`
-  const providerName = (publicSettings.value?.site_name || 'sub2api').trim() || 'sub2api'
+  const providerName = (publicSettings.value?.site_name || 'oc-router').trim() || 'oc-router'
   const deeplink = buildCcSwitchImportDeeplink({
     baseUrl,
     platform,

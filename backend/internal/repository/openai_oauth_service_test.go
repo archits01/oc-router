@@ -137,8 +137,8 @@ func (s *OpenAIOAuthServiceSuite) TestRefreshToken_FormFields() {
 	require.Equal(s.T(), "rt2", resp.RefreshToken)
 }
 
-// TestRefreshToken_DefaultsToOpenAIClientID 验证未指定 client_id 时默认使用 OpenAI ClientID，
-// 且只发送一次请求（不再盲猜多个 client_id）。
+// TestRefreshToken_DefaultsToOpenAIClientID
+//
 func (s *OpenAIOAuthServiceSuite) TestRefreshToken_DefaultsToOpenAIClientID() {
 	var seenClientIDs []string
 	s.setupServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +155,7 @@ func (s *OpenAIOAuthServiceSuite) TestRefreshToken_DefaultsToOpenAIClientID() {
 	resp, err := s.svc.RefreshToken(s.ctx, "rt", "")
 	require.NoError(s.T(), err, "RefreshToken")
 	require.Equal(s.T(), "at", resp.AccessToken)
-	// 只发送了一次请求，使用默认的 OpenAI ClientID
+	//
 	require.Equal(s.T(), []string{openai.ClientID}, seenClientIDs)
 }
 

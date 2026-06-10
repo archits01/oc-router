@@ -14,13 +14,13 @@ const (
 	openAIImageGenerationRateLimitKey  = "openai:image_generation"
 )
 
-// isRateLimitActiveForKey 检查指定 key 的限流是否生效
+// isRateLimitActiveForKey
 func (a *Account) isRateLimitActiveForKey(key string) bool {
 	resetAt := a.modelRateLimitResetAt(key)
 	return resetAt != nil && time.Now().Before(*resetAt)
 }
 
-// getRateLimitRemainingForKey 获取指定 key 的限流剩余时间，0 表示未限流或已过期
+// getRateLimitRemainingForKey
 func (a *Account) getRateLimitRemainingForKey(key string) time.Duration {
 	resetAt := a.modelRateLimitResetAt(key)
 	if resetAt == nil {
@@ -42,8 +42,7 @@ func (a *Account) isModelRateLimitedWithContext(ctx context.Context, requestedMo
 	return false
 }
 
-// GetModelRateLimitRemainingTime 获取模型限流剩余时间
-// 返回 0 表示未限流或已过期
+// GetModelRateLimitRemainingTime
 func (a *Account) GetModelRateLimitRemainingTime(requestedModel string) time.Duration {
 	return a.GetModelRateLimitRemainingTimeWithContext(context.Background(), requestedModel)
 }
@@ -113,7 +112,7 @@ func resolveFinalAntigravityModelKey(ctx context.Context, account *Account, requ
 	if modelKey == "" {
 		return ""
 	}
-	// thinking 会影响 Antigravity 最终模型名（例如 claude-sonnet-4-5 -> claude-sonnet-4-5-thinking）
+	// thinking > claude-sonnet-4-5-thinking）
 	if enabled, ok := ThinkingEnabledFromContext(ctx); ok {
 		modelKey = applyThinkingModelSuffix(modelKey, enabled)
 	}

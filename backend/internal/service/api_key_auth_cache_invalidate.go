@@ -2,7 +2,7 @@ package service
 
 import "context"
 
-// InvalidateAuthCacheByKey 清除指定 API Key 的认证缓存
+// InvalidateAuthCacheByKey
 func (s *APIKeyService) InvalidateAuthCacheByKey(ctx context.Context, key string) {
 	if key == "" {
 		return
@@ -11,7 +11,7 @@ func (s *APIKeyService) InvalidateAuthCacheByKey(ctx context.Context, key string
 	s.deleteAuthCache(ctx, cacheKey)
 }
 
-// InvalidateAuthCacheByUserID 清除用户相关的 API Key 认证缓存
+// InvalidateAuthCacheByUserID
 func (s *APIKeyService) InvalidateAuthCacheByUserID(ctx context.Context, userID int64) {
 	if userID <= 0 {
 		return
@@ -23,7 +23,7 @@ func (s *APIKeyService) InvalidateAuthCacheByUserID(ctx context.Context, userID 
 	s.deleteAuthCacheByKeys(ctx, keys)
 }
 
-// InvalidateAuthCacheByGroupID 清除分组相关的 API Key 认证缓存
+// InvalidateAuthCacheByGroupID
 func (s *APIKeyService) InvalidateAuthCacheByGroupID(ctx context.Context, groupID int64) {
 	if groupID <= 0 {
 		return

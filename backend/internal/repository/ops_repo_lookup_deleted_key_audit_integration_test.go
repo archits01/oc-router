@@ -15,7 +15,7 @@ func TestOpsRepositoryLookupDeletedKeyAudit(t *testing.T) {
 	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE deleted_api_key_audits RESTART IDENTITY")
 	repo := NewOpsRepository(integrationDB).(*opsRepository)
 
-	// 同一 key 两条审计,取最近一条(deleted_at DESC, id DESC)
+	// (deleted_at DESC, id DESC)
 	_, err := integrationDB.ExecContext(ctx, `
 		INSERT INTO deleted_api_key_audits (key, api_key_id, user_id, key_name, deleted_at)
 		VALUES ('sk-lookup-1', 10, 100, 'old', $1),
@@ -29,7 +29,7 @@ func TestOpsRepositoryLookupDeletedKeyAudit(t *testing.T) {
 	require.Equal(t, int64(200), res.UserID)
 	require.Equal(t, "new", res.KeyName)
 
-	// 未命中返回 nil
+	//
 	miss, err := repo.LookupDeletedKeyAudit(ctx, "sk-never-existed")
 	require.NoError(t, err)
 	require.Nil(t, miss)

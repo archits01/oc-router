@@ -29,8 +29,8 @@ func NewPromoHandler(promoService *service.PromoService) *PromoHandler {
 type CreatePromoCodeRequest struct {
 	Code        string  `json:"code"`                                  // 可选，为空则自动生成
 	BonusAmount float64 `json:"bonus_amount" binding:"required,min=0"` // 赠送余额
-	MaxUses     int     `json:"max_uses" binding:"min=0"`              // 最大使用次数，0=无限
-	ExpiresAt   *int64  `json:"expires_at"`                            // 过期时间戳（秒）
+	MaxUses     int     `json:"max_uses" binding:"min=0"`              // max usage count，0=无限
+	ExpiresAt   *int64  `json:"expires_at"`                            // expiry time戳（seconds）
 	Notes       string  `json:"notes"`                                 // 备注
 }
 
@@ -147,7 +147,6 @@ func (h *PromoHandler) Update(c *gin.Context) {
 
 	if req.ExpiresAt != nil {
 		if *req.ExpiresAt == 0 {
-			// 0 表示清除过期时间
 			input.ExpiresAt = nil
 		} else {
 			t := time.Unix(*req.ExpiresAt, 0)

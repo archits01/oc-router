@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ============ 临时限流单元测试 ============
+// ============ ============
 
-// TestMatchTempUnschedKeyword 测试关键词匹配函数
+// TestMatchTempUnschedKeyword
 func TestMatchTempUnschedKeyword(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -56,8 +56,8 @@ func TestMatchTempUnschedKeyword(t *testing.T) {
 			want:     "overloaded",
 		},
 		{
-			// matchTempUnschedKeyword 期望 body 已经是小写的
-			// 所以要测试大小写不敏感匹配，需要传入小写的 body
+			// matchTempUnschedKeyword
+			//
 			name:     "case_insensitive_body_lowered",
 			body:     "server is overloaded", // body 已经是小写
 			keywords: []string{"OVERLOADED"}, // keyword 会被转为小写比较
@@ -73,7 +73,7 @@ func TestMatchTempUnschedKeyword(t *testing.T) {
 	}
 }
 
-// TestAccountIsSchedulable_TempUnschedulable 测试临时限流账号不可调度
+// TestAccountIsSchedulable_TempUnschedulable
 func TestAccountIsSchedulable_TempUnschedulable(t *testing.T) {
 	future := time.Now().Add(10 * time.Minute)
 	past := time.Now().Add(-10 * time.Minute)
@@ -130,7 +130,7 @@ func TestAccountIsSchedulable_TempUnschedulable(t *testing.T) {
 	}
 }
 
-// TestAccount_IsTempUnschedulableEnabled 测试临时限流开关
+// TestAccount_IsTempUnschedulableEnabled
 func TestAccount_IsTempUnschedulableEnabled(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -177,7 +177,7 @@ func TestAccount_IsTempUnschedulableEnabled(t *testing.T) {
 	}
 }
 
-// TestAccount_GetTempUnschedulableRules 测试获取临时限流规则
+// TestAccount_GetTempUnschedulableRules
 func TestAccount_GetTempUnschedulableRules(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -235,7 +235,7 @@ func TestAccount_GetTempUnschedulableRules(t *testing.T) {
 	}
 }
 
-// TestTempUnschedulableRule_Parse 测试规则解析
+// TestTempUnschedulableRule_Parse
 func TestTempUnschedulableRule_Parse(t *testing.T) {
 	account := &Account{
 		Credentials: map[string]any{
@@ -258,7 +258,7 @@ func TestTempUnschedulableRule_Parse(t *testing.T) {
 	require.Equal(t, 5, rule.DurationMinutes)
 }
 
-// TestTruncateTempUnschedMessage 测试消息截断
+// TestTruncateTempUnschedMessage
 func TestTruncateTempUnschedMessage(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -273,7 +273,7 @@ func TestTruncateTempUnschedMessage(t *testing.T) {
 			want:     "short",
 		},
 		{
-			// 截断后会 TrimSpace，所以末尾的空格会被移除
+			//
 			name:     "truncate_long_message",
 			body:     []byte("this is a very long message that needs to be truncated"),
 			maxBytes: 20,
@@ -307,7 +307,7 @@ func TestTruncateTempUnschedMessage(t *testing.T) {
 	}
 }
 
-// TestTempUnschedState 测试临时限流状态结构
+// TestTempUnschedState
 func TestTempUnschedState(t *testing.T) {
 	now := time.Now()
 	until := now.Add(5 * time.Minute)
@@ -325,12 +325,11 @@ func TestTempUnschedState(t *testing.T) {
 	require.Equal(t, "overloaded", state.MatchedKeyword)
 	require.Equal(t, 0, state.RuleIndex)
 
-	// 验证时间戳
 	require.Equal(t, until.Unix(), state.UntilUnix)
 	require.Equal(t, now.Unix(), state.TriggeredAtUnix)
 }
 
-// TestAccount_TempUnschedulableUntil 测试临时限流时间字段
+// TestAccount_TempUnschedulableUntil
 func TestAccount_TempUnschedulableUntil(t *testing.T) {
 	future := time.Now().Add(10 * time.Minute)
 	past := time.Now().Add(-10 * time.Minute)

@@ -51,11 +51,10 @@ const (
 	// to match real Claude CLI traffic as closely as possible. When we need a visual
 	// separator between system blocks, we add "\n\n" at concatenation time.
 	claudeCodeSystemPrompt = "You are Claude Code, Anthropic's official CLI for Claude."
-	// claudeCodeSystemPromptExpansion 是真实 Claude Code 主系统提示词中"与具体工具无关"
-	// 的通用段落（身份/用途总述 + 安全声明 + URL 告警 + Tone and style），逐字取自真实
-	// CLI（2.1.x 一致）。伪装路径用它把 system 块数从 2 提升到 3、体量贴近真实 CC，同时
-	// 刻意排除 # Doing tasks / # Using your tools / # Executing actions 等会污染被代理
-	// 用户行为的工具专属指令。
+	// claudeCodeSystemPromptExpansion ""
+	// + + URL + Tone and style），
+	// CLI（2.1.x
+	// # Doing tasks / # Using your tools / # Executing actions
 	claudeCodeSystemPromptExpansion = `You are an interactive agent that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
 
 IMPORTANT: Assist with authorized security testing, defensive security, CTF challenges, and educational contexts. Refuse requests for destructive techniques, DoS attacks, mass targeting, supply chain compromise, or detection evasion for malicious purposes. Dual-use security tools (C2 frameworks, credential testing, exploit development) require clear authorization context: pentesting engagements, CTF competitions, security research, or defensive use cases.
@@ -73,7 +72,7 @@ IMPORTANT: You must NEVER generate or guess URLs for the user unless you are con
 	defaultModelsListCacheTTL    = 15 * time.Second
 	postUsageBillingTimeout      = 15 * time.Second
 	debugGatewayBodyEnv          = "SUB2API_DEBUG_GATEWAY_BODY"
-	// 上游错误体只需要提取错误 JSON/日志摘要，默认 512KiB 避免错误风暴叠加大请求体。
+	//
 	gatewayUpstreamErrorBodyReadLimit int64 = 512 << 10
 )
 
@@ -86,11 +85,11 @@ const (
 	cacheTTLTarget1h = "1h"
 )
 
-// ForceCacheBillingContextKey 强制缓存计费上下文键
-// 用于粘性会话切换时，将 input_tokens 转为 cache_read_input_tokens 计费
+// ForceCacheBillingContextKey
+//
 type forceCacheBillingKeyType struct{}
 
-// accountWithLoad 账号与负载信息的组合，用于负载感知调度
+// accountWithLoad
 type accountWithLoad struct {
 	account  *Account
 	loadInfo *AccountLoadInfo
@@ -115,19 +114,19 @@ var (
 	modelsListCacheMissTotal  atomic.Int64
 	modelsListCacheStoreTotal atomic.Int64
 
-	// Deprecated: flusher_enabled=true 后不再增长(仅 flag=false 降级直写路径使用);新主路径见 FlusherMetrics。remove after 2026-09。
-	// userPlatformQuotaDBIncrErrorTotal 统计 finalizePostUsageBilling 异步 goroutine
-	// 中 IncrementUsageWithReset 失败次数。Redis 已成功累加 + DB 写失败意味着
-	// Redis cache TTL 过期或被清后该笔 cost 会丢失（与实际消费偏差）。
-	// oncall 通过 GatewayUserPlatformQuotaIncrStats() 暴露给 ops 面板做阈值告警。
+	// Deprecated: flusher_enabled=true (=false );
+	// userPlatformQuotaDBIncrErrorTotal
+	// + DB
+	// Redis cache TTL
+	// oncall ()
 	userPlatformQuotaDBIncrErrorTotal atomic.Int64
-	// Deprecated: flusher_enabled=true 后不再增长(仅 flag=false 降级直写路径使用);新主路径见 FlusherMetrics。remove after 2026-09。
-	// userPlatformQuotaDBIncrLegacyErrorTotal 统计 legacy postUsageBilling
-	// （applyUsageBilling 在 repo==nil 时 fallback）路径下的失败次数；
-	// 与 DB Incr 失败分开计数，便于区分"主路径暂时故障"vs"基础设施长期未配齐"。
+	// Deprecated: flusher_enabled=true (=false );
+	// userPlatformQuotaDBIncrLegacyErrorTotal
+	// （applyUsageBilling ==nil
+	// ""vs""。
 	userPlatformQuotaDBIncrLegacyErrorTotal atomic.Int64
-	// userPlatformQuotaSentinelSetCacheErrorTotal 统计 checkUserPlatformQuotaEligibility
-	// 在 DB 无行时回填 sentinel cache entry 写 Redis 失败的次数（phase A）。
+	// userPlatformQuotaSentinelSetCacheErrorTotal
+	//
 	userPlatformQuotaSentinelSetCacheErrorTotal atomic.Int64
 )
 
@@ -151,18 +150,18 @@ func GatewayModelsListCacheStats() (cacheHit, cacheMiss, store int64) {
 	return modelsListCacheHitTotal.Load(), modelsListCacheMissTotal.Load(), modelsListCacheStoreTotal.Load()
 }
 
-// GatewayUserPlatformQuotaIncrStats 返回 (mainPathErr, legacyPathErr, sentinelSetErr)。
-// mainPathErr：finalizePostUsageBilling 异步 goroutine 写 DB 失败累计次数；
-// legacyPathErr：postUsageBilling fallback 路径写 DB 失败累计次数；
-// sentinelSetErr：DB 无行时回填 sentinel cache entry 写 Redis 失败累计次数。
-// ops 监控面板可以按"持续上升斜率"做告警阈值。
+// GatewayUserPlatformQuotaIncrStats (mainPathErr, legacyPathErr, sentinelSetErr)。
+// mainPathErr：finalizePostUsageBilling
+// legacyPathErr：postUsageBilling fallback
+// sentinelSetErr：DB
+// ops ""
 func GatewayUserPlatformQuotaIncrStats() (mainPathErr, legacyPathErr, sentinelSetErr int64) {
 	return userPlatformQuotaDBIncrErrorTotal.Load(),
 		userPlatformQuotaDBIncrLegacyErrorTotal.Load(),
 		userPlatformQuotaSentinelSetCacheErrorTotal.Load()
 }
 
-// GatewayUserPlatformQuotaFlusherStats 暴露 flusher 运行指标供 ops/health 面板查询。
+// GatewayUserPlatformQuotaFlusherStats
 func GatewayUserPlatformQuotaFlusherStats(f *UserPlatformQuotaUsageFlusher) map[string]int64 {
 	if f == nil || f.metrics == nil {
 		return nil
@@ -218,13 +217,13 @@ func cloneStringSlice(src []string) []string {
 	return dst
 }
 
-// IsForceCacheBilling 检查是否启用强制缓存计费
+// IsForceCacheBilling
 func IsForceCacheBilling(ctx context.Context) bool {
 	v, _ := ctx.Value(ForceCacheBillingContextKey).(bool)
 	return v
 }
 
-// WithForceCacheBilling 返回带有强制缓存计费标记的上下文
+// WithForceCacheBilling
 func WithForceCacheBilling(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ForceCacheBillingContextKey, true)
 }
@@ -400,9 +399,8 @@ var (
 	sseDataRe            = regexp.MustCompile(`^data:\s*`)
 	claudeCliUserAgentRe = regexp.MustCompile(`(?i)^claude-cli/\d+\.\d+\.\d+`)
 
-	// claudeCodePromptPrefixes 用于检测 Claude Code 系统提示词的前缀列表
-	// 支持多种变体：标准版、Agent SDK 版、Explore Agent 版、Compact 版等
-	// 注意：前缀之间不应存在包含关系，否则会导致冗余匹配
+	// claudeCodePromptPrefixes
+	//
 	claudeCodePromptPrefixes = []string{
 		"You are Claude Code, Anthropic's official CLI for Claude",             // 标准版 & Agent SDK 版（含 running within...）
 		"You are a Claude agent, built on Anthropic's Claude Agent SDK",        // Agent SDK 变体
@@ -411,13 +409,13 @@ var (
 	}
 )
 
-// ErrNoAvailableAccounts 表示没有可用的账号
+// ErrNoAvailableAccounts
 var ErrNoAvailableAccounts = errors.New("no available accounts")
 
-// ErrClaudeCodeOnly 表示分组仅允许 Claude Code 客户端访问
+// ErrClaudeCodeOnly
 var ErrClaudeCodeOnly = errors.New("this group only allows Claude Code clients")
 
-// allowedHeaders 白名单headers（参考CRS项目）
+// allowedHeaders
 var allowedHeaders = map[string]bool{
 	"accept":                                    true,
 	"x-stainless-retry-count":                   true,
@@ -442,22 +440,22 @@ var allowedHeaders = map[string]bool{
 	"x-client-request-id":                       true,
 }
 
-// GatewayCache 定义网关服务的缓存操作接口。
-// 提供粘性会话（Sticky Session）的存储、查询、刷新和删除功能。
+// GatewayCache
+//
 //
 // GatewayCache defines cache operations for gateway service.
 // Provides sticky session storage, retrieval, refresh and deletion capabilities.
 type GatewayCache interface {
-	// GetSessionAccountID 获取粘性会话绑定的账号 ID
+	// GetSessionAccountID
 	// Get the account ID bound to a sticky session
 	GetSessionAccountID(ctx context.Context, groupID int64, sessionHash string) (int64, error)
-	// SetSessionAccountID 设置粘性会话与账号的绑定关系
+	// SetSessionAccountID
 	// Set the binding between sticky session and account
 	SetSessionAccountID(ctx context.Context, groupID int64, sessionHash string, accountID int64, ttl time.Duration) error
-	// RefreshSessionTTL 刷新粘性会话的过期时间
+	// RefreshSessionTTL
 	// Refresh the expiration time of a sticky session
 	RefreshSessionTTL(ctx context.Context, groupID int64, sessionHash string, ttl time.Duration) error
-	// DeleteSessionAccountID 删除粘性会话绑定，用于账号不可用时主动清理
+	// DeleteSessionAccountID
 	// Delete sticky session binding, used to proactively clean up when account becomes unavailable
 	DeleteSessionAccountID(ctx context.Context, groupID int64, sessionHash string) error
 }
@@ -503,9 +501,8 @@ func prefetchedStickyAccountIDFromContext(ctx context.Context, groupID *int64) i
 	return 0
 }
 
-// shouldClearStickySession 检查账号是否处于不可调度状态，需要清理粘性会话绑定。
-// 委托 IsSchedulable() 判断账号级可调度性（状态、配额、过载、限流等），
-// 额外检查模型级限流。
+// shouldClearStickySession
+// ()
 //
 // shouldClearStickySession checks if an account is in an unschedulable state
 // and the sticky session binding should be cleared.
@@ -537,18 +534,18 @@ type AccountSelectionResult struct {
 	WaitPlan    *AccountWaitPlan // nil means no wait allowed
 }
 
-// ClaudeUsage 表示Claude API返回的usage信息
+// ClaudeUsage
 type ClaudeUsage struct {
 	InputTokens              int `json:"input_tokens"`
 	OutputTokens             int `json:"output_tokens"`
 	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
 	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
-	CacheCreation5mTokens    int // 5分钟缓存创建token（来自嵌套 cache_creation 对象）
-	CacheCreation1hTokens    int // 1小时缓存创建token（来自嵌套 cache_creation 对象）
+	CacheCreation5mTokens    int // 5minutes缓存createtoken（来自嵌套 cache_creation 对象）
+	CacheCreation1hTokens    int // 1小时缓存createtoken（来自嵌套 cache_creation 对象）
 	ImageOutputTokens        int `json:"image_output_tokens,omitempty"`
 }
 
-// ForwardResult 转发结果
+// ForwardResult
 type ForwardResult struct {
 	RequestID string
 	Usage     ClaudeUsage
@@ -558,11 +555,10 @@ type ForwardResult struct {
 	UpstreamModel    string
 	Stream           bool
 	Duration         time.Duration
-	FirstTokenMs     *int // 首字时间（流式请求）
-	ClientDisconnect bool // 客户端是否在流式传输过程中断开
+	FirstTokenMs     *int // 首字时间（streaming request）
+	ClientDisconnect bool // 客户端是否在streaming传输过程中断开
 	ReasoningEffort  *string
 
-	// 图片生成计费字段（图片生成模型使用）
 	ImageCount         int    // 生成的图片数量
 	ImageSize          string // 最终计费尺寸 "1K", "2K", "4K"
 	ImageInputSize     string // 请求中的原始图片尺寸
@@ -575,23 +571,22 @@ type ForwardResult struct {
 // UpstreamFailoverError indicates an upstream error that should trigger account failover.
 type UpstreamFailoverError struct {
 	StatusCode             int
-	ResponseBody           []byte      // 上游响应体，用于错误透传规则匹配
-	ResponseHeaders        http.Header // 上游响应头，用于透传 cf-ray/cf-mitigated/content-type 等诊断信息
+	ResponseBody           []byte      // 上游响应体，用于error透传规则匹配
+	ResponseHeaders        http.Header // 上游响应头，用于透传 cf-ray/cf-mitigated/content-type 等诊断info
 	ForceCacheBilling      bool        // Antigravity 粘性会话切换时设为 true
-	RetryableOnSameAccount bool        // 临时性错误（如 Google 间歇性 400、空响应），应在同一账号上重试 N 次再切换
+	RetryableOnSameAccount bool        // 临时性error（如 Google 间歇性 400、空响应），应在同一账号上retry N 次再切换
 }
 
 func (e *UpstreamFailoverError) Error() string {
 	return fmt.Sprintf("upstream error: %d (failover)", e.StatusCode)
 }
 
-// TempUnscheduleRetryableError 对 RetryableOnSameAccount 类型的 failover 错误触发临时封禁。
-// 由 handler 层在同账号重试全部用尽、切换账号时调用。
+// TempUnscheduleRetryableError
+//
 func (s *GatewayService) TempUnscheduleRetryableError(ctx context.Context, accountID int64, failoverErr *UpstreamFailoverError) {
 	if failoverErr == nil || !failoverErr.RetryableOnSameAccount {
 		return
 	}
-	// 根据状态码选择封禁策略
 	switch failoverErr.StatusCode {
 	case http.StatusBadRequest:
 		tempUnscheduleGoogleConfigError(ctx, s.accountRepo, accountID, "[handler]")
@@ -721,13 +716,13 @@ func NewGatewayService(
 	return svc
 }
 
-// GenerateSessionHash 从预解析请求计算粘性会话 hash
+// GenerateSessionHash
 func (s *GatewayService) GenerateSessionHash(parsed *ParsedRequest) string {
 	if parsed == nil {
 		return ""
 	}
 
-	// 1. 最高优先级：从 metadata.user_id 提取 session_xxx
+	// 1.
 	if parsed.MetadataUserID != "" {
 		uid := ParseMetadataUserID(parsed.MetadataUserID)
 		if uid != nil && uid.SessionID != "" {
@@ -745,7 +740,7 @@ func (s *GatewayService) GenerateSessionHash(parsed *ParsedRequest) string {
 		)
 	}
 
-	// 2. 提取带 cache_control: {type: "ephemeral"} 的内容
+	// 2. {type: "ephemeral"}
 	cacheableContent := s.extractCacheableContent(parsed)
 	if cacheableContent != "" {
 		hash := s.hashContent(cacheableContent)
@@ -756,9 +751,9 @@ func (s *GatewayService) GenerateSessionHash(parsed *ParsedRequest) string {
 		return hash
 	}
 
-	// 3. 最后 fallback: 使用 session上下文 + system + 所有消息的完整摘要串
+	// 3. + system +
 	var combined strings.Builder
-	// 混入请求上下文区分因子，避免不同用户相同消息产生相同 hash
+	//
 	if parsed.SessionContext != nil {
 		_, _ = combined.WriteString(parsed.SessionContext.ClientIP)
 		_, _ = combined.WriteString(":")
@@ -805,8 +800,8 @@ func (s *GatewayService) GetCachedSessionAccountID(ctx context.Context, groupID 
 	return accountID, nil
 }
 
-// FindGeminiSession 查找 Gemini 会话（基于内容摘要链的 Fallback 匹配）
-// 返回最长匹配的会话信息（uuid, accountID）
+// FindGeminiSession
+//
 func (s *GatewayService) FindGeminiSession(_ context.Context, groupID int64, prefixHash, digestChain string) (uuid string, accountID int64, matchedChain string, found bool) {
 	if digestChain == "" || s.digestStore == nil {
 		return "", 0, "", false
@@ -814,7 +809,7 @@ func (s *GatewayService) FindGeminiSession(_ context.Context, groupID int64, pre
 	return s.digestStore.Find(groupID, prefixHash, digestChain)
 }
 
-// SaveGeminiSession 保存 Gemini 会话。oldDigestChain 为 Find 返回的 matchedChain，用于删旧 key。
+// SaveGeminiSession
 func (s *GatewayService) SaveGeminiSession(_ context.Context, groupID int64, prefixHash, digestChain, uuid string, accountID int64, oldDigestChain string) error {
 	if digestChain == "" || s.digestStore == nil {
 		return nil
@@ -823,7 +818,7 @@ func (s *GatewayService) SaveGeminiSession(_ context.Context, groupID int64, pre
 	return nil
 }
 
-// FindAnthropicSession 查找 Anthropic 会话（基于内容摘要链的 Fallback 匹配）
+// FindAnthropicSession
 func (s *GatewayService) FindAnthropicSession(_ context.Context, groupID int64, prefixHash, digestChain string) (uuid string, accountID int64, matchedChain string, found bool) {
 	if digestChain == "" || s.digestStore == nil {
 		return "", 0, "", false
@@ -831,7 +826,7 @@ func (s *GatewayService) FindAnthropicSession(_ context.Context, groupID int64, 
 	return s.digestStore.Find(groupID, prefixHash, digestChain)
 }
 
-// SaveAnthropicSession 保存 Anthropic 会话
+// SaveAnthropicSession
 func (s *GatewayService) SaveAnthropicSession(_ context.Context, groupID int64, prefixHash, digestChain, uuid string, accountID int64, oldDigestChain string) error {
 	if digestChain == "" || s.digestStore == nil {
 		return nil
@@ -856,7 +851,7 @@ func parseRawJSONView(raw []byte) gjson.Result {
 	if len(raw) == 0 {
 		return gjson.Result{}
 	}
-	// 这里只做同步只读解析，避免 gjson.ParseBytes 为大 messages/contents 复制整段 raw。
+	//
 	return gjson.Parse(*(*string)(unsafe.Pointer(&raw)))
 }
 
@@ -994,8 +989,7 @@ type anthropicMetadataPayload struct {
 	UserID string `json:"user_id"`
 }
 
-// replaceModelInBody 替换请求体中的model字段
-// 优先使用定点修改，尽量保持客户端原始字段顺序。
+// replaceModelInBody
 func (s *GatewayService) replaceModelInBody(body []byte, newModel string) []byte {
 	return ReplaceModelInBody(body, newModel)
 }
@@ -1194,7 +1188,7 @@ func normalizeClaudeOAuthRequestBody(body []byte, modelID string, opts claudeOAu
 		}
 	}
 
-	// 确保 tools 字段存在（即使为空数组）
+	//
 	if !gjson.GetBytes(out, "tools").Exists() {
 		if next, ok := setJSONRawBytes(out, "tools", []byte("[]")); ok {
 			out = next
@@ -1209,9 +1203,8 @@ func normalizeClaudeOAuthRequestBody(body []byte, modelID string, opts claudeOAu
 		}
 	}
 
-	// temperature：真实 Claude Code CLI 总是发送 temperature（默认 1，客户端可覆盖）。
-	// 之前的实现直接 delete 会导致 payload 缺字段，与真实 CLI 字节级不一致。
-	// 策略：客户端传了什么就透传；没传则补默认 1。
+	// temperature：
+	//
 	if !gjson.GetBytes(out, "temperature").Exists() {
 		if next, ok := setJSONValueBytes(out, "temperature", 1); ok {
 			out = next
@@ -1219,7 +1212,7 @@ func normalizeClaudeOAuthRequestBody(body []byte, modelID string, opts claudeOAu
 		}
 	}
 
-	// max_tokens：真实 CLI 的默认值是 128000。缺失时补齐以对齐指纹。
+	// max_tokens：
 	if !gjson.GetBytes(out, "max_tokens").Exists() {
 		if next, ok := setJSONValueBytes(out, "max_tokens", 128000); ok {
 			out = next
@@ -1227,15 +1220,15 @@ func normalizeClaudeOAuthRequestBody(body []byte, modelID string, opts claudeOAu
 		}
 	}
 
-	// context_management：thinking.type 为 enabled/adaptive 时，真实 CLI 会自动
-	// 附带 {"edits":[{"type":"clear_thinking_20251015","keep":"all"}]}。
-	// 客户端显式传了就透传；否则按 CLI 行为补齐。
+	// context_management：thinking.type
+	// {"edits":[{"type":"clear_thinking_20251015","keep":"all"}]}。
 	//
-	// 注：本函数不按 model 名决定是否保留 context_management。“最终 beta
-	// header 不含 context-management-2025-06-27 时 strip 字段”的能力维度
-	// 对称约束由 sanitizeAnthropicBodyForBetaTokens 在 buildUpstreamRequest /
-	// buildCountTokensRequest 层统一执行，与 Bedrock 路径的
-	// sanitizeBedrockFieldsForBetaTokens 对称。
+	//
+	// “
+	// header ”
+	//
+	// buildCountTokensRequest
+	// sanitizeBedrockFieldsForBetaTokens
 	if !gjson.GetBytes(out, "context_management").Exists() {
 		thinkingType := gjson.GetBytes(out, "thinking.type").String()
 		if thinkingType == "enabled" || thinkingType == "adaptive" {
@@ -1247,11 +1240,11 @@ func normalizeClaudeOAuthRequestBody(body []byte, modelID string, opts claudeOAu
 		}
 	}
 
-	// tool_choice：与 Parrot 对齐，不再无条件删除。
-	// - 客户端传了 {"type":"tool","name":"X"} → 保留结构，name 由
-	//   applyToolNameRewriteToBody 同步映射为假名
-	// - 其他形态（auto/any/none）原样透传
-	// 如果 body 里完全没有 tools（空数组），tool_choice 没意义时才删除
+	// tool_choice：
+	// - {"type":"tool","name":"X"} →
+	//   applyToolNameRewriteToBody
+	// -
+	//
 	if !gjson.GetBytes(out, "tools").IsArray() || len(gjson.GetBytes(out, "tools").Array()) == 0 {
 		if gjson.GetBytes(out, "tool_choice").Exists() {
 			if next, ok := deleteJSONPathBytes(out, "tool_choice"); ok {
@@ -1286,9 +1279,9 @@ func (s *GatewayService) buildOAuthMetadataUserID(parsed *ParsedRequest, account
 		userID = generateClientID()
 	}
 
-	// session_id 用"会话级稳定种子"派生（账号 + 客户端区分因子 + 首条 user 文本）：
-	// 随对话在尾部追加 messages 时保持不变，贴近真实 CC 进程级稳定的 session_id。
-	// 不复用 GenerateSessionHash —— 后者是粘性路由键、按设计逐轮变化（见其测试）。
+	// session_id ""+ +
+	//
+	// ——
 	var firstUserText string
 	if parsed.Body != nil {
 		firstUserText = extractFirstUserText(parsed.Body.Bytes())
@@ -1296,7 +1289,6 @@ func (s *GatewayService) buildOAuthMetadataUserID(parsed *ParsedRequest, account
 	seed := buildStableSessionSeed(account.ID, sessionContextDiscriminator(parsed.SessionContext), firstUserText)
 	sessionID := generateSessionUUID(seed)
 
-	// 根据指纹 UA 版本选择输出格式
 	var uaVersion string
 	if fp != nil {
 		uaVersion = ExtractCLIVersion(fp.UserAgent)
@@ -1305,25 +1297,23 @@ func (s *GatewayService) buildOAuthMetadataUserID(parsed *ParsedRequest, account
 	return FormatMetadataUserID(userID, accountUUID, sessionID, uaVersion)
 }
 
-// applyClaudeCodeOAuthMimicryToBody 将"非 Claude Code 客户端 + Claude OAuth 账号"
-// 路径上原本只在 /v1/messages 里做的完整伪装应用到任意 body 上。
+// applyClaudeCodeOAuthMimicryToBody "+ Claude OAuth "
 //
-// 这是 /v1/messages 主路径上 rewriteSystemForNonClaudeCode +
-// normalizeClaudeOAuthRequestBody 流程的通用版，供 OpenAI 协议兼容层
-// (ForwardAsChatCompletions / ForwardAsResponses) 复用。
 //
-// 未抽离之前，OpenAI 协议兼容层仅做 injectClaudeCodePrompt（前置追加），
-// 而仓内 /v1/messages 路径自己的注释明确说过"仅前置追加无法通过 Anthropic
-// 第三方检测"；那条注释就是本函数存在的根因。
+// +
+// normalizeClaudeOAuthRequestBody
+// (ForwardAsChatCompletions / ForwardAsResponses)
 //
-// 参数：
-//   - ctx / c：用于读取指纹和 gateway settings；c 可为 nil（如 count_tokens）。
-//   - account：必须是 OAuth 账号，且调用方已判断不是 Claude Code 客户端。
-//   - body：已经 marshal 成 Anthropic /v1/messages 格式的请求体。
-//   - systemRaw：body 中原始 system 字段（用于判断是否需要 rewrite）。
-//   - model：最终会发给上游的模型 ID（用于 haiku 旁路 + metadata 版本选择）。
 //
-// 返回：改写后的 body。即使中间任何一步失败，也会退化成原 body（不会 panic）。
+// "
+//
+//   - ctx / c：
+//   - account：
+//   - body：
+//   - systemRaw：body
+//   - model：+ metadata
+//
+//
 func (s *GatewayService) applyClaudeCodeOAuthMimicryToBody(
 	ctx context.Context,
 	c *gin.Context,
@@ -1361,11 +1351,11 @@ func (s *GatewayService) applyClaudeCodeOAuthMimicryToBody(
 
 	body, _ = normalizeClaudeOAuthRequestBody(body, model, normalizeOpts)
 
-	// Phase D+E+F: messages cache 策略 + 工具名混淆 + tools[-1] 断点
-	// 对齐 Parrot transform_request 里剩余的字段级改写。顺序有语义约束：
-	//   1) messages cache：仅在配置开启时清除客户端断点并注入代理断点
-	//   2) tool rewrite：最后改 tools[*].name / tool_choice.name 并在 tools[-1]
-	//      上打断点；mapping 存入 gin.Context 供响应侧 bytes.Replace 还原。
+	// Phase D+E+F: messages cache + + tools[-1]
+	//
+	//   1) messages cache：
+	//   2) tool rewrite：[*].name / tool_choice.name [-1]
+	//
 	body = s.rewriteMessageCacheControlIfEnabled(ctx, body)
 
 	if rw := buildToolNameRewriteFromBody(body); rw != nil {
@@ -1380,13 +1370,12 @@ func (s *GatewayService) applyClaudeCodeOAuthMimicryToBody(
 	return body
 }
 
-// buildOAuthMetadataUserIDFromBody 是 buildOAuthMetadataUserID 的变体，
-// 适用于调用方手上没有 ParsedRequest 的场景（如 OpenAI 协议兼容层）。
+// buildOAuthMetadataUserIDFromBody
 //
-// 与 buildOAuthMetadataUserID 的唯一区别：
-//   - session hash 从 body 本体按同样规则重算，而不是读取 ParsedRequest 缓存值。
-//   - 如果 body 里已经存在 metadata.user_id，则返回空（由 ensureClaudeOAuthMetadataUserID
-//     自行决定是否覆盖）。
+//
+//
+//   - session hash
+//   -
 func (s *GatewayService) buildOAuthMetadataUserIDFromBody(
 	ctx context.Context,
 	account *Account,
@@ -1409,8 +1398,8 @@ func (s *GatewayService) buildOAuthMetadataUserIDFromBody(
 		userID = generateClientID()
 	}
 
-	// 与 buildOAuthMetadataUserID 一致：用会话级稳定种子，避免整 body 哈希导致
-	// 每轮（甚至每个 token 变化）都重算出不同的 session_id。
+	//
+	//
 	var clientDiscriminator string
 	if fp != nil {
 		clientDiscriminator = fp.ClientID
@@ -1426,14 +1415,14 @@ func (s *GatewayService) buildOAuthMetadataUserIDFromBody(
 	return FormatMetadataUserID(userID, accountUUID, sessionID, uaVersion)
 }
 
-// buildStableSessionSeed 为伪装路径合成的 metadata.user_id session_id 生成"会话级稳定"种子。
+// buildStableSessionSeed ""
 //
-// 真实 Claude Code 的 session_id 是进程级随机 UUID，在一段会话内跨请求保持不变。无状态代理
-// 无法恢复该值，这里用"会话内不变的锚点"近似：账号 ID + 客户端区分因子 + 首条 user 消息文本。
-// 对话在尾部追加 messages 时这三者都不变，因此 generateSessionUUID(seed) 跨轮稳定。
 //
-// 注意：粘性路由键 GenerateSessionHash 按设计逐轮变化（见其测试），本函数与之独立、互不影响。
-// accountID 恒存在，故 seed 永不为空 —— 输出始终是确定性 UUID，而非随机值。
+// ""+ +
+// (seed)
+//
+//
+// accountID ——
 func buildStableSessionSeed(accountID int64, clientDiscriminator, firstUserText string) string {
 	var b strings.Builder
 	_, _ = b.WriteString(strconv.FormatInt(accountID, 10))
@@ -1444,8 +1433,8 @@ func buildStableSessionSeed(accountID int64, clientDiscriminator, firstUserText 
 	return b.String()
 }
 
-// sessionContextDiscriminator 把请求上下文（客户端 IP / 归一化 UA / API Key ID）拼成
-// 一个跨客户端的区分因子，避免不同用户的相同首条消息派生出相同 session_id。
+// sessionContextDiscriminator
+//
 func sessionContextDiscriminator(sc *SessionContext) string {
 	if sc == nil {
 		return ""
@@ -1470,19 +1459,19 @@ func generateSessionUUID(seed string) string {
 		bytes[0:4], bytes[4:6], bytes[6:8], bytes[8:10], bytes[10:16])
 }
 
-// SelectAccount 选择账号（粘性会话+优先级）
+// SelectAccount +
 func (s *GatewayService) SelectAccount(ctx context.Context, groupID *int64, sessionHash string) (*Account, error) {
 	return s.SelectAccountForModel(ctx, groupID, sessionHash, "")
 }
 
-// SelectAccountForModel 选择支持指定模型的账号（粘性会话+优先级+模型映射）
+// SelectAccountForModel ++
 func (s *GatewayService) SelectAccountForModel(ctx context.Context, groupID *int64, sessionHash string, requestedModel string) (*Account, error) {
 	return s.SelectAccountForModelWithExclusions(ctx, groupID, sessionHash, requestedModel, nil)
 }
 
 // SelectAccountForModelWithExclusions selects an account supporting the requested model while excluding specified accounts.
 func (s *GatewayService) SelectAccountForModelWithExclusions(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}) (*Account, error) {
-	// 优先检查 context 中的强制平台（/antigravity 路由）
+	//
 	var platform string
 	forcePlatform, hasForcePlatform := ctx.Value(ctxkey.ForcePlatform).(string)
 	if hasForcePlatform && forcePlatform != "" {
@@ -1496,12 +1485,11 @@ func (s *GatewayService) SelectAccountForModelWithExclusions(ctx context.Context
 		ctx = s.withGroupContext(ctx, group)
 		platform = group.Platform
 	} else {
-		// 无分组时只使用原生 anthropic 平台
+		//
 		platform = PlatformAnthropic
 	}
 
-	// Claude Code 限制可能已将 groupID 解析为 fallback group，
-	// 渠道限制预检查必须使用解析后的分组。
+	// Claude Code
 	if s.checkChannelPricingRestriction(ctx, groupID, requestedModel) {
 		slog.Warn("channel pricing restriction blocked request",
 			"group_id", derefGroupID(groupID),
@@ -1509,8 +1497,7 @@ func (s *GatewayService) SelectAccountForModelWithExclusions(ctx context.Context
 		return nil, fmt.Errorf("%w supporting model: %s (channel pricing restriction)", ErrNoAvailableAccounts, requestedModel)
 	}
 
-	// anthropic/gemini 分组支持混合调度（包含启用了 mixed_scheduling 的 antigravity 账户）
-	// 注意：强制平台模式不走混合调度
+	// anthropic/gemini
 	if (platform == PlatformAnthropic || platform == PlatformGemini) && !hasForcePlatform {
 		account, err := s.selectAccountWithMixedScheduling(ctx, groupID, sessionHash, requestedModel, excludedIDs, platform)
 		if err != nil {
@@ -1519,8 +1506,7 @@ func (s *GatewayService) SelectAccountForModelWithExclusions(ctx context.Context
 		return s.hydrateSelectedAccount(ctx, account)
 	}
 
-	// antigravity 分组、强制平台模式或无分组使用单平台选择
-	// 注意：强制平台模式也必须遵守分组限制，不再回退到全平台查询
+	// antigravity
 	account, err := s.selectAccountForModelWithPlatform(ctx, groupID, sessionHash, requestedModel, excludedIDs, platform)
 	if err != nil {
 		return nil, err
@@ -1529,10 +1515,9 @@ func (s *GatewayService) SelectAccountForModelWithExclusions(ctx context.Context
 }
 
 // SelectAccountWithLoadAwareness selects account with load-awareness and wait plan.
-// metadataUserID: 用于客户端亲和调度，从中提取客户端 ID
-// sub2apiUserID: 系统用户 ID，用于二维亲和调度
+// metadataUserID:
+// sub2apiUserID:
 func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, metadataUserID string, sub2apiUserID int64) (*AccountSelectionResult, error) {
-	// 调试日志：记录调度入口参数
 	excludedIDsList := make([]int64, 0, len(excludedIDs))
 	for id := range excludedIDs {
 		excludedIDsList = append(excludedIDsList, id)
@@ -1545,15 +1530,14 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 
 	cfg := s.schedulingConfig()
 
-	// 检查 Claude Code 客户端限制（可能会替换 groupID 为降级分组）
+	//
 	group, groupID, err := s.checkClaudeCodeRestriction(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
 	ctx = s.withGroupContext(ctx, group)
 
-	// Claude Code 限制可能已将 groupID 解析为 fallback group，
-	// 渠道限制预检查必须使用解析后的分组。
+	// Claude Code
 	if s.checkChannelPricingRestriction(ctx, groupID, requestedModel) {
 		slog.Warn("channel pricing restriction blocked request",
 			"group_id", derefGroupID(groupID),
@@ -1573,7 +1557,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		}
 	}
 
-	// [DEBUG-STICKY] 调度器入口日志
+	// [DEBUG-STICKY]
 	slog.Info("sticky.scheduler_entry",
 		"group_id", derefGroupID(groupID),
 		"session_hash", shortSessionHash(sessionHash),
@@ -1595,7 +1579,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	}
 
 	if s.concurrencyService == nil || !cfg.LoadBatchEnabled {
-		// 复制排除列表，用于会话限制拒绝时的重试
 		localExcluded := make(map[int64]struct{})
 		for k, v := range excludedIDs {
 			localExcluded[k] = v
@@ -1609,7 +1592,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 
 			result, err := s.tryAcquireAccountSlot(ctx, account.ID, account.Concurrency)
 			if err == nil && result.Acquired {
-				// 获取槽位后检查会话限制（使用 sessionHash 作为会话标识符）
+				//
 				if !s.checkAndRegisterSession(ctx, account, sessionHash) {
 					result.ReleaseFunc()                   // 释放槽位
 					localExcluded[account.ID] = struct{}{} // 排除此账号
@@ -1618,7 +1601,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 				return s.newSelectionResult(ctx, account, true, result.ReleaseFunc, nil)
 			}
 
-			// 对于等待计划的情况，也需要先检查会话限制
 			if !s.checkAndRegisterSession(ctx, account, sessionHash) {
 				localExcluded[account.ID] = struct{}{}
 				continue
@@ -1663,7 +1645,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	ctx = s.withWindowCostPrefetch(ctx, accounts)
 	ctx = s.withRPMPrefetch(ctx, accounts)
 
-	// 提前构建 accountByID（供 Layer 1 和 Layer 1.5 使用）
+	//
 	accountByID := make(map[int64]*Account, len(accounts))
 	for i := range accounts {
 		accountByID[accounts[i].ID] = &accounts[i]
@@ -1676,7 +1658,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		return excluded
 	}
 
-	// 获取模型路由配置（仅 anthropic 平台）
+	//
 	var routingAccountIDs []int64
 	if group != nil && requestedModel != "" && group.Platform == PlatformAnthropic {
 		routingAccountIDs = group.GetRoutingAccountIDs(requestedModel)
@@ -1698,12 +1680,11 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		}
 	}
 
-	// ============ Layer 1: 模型路由优先选择（优先级高于粘性会话） ============
+	// ============ Layer 1: ============
 	if len(routingAccountIDs) > 0 && s.concurrencyService != nil {
-		// 1. 过滤出路由列表中可调度的账号
 		var routingCandidates []*Account
 		var filteredExcluded, filteredMissing, filteredUnsched, filteredPlatform, filteredModelScope, filteredModelMapping, filteredWindowCost int
-		var modelScopeSkippedIDs []int64 // 记录因模型限流被跳过的账号 ID
+		var modelScopeSkippedIDs []int64 // 记录因model限流被跳过的账号 ID
 		for _, routingAccountID := range routingAccountIDs {
 			if isExcluded(routingAccountID) {
 				filteredExcluded++
@@ -1731,16 +1712,14 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 				modelScopeSkippedIDs = append(modelScopeSkippedIDs, account.ID)
 				continue
 			}
-			// 配额检查
 			if !s.isAccountSchedulableForQuota(account) {
 				continue
 			}
-			// 窗口费用检查（非粘性会话路径）
 			if !s.isAccountSchedulableForWindowCost(ctx, account, false) {
 				filteredWindowCost++
 				continue
 			}
-			// RPM 检查（非粘性会话路径）
+			// RPM
 			if !s.isAccountSchedulableForRPM(ctx, account, false) {
 				continue
 			}
@@ -1758,7 +1737,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		}
 
 		if len(routingCandidates) > 0 {
-			// 1.5. 在路由账号范围内检查粘性会话
+			// 1.5.
 			if sessionHash != "" && stickyAccountID > 0 {
 				slog.Debug("sticky.layer1_5_checking",
 					"sticky_account_id", stickyAccountID,
@@ -1768,7 +1747,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 					"session", shortSessionHash(sessionHash),
 				)
 				if containsInt64(routingAccountIDs, stickyAccountID) && !isExcluded(stickyAccountID) {
-					// 粘性账号在路由列表中，优先使用
 					if stickyAccount, ok := accountByID[stickyAccountID]; ok {
 						var stickyCacheMissReason string
 
@@ -1784,11 +1762,9 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 						if rpmPass { // 粘性会话窗口费用+RPM 检查
 							result, err := s.tryAcquireAccountSlot(ctx, stickyAccountID, stickyAccount.Concurrency)
 							if err == nil && result.Acquired {
-								// 会话数量限制检查
 								if !s.checkAndRegisterSession(ctx, stickyAccount, sessionHash) {
 									result.ReleaseFunc() // 释放槽位
 									stickyCacheMissReason = "session_limit"
-									// 继续到负载感知选择
 								} else {
 									slog.Debug("sticky.layer1_5_hit",
 										"account_id", stickyAccountID,
@@ -1805,10 +1781,8 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 							if stickyCacheMissReason == "" {
 								waitingCount, _ := s.concurrencyService.GetAccountWaitingCount(ctx, stickyAccountID)
 								if waitingCount < cfg.StickySessionMaxWaiting {
-									// 会话数量限制检查（等待计划也需要占用会话配额）
 									if !s.checkAndRegisterSession(ctx, stickyAccount, sessionHash) {
 										stickyCacheMissReason = "session_limit"
-										// 会话限制已满，继续到负载感知选择
 									} else {
 										return &AccountSelectionResult{
 											Account: stickyAccount,
@@ -1824,14 +1798,12 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 									stickyCacheMissReason = "wait_queue_full"
 								}
 							}
-							// 粘性账号槽位满且等待队列已满，继续使用负载感知选择
 						} else if !gatePass {
 							stickyCacheMissReason = "gate_check"
 						} else {
 							stickyCacheMissReason = "rpm_red"
 						}
 
-						// 记录粘性缓存未命中的结构化日志
 						if stickyCacheMissReason != "" {
 							baseRPM := stickyAccount.GetBaseRPM()
 							var currentRPM int
@@ -1849,7 +1821,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 				}
 			}
 
-			// 2. 批量获取负载信息
 			routingLoads := make([]AccountWithConcurrency, 0, len(routingCandidates))
 			for _, acc := range routingCandidates {
 				routingLoads = append(routingLoads, AccountWithConcurrency{
@@ -1859,7 +1830,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 			}
 			routingLoadMap, _ := s.concurrencyService.GetAccountsLoadBatch(ctx, routingLoads)
 
-			// 3. 按负载感知排序
 			var routingAvailable []accountWithLoad
 			for _, acc := range routingCandidates {
 				loadInfo := routingLoadMap[acc.ID]
@@ -1872,7 +1842,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 			}
 
 			if len(routingAvailable) > 0 {
-				// 排序：优先级 > 负载率 > 最后使用时间
+				// > >
 				sort.SliceStable(routingAvailable, func(i, j int) bool {
 					a, b := routingAvailable[i], routingAvailable[j]
 					if a.account.Priority != b.account.Priority {
@@ -1894,11 +1864,9 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 				})
 				shuffleWithinSortGroups(routingAvailable)
 
-				// 4. 尝试获取槽位
 				for _, item := range routingAvailable {
 					result, err := s.tryAcquireAccountSlot(ctx, item.account.ID, item.account.Concurrency)
 					if err == nil && result.Acquired {
-						// 会话数量限制检查
 						if !s.checkAndRegisterSession(ctx, item.account, sessionHash) {
 							result.ReleaseFunc() // 释放槽位，继续尝试下一个账号
 							continue
@@ -1913,8 +1881,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 					}
 				}
 
-				// 5. 所有路由账号槽位满，尝试返回等待计划（选择负载最低的）
-				// 遍历找到第一个满足会话限制的账号
 				for _, item := range routingAvailable {
 					if !s.checkAndRegisterSession(ctx, item.account, sessionHash) {
 						continue // 会话限制已满，尝试下一个
@@ -1929,20 +1895,19 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 						MaxWaiting:     cfg.StickySessionMaxWaiting,
 					})
 				}
-				// 所有路由账号会话限制都已满，继续到 Layer 2 回退
+				//
 			}
-			// 路由列表中的账号都不可用（负载率 >= 100），继续到 Layer 2 回退
+			// >= 100），
 			logger.LegacyPrintf("service.gateway", "[ModelRouting] All routed accounts unavailable for model=%s, falling back to normal selection", requestedModel)
 		}
 	}
 
-	// ============ Layer 1.5: 粘性会话（仅在无模型路由配置时生效） ============
+	// ============ Layer 1.5: ============
 	if len(routingAccountIDs) == 0 && sessionHash != "" && stickyAccountID > 0 && !isExcluded(stickyAccountID) {
 		accountID := stickyAccountID
 		if accountID > 0 && !isExcluded(accountID) {
 			account, ok := accountByID[accountID]
 			if ok {
-				// 检查账户是否需要清理粘性会话绑定
 				clearSticky := shouldClearStickySession(account, requestedModel)
 				if clearSticky {
 					slog.Debug("sticky.layer1_5_no_routing_clear",
@@ -1953,9 +1918,9 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 					_ = s.cache.DeleteSessionAccountID(ctx, derefGroupID(groupID), sessionHash)
 				}
 
-				// 注意：不再检查 isAccountInGroup，因为 accountByID 已经从按分组过滤的
-				// accounts 列表构建，账号一定在分组内。而 scheduler snapshot 缓存
-				// 反序列化后 AccountGroups 字段为空，导致 isAccountInGroup 永远返回 false。
+				//
+				// accounts
+				//
 				platformOK := s.isAccountAllowedForPlatform(account, platform, useMixed)
 				modelSupported := requestedModel == "" || s.isModelSupportedByAccountWithContext(ctx, account, requestedModel)
 				modelSchedulable := s.isAccountSchedulableForModelSelection(ctx, account, requestedModel)
@@ -1980,7 +1945,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 				if !clearSticky && platformOK && modelSupported && modelSchedulable && quotaOK && windowCostOK && rpmOK && schedulable {
 					result, err := s.tryAcquireAccountSlot(ctx, accountID, account.Concurrency)
 					if err == nil && result.Acquired {
-						// 会话数量限制检查
 						if !s.checkAndRegisterSession(ctx, account, sessionHash) {
 							result.ReleaseFunc() // 释放槽位，继续到 Layer 2
 							slog.Debug("sticky.layer1_5_no_routing_miss",
@@ -2008,9 +1972,8 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 
 					waitingCount, _ := s.concurrencyService.GetAccountWaitingCount(ctx, accountID)
 					if waitingCount < cfg.StickySessionMaxWaiting {
-						// 会话数量限制检查（等待计划也需要占用会话配额）
 						if !s.checkAndRegisterSession(ctx, account, sessionHash) {
-							// 会话限制已满，继续到 Layer 2
+							//
 						} else {
 							slog.Debug("sticky.layer1_5_no_routing_hit",
 								"account_id", accountID,
@@ -2054,7 +2017,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		)
 	}
 
-	// ============ Layer 2: 负载感知选择 ============
+	// ============ Layer 2: ============
 	slog.Debug("sticky.layer2_fallback",
 		"session", shortSessionHash(sessionHash),
 		"sticky_account_id", stickyAccountID,
@@ -2082,15 +2045,13 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		if !s.isAccountSchedulableForModelSelection(ctx, acc, requestedModel) {
 			continue
 		}
-		// 配额检查
 		if !s.isAccountSchedulableForQuota(acc) {
 			continue
 		}
-		// 窗口费用检查（非粘性会话路径）
 		if !s.isAccountSchedulableForWindowCost(ctx, acc, false) {
 			continue
 		}
-		// RPM 检查（非粘性会话路径）
+		// RPM
 		if !s.isAccountSchedulableForRPM(ctx, acc, false) {
 			continue
 		}
@@ -2131,13 +2092,11 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 			}
 		}
 
-		// 分层过滤选择：优先级 → 负载率 → LRU
+		// → → LRU
 		for len(available) > 0 {
-			// 1. 取优先级最小的集合
 			candidates := filterByMinPriority(available)
-			// 2. 取负载率最低的集合
 			candidates = filterByMinLoadRate(candidates)
-			// 3. LRU 选择最久未用的账号
+			// 3. LRU
 			selected := selectByLRU(candidates, preferOAuth)
 			if selected == nil {
 				break
@@ -2145,7 +2104,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 
 			result, err := s.tryAcquireAccountSlot(ctx, selected.account.ID, selected.account.Concurrency)
 			if err == nil && result.Acquired {
-				// 会话数量限制检查
 				if !s.checkAndRegisterSession(ctx, selected.account, sessionHash) {
 					result.ReleaseFunc() // 释放槽位，继续尝试下一个账号
 				} else {
@@ -2156,7 +2114,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 				}
 			}
 
-			// 移除已尝试的账号，重新进行分层过滤
 			selectedID := selected.account.ID
 			newAvailable := make([]accountWithLoad, 0, len(available)-1)
 			for _, acc := range available {
@@ -2168,10 +2125,9 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		}
 	}
 
-	// ============ Layer 3: 兜底排队 ============
+	// ============ Layer 3: ============
 	s.sortCandidatesForFallback(candidates, preferOAuth, cfg.FallbackSelectionMode)
 	for _, acc := range candidates {
-		// 会话数量限制检查（等待计划也需要占用会话配额）
 		if !s.checkAndRegisterSession(ctx, acc, sessionHash) {
 			continue // 会话限制已满，尝试下一个账号
 		}
@@ -2192,7 +2148,6 @@ func (s *GatewayService) tryAcquireByLegacyOrder(ctx context.Context, candidates
 	for _, acc := range ordered {
 		result, err := s.tryAcquireAccountSlot(ctx, acc.ID, acc.Concurrency)
 		if err == nil && result.Acquired {
-			// 会话数量限制检查
 			if !s.checkAndRegisterSession(ctx, acc, sessionHash) {
 				result.ReleaseFunc() // 释放槽位，继续尝试下一个账号
 				continue
@@ -2312,16 +2267,16 @@ func (s *GatewayService) resolveGatewayGroup(ctx context.Context, groupID *int64
 	}
 }
 
-// checkClaudeCodeRestriction 检查分组的 Claude Code 客户端限制
-// 如果分组启用了 claude_code_only 且请求不是来自 Claude Code 客户端：
-//   - 有降级分组：返回降级分组的 ID
-//   - 无降级分组：返回 ErrClaudeCodeOnly 错误
+// checkClaudeCodeRestriction
+//
+//   -
+//   -
 func (s *GatewayService) checkClaudeCodeRestriction(ctx context.Context, groupID *int64) (*Group, *int64, error) {
 	if groupID == nil {
 		return nil, groupID, nil
 	}
 
-	// 强制平台模式不检查 Claude Code 限制
+	//
 	if forcePlatform, hasForcePlatform := ctx.Value(ctxkey.ForcePlatform).(string); hasForcePlatform && forcePlatform != "" {
 		return nil, groupID, nil
 	}
@@ -2426,7 +2381,6 @@ func (s *GatewayService) listSchedulableAccounts(ctx context.Context, groupID *i
 		accounts, err = s.accountRepo.ListSchedulableByPlatform(ctx, platform)
 	} else if groupID != nil {
 		accounts, err = s.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, *groupID, platform)
-		// 分组内无账号则返回空列表，由上层处理错误，不再回退到全平台查询
 	} else {
 		accounts, err = s.accountRepo.ListSchedulableUngroupedByPlatform(ctx, platform)
 	}
@@ -2455,9 +2409,9 @@ func (s *GatewayService) listSchedulableAccounts(ctx context.Context, groupID *i
 	return accounts, useMixed, nil
 }
 
-// IsSingleAntigravityAccountGroup 检查指定分组是否只有一个 antigravity 平台的可调度账号。
-// 用于 Handler 层在首次请求时提前设置 SingleAccountRetry context，
-// 避免单账号分组收到 503 时错误地设置模型限流标记导致后续请求连续快速失败。
+// IsSingleAntigravityAccountGroup
+//
+//
 func (s *GatewayService) IsSingleAntigravityAccountGroup(ctx context.Context, groupID *int64) bool {
 	accounts, _, err := s.listSchedulableAccounts(ctx, groupID, PlatformAntigravity, true)
 	if err != nil {
@@ -2500,7 +2454,7 @@ func (s *GatewayService) isAccountInGroup(account *Account, groupID *int64) bool
 		return false
 	}
 	if groupID == nil {
-		// 无分组的 API Key 只能使用未分组的账号
+		//
 		return len(account.AccountGroups) == 0
 	}
 	for _, ag := range account.AccountGroups {
@@ -2624,7 +2578,6 @@ func (s *GatewayService) withWindowCostPrefetch(ctx context.Context, accounts []
 			logger.LegacyPrintf("service.gateway", "window_cost batch db query failed: start=%s err=%v", startTime.Format(time.RFC3339), err)
 		}
 
-		// 回退路径：缺少批量仓储能力或批量查询失败时，按账号单查（失败开放）。
 		windowCostPrefetchFallbackTotal.Add(int64(len(ids)))
 		for _, accountID := range ids {
 			stats, err := s.usageLogRepo.GetAccountWindowStats(ctx, accountID, startTime)
@@ -2641,8 +2594,8 @@ func (s *GatewayService) withWindowCostPrefetch(ctx context.Context, accounts []
 	return context.WithValue(ctx, windowCostPrefetchContextKey, costs)
 }
 
-// isAccountSchedulableForQuota 检查账号是否在配额限制内
-// 适用于配置了 quota_limit 的 apikey 和 bedrock 类型账号
+// isAccountSchedulableForQuota
+//
 func (s *GatewayService) isAccountSchedulableForQuota(account *Account) bool {
 	if !account.IsAPIKeyOrBedrock() {
 		return true
@@ -2650,11 +2603,11 @@ func (s *GatewayService) isAccountSchedulableForQuota(account *Account) bool {
 	return !account.IsQuotaExceeded()
 }
 
-// isAccountSchedulableForWindowCost 检查账号是否可根据窗口费用进行调度
-// 仅适用于 Anthropic OAuth/SetupToken 账号
-// 返回 true 表示可调度，false 表示不可调度
+// isAccountSchedulableForWindowCost
+//
+//
 func (s *GatewayService) isAccountSchedulableForWindowCost(ctx context.Context, account *Account, isSticky bool) bool {
-	// 只检查 Anthropic OAuth/SetupToken 账号
+	//
 	if !account.IsAnthropicOAuthOrSetupToken() {
 		return true
 	}
@@ -2664,7 +2617,6 @@ func (s *GatewayService) isAccountSchedulableForWindowCost(ctx context.Context, 
 		return true // 未启用窗口费用限制
 	}
 
-	// 尝试从缓存获取窗口费用
 	var currentCost float64
 	if cost, ok := windowCostFromPrefetchContext(ctx, account.ID); ok {
 		currentCost = cost
@@ -2677,21 +2629,16 @@ func (s *GatewayService) isAccountSchedulableForWindowCost(ctx context.Context, 
 		}
 	}
 
-	// 缓存未命中，从数据库查询
 	{
-		// 使用统一的窗口开始时间计算逻辑（考虑窗口过期情况）
 		startTime := account.GetCurrentWindowStartTime()
 
 		stats, err := s.usageLogRepo.GetAccountWindowStats(ctx, account.ID, startTime)
 		if err != nil {
-			// 失败开放：查询失败时允许调度
 			return true
 		}
 
-		// 使用标准费用（不含账号倍率）
 		currentCost = stats.StandardCost
 
-		// 设置缓存（忽略错误）
 		if s.sessionLimitCache != nil {
 			_ = s.sessionLimitCache.SetWindowCost(ctx, account.ID, currentCost)
 		}
@@ -2724,7 +2671,7 @@ func rpmFromPrefetchContext(ctx context.Context, accountID int64) (int, bool) {
 	return 0, false
 }
 
-// withRPMPrefetch 批量预取所有候选账号的 RPM 计数
+// withRPMPrefetch
 func (s *GatewayService) withRPMPrefetch(ctx context.Context, accounts []Account) context.Context {
 	if s.rpmCache == nil {
 		return ctx
@@ -2742,13 +2689,13 @@ func (s *GatewayService) withRPMPrefetch(ctx context.Context, accounts []Account
 
 	counts, err := s.rpmCache.GetRPMBatch(ctx, ids)
 	if err != nil {
-		return ctx // 失败开放
+		return ctx // failed开放
 	}
 	return context.WithValue(ctx, rpmPrefetchContextKey, counts)
 }
 
-// isAccountSchedulableForRPM 检查账号是否可根据 RPM 进行调度
-// 仅适用于 Anthropic OAuth/SetupToken 账号
+// isAccountSchedulableForRPM
+//
 func (s *GatewayService) isAccountSchedulableForRPM(ctx context.Context, account *Account, isSticky bool) bool {
 	if !account.IsAnthropicOAuthOrSetupToken() {
 		return true
@@ -2758,7 +2705,6 @@ func (s *GatewayService) isAccountSchedulableForRPM(ctx context.Context, account
 		return true
 	}
 
-	// 尝试从预取缓存获取
 	var currentRPM int
 	if count, ok := rpmFromPrefetchContext(ctx, account.ID); ok {
 		currentRPM = count
@@ -2766,7 +2712,7 @@ func (s *GatewayService) isAccountSchedulableForRPM(ctx context.Context, account
 		if count, err := s.rpmCache.GetRPM(ctx, account.ID); err == nil {
 			currentRPM = count
 		}
-		// 失败开放：GetRPM 错误时允许调度
+		//
 	}
 
 	schedulability := account.CheckRPMSchedulability(currentRPM)
@@ -2782,9 +2728,8 @@ func (s *GatewayService) isAccountSchedulableForRPM(ctx context.Context, account
 }
 
 // IncrementAccountRPM increments the RPM counter for the given account.
-// 已知 TOCTOU 竞态：调度时读取 RPM 计数与此处递增之间存在时间窗口，
-// 高并发下可能短暂超出 RPM 限制。这是与 WindowCost 一致的 soft-limit
-// 设计权衡——可接受的少量超额优于加锁带来的延迟和复杂度。
+//
+//
 func (s *GatewayService) IncrementAccountRPM(ctx context.Context, accountID int64) error {
 	if s.rpmCache == nil {
 		return nil
@@ -2793,19 +2738,19 @@ func (s *GatewayService) IncrementAccountRPM(ctx context.Context, accountID int6
 	return err
 }
 
-// checkAndRegisterSession 检查并注册会话，用于会话数量限制
-// 仅适用于 Anthropic OAuth/SetupToken 账号
-// sessionID: 会话标识符（使用粘性会话的 hash）
-// 返回 true 表示允许（在限制内或会话已存在），false 表示拒绝（超出限制且是新会话）
+// checkAndRegisterSession
+//
+// sessionID:
+//
 func (s *GatewayService) checkAndRegisterSession(ctx context.Context, account *Account, sessionID string) bool {
-	// 只检查 Anthropic OAuth/SetupToken 账号
+	//
 	if !account.IsAnthropicOAuthOrSetupToken() {
 		return true
 	}
 
 	maxSessions := account.GetMaxSessions()
 	if maxSessions <= 0 || sessionID == "" {
-		return true // 未启用会话限制或无会话ID
+		return true // 未启用会话限制or无会话ID
 	}
 
 	if s.sessionLimitCache == nil {
@@ -2816,7 +2761,6 @@ func (s *GatewayService) checkAndRegisterSession(ctx context.Context, account *A
 
 	allowed, err := s.sessionLimitCache.RegisterSession(ctx, account.ID, sessionID, maxSessions, idleTimeout)
 	if err != nil {
-		// 失败开放：缓存错误时允许通过
 		return true
 	}
 	return allowed
@@ -2856,7 +2800,7 @@ func (s *GatewayService) newSelectionResult(ctx context.Context, account *Accoun
 	}, nil
 }
 
-// filterByMinPriority 过滤出优先级最小的账号集合
+// filterByMinPriority
 func filterByMinPriority(accounts []accountWithLoad) []accountWithLoad {
 	if len(accounts) == 0 {
 		return accounts
@@ -2876,7 +2820,7 @@ func filterByMinPriority(accounts []accountWithLoad) []accountWithLoad {
 	return result
 }
 
-// filterByMinLoadRate 过滤出负载率最低的账号集合
+// filterByMinLoadRate
 func filterByMinLoadRate(accounts []accountWithLoad) []accountWithLoad {
 	if len(accounts) == 0 {
 		return accounts
@@ -2896,8 +2840,8 @@ func filterByMinLoadRate(accounts []accountWithLoad) []accountWithLoad {
 	return result
 }
 
-// selectByLRU 从集合中选择最久未用的账号
-// 如果有多个账号具有相同的最小 LastUsedAt，则随机选择一个
+// selectByLRU
+//
 func selectByLRU(accounts []accountWithLoad, preferOAuth bool) *accountWithLoad {
 	if len(accounts) == 0 {
 		return nil
@@ -2906,7 +2850,7 @@ func selectByLRU(accounts []accountWithLoad, preferOAuth bool) *accountWithLoad 
 		return &accounts[0]
 	}
 
-	// 1. 找到最小的 LastUsedAt（nil 被视为最小）
+	// 1.
 	var minTime *time.Time
 	hasNil := false
 	for _, acc := range accounts {
@@ -2919,7 +2863,7 @@ func selectByLRU(accounts []accountWithLoad, preferOAuth bool) *accountWithLoad 
 		}
 	}
 
-	// 2. 收集所有具有最小 LastUsedAt 的账号索引
+	// 2.
 	var candidateIdxs []int
 	for i, acc := range accounts {
 		if hasNil {
@@ -2933,12 +2877,11 @@ func selectByLRU(accounts []accountWithLoad, preferOAuth bool) *accountWithLoad 
 		}
 	}
 
-	// 3. 如果只有一个候选，直接返回
 	if len(candidateIdxs) == 1 {
 		return &accounts[candidateIdxs[0]]
 	}
 
-	// 4. 如果有多个候选且 preferOAuth，优先选择 OAuth 类型
+	// 4.
 	if preferOAuth {
 		var oauthIdxs []int
 		for _, idx := range candidateIdxs {
@@ -2951,7 +2894,6 @@ func selectByLRU(accounts []accountWithLoad, preferOAuth bool) *accountWithLoad 
 		}
 	}
 
-	// 5. 随机选择一个
 	selectedIdx := candidateIdxs[mathrand.Intn(len(candidateIdxs))]
 	return &accounts[selectedIdx]
 }
@@ -2979,8 +2921,7 @@ func sortAccountsByPriorityAndLastUsed(accounts []*Account, preferOAuth bool) {
 	shuffleWithinPriorityAndLastUsed(accounts, preferOAuth)
 }
 
-// shuffleWithinSortGroups 对排序后的 accountWithLoad 切片，按 (Priority, LoadRate, LastUsedAt) 分组后组内随机打乱。
-// 防止并发请求读取同一快照时，确定性排序导致所有请求命中相同账号。
+// shuffleWithinSortGroups (Priority, LoadRate, LastUsedAt)
 func shuffleWithinSortGroups(accounts []accountWithLoad) {
 	if len(accounts) <= 1 {
 		return
@@ -3000,7 +2941,7 @@ func shuffleWithinSortGroups(accounts []accountWithLoad) {
 	}
 }
 
-// sameAccountWithLoadGroup 判断两个 accountWithLoad 是否属于同一排序组
+// sameAccountWithLoadGroup
 func sameAccountWithLoadGroup(a, b accountWithLoad) bool {
 	if a.account.Priority != b.account.Priority {
 		return false
@@ -3011,12 +2952,11 @@ func sameAccountWithLoadGroup(a, b accountWithLoad) bool {
 	return sameLastUsedAt(a.account.LastUsedAt, b.account.LastUsedAt)
 }
 
-// shuffleWithinPriorityAndLastUsed 对排序后的 []*Account 切片，按 (Priority, LastUsedAt) 分组后组内随机打乱。
+// shuffleWithinPriorityAndLastUsed []*Account (Priority, LastUsedAt)
 //
-// 注意：当 preferOAuth=true 时，需要保证 OAuth 账号在同组内仍然优先，否则会把排序时的偏好打散掉。
-// 因此这里采用"组内分区 + 分区内 shuffle"的方式：
-// - 先把同组账号按 (OAuth / 非 OAuth) 拆成两段，保持 OAuth 段在前；
-// - 再分别在各段内随机打散，避免热点。
+// =true
+// "+ "
+// - (OAuth / )
 func shuffleWithinPriorityAndLastUsed(accounts []*Account, preferOAuth bool) {
 	if len(accounts) <= 1 {
 		return
@@ -3056,7 +2996,7 @@ func shuffleWithinPriorityAndLastUsed(accounts []*Account, preferOAuth bool) {
 	}
 }
 
-// sameAccountGroup 判断两个 Account 是否属于同一排序组（Priority + LastUsedAt）
+// sameAccountGroup + LastUsedAt）
 func sameAccountGroup(a, b *Account) bool {
 	if a.Priority != b.Priority {
 		return false
@@ -3064,7 +3004,7 @@ func sameAccountGroup(a, b *Account) bool {
 	return sameLastUsedAt(a.LastUsedAt, b.LastUsedAt)
 }
 
-// sameLastUsedAt 判断两个 LastUsedAt 是否相同（精度到秒）
+// sameLastUsedAt
 func sameLastUsedAt(a, b *time.Time) bool {
 	switch {
 	case a == nil && b == nil:
@@ -3076,20 +3016,18 @@ func sameLastUsedAt(a, b *time.Time) bool {
 	}
 }
 
-// sortCandidatesForFallback 根据配置选择排序策略
-// mode: "last_used"(按最后使用时间) 或 "random"(随机)
+// sortCandidatesForFallback
+// mode: "last_used"() "random"()
 func (s *GatewayService) sortCandidatesForFallback(accounts []*Account, preferOAuth bool, mode string) {
 	if mode == "random" {
-		// 先按优先级排序，然后在同优先级内随机打乱
 		sortAccountsByPriorityOnly(accounts, preferOAuth)
 		shuffleWithinPriority(accounts)
 	} else {
-		// 默认按最后使用时间排序
 		sortAccountsByPriorityAndLastUsed(accounts, preferOAuth)
 	}
 }
 
-// sortAccountsByPriorityOnly 仅按优先级排序
+// sortAccountsByPriorityOnly
 func sortAccountsByPriorityOnly(accounts []*Account, preferOAuth bool) {
 	sort.SliceStable(accounts, func(i, j int) bool {
 		a, b := accounts[i], accounts[j]
@@ -3103,7 +3041,7 @@ func sortAccountsByPriorityOnly(accounts []*Account, preferOAuth bool) {
 	})
 }
 
-// shuffleWithinPriority 在同优先级内随机打乱顺序
+// shuffleWithinPriority
 func shuffleWithinPriority(accounts []*Account) {
 	if len(accounts) <= 1 {
 		return
@@ -3116,7 +3054,7 @@ func shuffleWithinPriority(accounts []*Account) {
 		for end < len(accounts) && accounts[end].Priority == priority {
 			end++
 		}
-		// 对 [start, end) 范围内的账户随机打乱
+		// [start, end)
 		if end-start > 1 {
 			r.Shuffle(end-start, func(i, j int) {
 				accounts[start+i], accounts[start+j] = accounts[start+j], accounts[start+i]
@@ -3126,12 +3064,12 @@ func shuffleWithinPriority(accounts []*Account) {
 	}
 }
 
-// selectAccountForModelWithPlatform 选择单平台账户（完全隔离）
+// selectAccountForModelWithPlatform
 func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, platform string) (*Account, error) {
 	preferOAuth := platform == PlatformGemini
 	routingAccountIDs := s.routingAccountIDsForRequest(ctx, groupID, requestedModel, platform)
 
-	// require_privacy_set: 获取分组信息
+	// require_privacy_set:
 	var schedGroup *Group
 	if groupID != nil && s.groupRepo != nil {
 		schedGroup, _ = s.groupRepo.GetByID(ctx, *groupID)
@@ -3154,7 +3092,6 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 			if err == nil && accountID > 0 && containsInt64(routingAccountIDs, accountID) {
 				if _, excluded := excludedIDs[accountID]; !excluded {
 					account, err := s.getSchedulableAccount(ctx, accountID)
-					// 检查账号分组归属和平台匹配（确保粘性会话不会跨分组或跨平台）
 					if err == nil {
 						clearSticky := shouldClearStickySession(account, requestedModel)
 						if clearSticky {
@@ -3183,7 +3120,7 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 		}
 		accountsLoaded = true
 
-		// 提前预取窗口费用+RPM 计数，确保 routing 段内的调度检查调用能命中缓存
+		// +RPM
 		ctx = s.withWindowCostPrefetch(ctx, accounts)
 		ctx = s.withRPMPrefetch(ctx, accounts)
 
@@ -3208,7 +3145,7 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 			if !s.isAccountSchedulableForSelection(acc) {
 				continue
 			}
-			// require_privacy_set: 跳过 privacy 未设置的账号并标记异常
+			// require_privacy_set:
 			if schedGroup != nil && schedGroup.RequirePrivacySet && !acc.IsPrivacySet() {
 				_ = s.accountRepo.SetError(ctx, acc.ID,
 					fmt.Sprintf("Privacy not set, required by group [%s]", schedGroup.Name))
@@ -3267,13 +3204,11 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 		logger.LegacyPrintf("service.gateway", "[ModelRouting] No routed accounts available for model=%s, falling back to normal selection", requestedModel)
 	}
 
-	// 1. 查询粘性会话
 	if sessionHash != "" && s.cache != nil {
 		accountID, err := s.cache.GetSessionAccountID(ctx, derefGroupID(groupID), sessionHash)
 		if err == nil && accountID > 0 {
 			if _, excluded := excludedIDs[accountID]; !excluded {
 				account, err := s.getSchedulableAccount(ctx, accountID)
-				// 检查账号分组归属和平台匹配（确保粘性会话不会跨分组或跨平台）
 				if err == nil {
 					clearSticky := shouldClearStickySession(account, requestedModel)
 					if clearSticky {
@@ -3287,7 +3222,6 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 		}
 	}
 
-	// 2. 获取可调度账号列表（单平台）
 	if !accountsLoaded {
 		forcePlatform, hasForcePlatform := ctx.Value(ctxkey.ForcePlatform).(string)
 		if hasForcePlatform && forcePlatform == "" {
@@ -3300,13 +3234,13 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 		}
 	}
 
-	// 批量预取窗口费用+RPM 计数，避免逐个账号查询（N+1）
+	// +RPM +1）
 	ctx = s.withWindowCostPrefetch(ctx, accounts)
 	ctx = s.withRPMPrefetch(ctx, accounts)
 
-	// 3. 按优先级+最久未用选择（考虑模型支持）
-	// needsUpstreamCheck 仅在主选择循环中使用；粘性会话命中时跳过此检查，
-	// 因为粘性会话优先保持连接一致性，且 upstream 计费基准极少使用。
+	// 3. +
+	// needsUpstreamCheck
+	//
 	needsUpstreamCheck := s.needsUpstreamChannelRestrictionCheck(ctx, groupID)
 	var selected *Account
 	for i := range accounts {
@@ -3319,7 +3253,7 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 		if !s.isAccountSchedulableForSelection(acc) {
 			continue
 		}
-		// require_privacy_set: 跳过 privacy 未设置的账号并标记异常
+		// require_privacy_set:
 		if schedGroup != nil && schedGroup.RequirePrivacySet && !acc.IsPrivacySet() {
 			_ = s.accountRepo.SetError(ctx, acc.ID,
 				fmt.Sprintf("Privacy not set, required by group [%s]", schedGroup.Name))
@@ -3375,7 +3309,6 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 		return nil, ErrNoAvailableAccounts
 	}
 
-	// 4. 建立粘性绑定
 	if sessionHash != "" && s.cache != nil {
 		if err := s.cache.SetSessionAccountID(ctx, derefGroupID(groupID), sessionHash, selected.ID, stickySessionTTL); err != nil {
 			logger.LegacyPrintf("service.gateway", "set session account failed: session=%s account_id=%d err=%v", sessionHash, selected.ID, err)
@@ -3385,13 +3318,13 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 	return selected, nil
 }
 
-// selectAccountWithMixedScheduling 选择账户（支持混合调度）
-// 查询原生平台账户 + 启用 mixed_scheduling 的 antigravity 账户
+// selectAccountWithMixedScheduling
+// +
 func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, nativePlatform string) (*Account, error) {
 	preferOAuth := nativePlatform == PlatformGemini
 	routingAccountIDs := s.routingAccountIDsForRequest(ctx, groupID, requestedModel, nativePlatform)
 
-	// require_privacy_set: 获取分组信息
+	// require_privacy_set:
 	var schedGroup *Group
 	if groupID != nil && s.groupRepo != nil {
 		schedGroup, _ = s.groupRepo.GetByID(ctx, *groupID)
@@ -3412,7 +3345,7 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 			if err == nil && accountID > 0 && containsInt64(routingAccountIDs, accountID) {
 				if _, excluded := excludedIDs[accountID]; !excluded {
 					account, err := s.getSchedulableAccount(ctx, accountID)
-					// 检查账号分组归属和有效性：原生平台直接匹配，antigravity 需要启用混合调度
+					//
 					if err == nil {
 						clearSticky := shouldClearStickySession(account, requestedModel)
 						if clearSticky {
@@ -3439,7 +3372,7 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 		}
 		accountsLoaded = true
 
-		// 提前预取窗口费用+RPM 计数，确保 routing 段内的调度检查调用能命中缓存
+		// +RPM
 		ctx = s.withWindowCostPrefetch(ctx, accounts)
 		ctx = s.withRPMPrefetch(ctx, accounts)
 
@@ -3464,13 +3397,13 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 			if !s.isAccountSchedulableForSelection(acc) {
 				continue
 			}
-			// require_privacy_set: 跳过 privacy 未设置的账号并标记异常
+			// require_privacy_set:
 			if schedGroup != nil && schedGroup.RequirePrivacySet && !acc.IsPrivacySet() {
 				_ = s.accountRepo.SetError(ctx, acc.ID,
 					fmt.Sprintf("Privacy not set, required by group [%s]", schedGroup.Name))
 				continue
 			}
-			// 过滤：原生平台直接通过，antigravity 需要启用混合调度
+			//
 			if acc.Platform == PlatformAntigravity && !acc.IsMixedSchedulingEnabled() {
 				continue
 			}
@@ -3527,13 +3460,12 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 		logger.LegacyPrintf("service.gateway", "[ModelRouting] No routed accounts available for model=%s, falling back to normal selection", requestedModel)
 	}
 
-	// 1. 查询粘性会话
 	if sessionHash != "" && s.cache != nil {
 		accountID, err := s.cache.GetSessionAccountID(ctx, derefGroupID(groupID), sessionHash)
 		if err == nil && accountID > 0 {
 			if _, excluded := excludedIDs[accountID]; !excluded {
 				account, err := s.getSchedulableAccount(ctx, accountID)
-				// 检查账号分组归属和有效性：原生平台直接匹配，antigravity 需要启用混合调度
+				//
 				if err == nil {
 					clearSticky := shouldClearStickySession(account, requestedModel)
 					if clearSticky {
@@ -3549,7 +3481,6 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 		}
 	}
 
-	// 2. 获取可调度账号列表
 	if !accountsLoaded {
 		var err error
 		accounts, _, err = s.listSchedulableAccounts(ctx, groupID, nativePlatform, false)
@@ -3558,12 +3489,12 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 		}
 	}
 
-	// 批量预取窗口费用+RPM 计数，避免逐个账号查询（N+1）
+	// +RPM +1）
 	ctx = s.withWindowCostPrefetch(ctx, accounts)
 	ctx = s.withRPMPrefetch(ctx, accounts)
 
-	// 3. 按优先级+最久未用选择（考虑模型支持和混合调度）
-	// needsUpstreamCheck 仅在主选择循环中使用；粘性会话命中时跳过此检查。
+	// 3. +
+	// needsUpstreamCheck
 	needsUpstreamCheck := s.needsUpstreamChannelRestrictionCheck(ctx, groupID)
 	var selected *Account
 	for i := range accounts {
@@ -3576,13 +3507,13 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 		if !s.isAccountSchedulableForSelection(acc) {
 			continue
 		}
-		// require_privacy_set: 跳过 privacy 未设置的账号并标记异常
+		// require_privacy_set:
 		if schedGroup != nil && schedGroup.RequirePrivacySet && !acc.IsPrivacySet() {
 			_ = s.accountRepo.SetError(ctx, acc.ID,
 				fmt.Sprintf("Privacy not set, required by group [%s]", schedGroup.Name))
 			continue
 		}
-		// 过滤：原生平台直接通过，antigravity 需要启用混合调度
+		//
 		if acc.Platform == PlatformAntigravity && !acc.IsMixedSchedulingEnabled() {
 			continue
 		}
@@ -3636,7 +3567,6 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 		return nil, ErrNoAvailableAccounts
 	}
 
-	// 4. 建立粘性绑定
 	if sessionHash != "" && s.cache != nil {
 		if err := s.cache.SetSessionAccountID(ctx, derefGroupID(groupID), sessionHash, selected.ID, stickySessionTTL); err != nil {
 			logger.LegacyPrintf("service.gateway", "set session account failed: session=%s account_id=%d err=%v", sessionHash, selected.ID, err)
@@ -3818,23 +3748,22 @@ func summarizeSelectionFailureStats(stats selectionFailureStats) string {
 	)
 }
 
-// isModelSupportedByAccountWithContext 根据账户平台检查模型支持（带 context）
-// 对于 Antigravity 平台，会先获取映射后的最终模型名（包括 thinking 后缀）再检查支持
+// isModelSupportedByAccountWithContext
+//
 func (s *GatewayService) isModelSupportedByAccountWithContext(ctx context.Context, account *Account, requestedModel string) bool {
 	if account.Platform == PlatformAntigravity {
 		if strings.TrimSpace(requestedModel) == "" {
 			return true
 		}
-		// 使用与转发阶段一致的映射逻辑：自定义映射优先 → 默认映射兜底
 		mapped := mapAntigravityModel(account, requestedModel)
 		if mapped == "" {
 			return false
 		}
-		// 应用 thinking 后缀后检查最终模型是否在账号映射中
+		//
 		if enabled, ok := ThinkingEnabledFromContext(ctx); ok {
 			finalModel := applyThinkingModelSuffix(mapped, enabled)
 			if finalModel == mapped {
-				return true // thinking 后缀未改变模型名，映射已通过
+				return true // thinking 后缀未改变model名，映射已通过
 			}
 			return account.IsModelSupported(finalModel)
 		}
@@ -3843,7 +3772,7 @@ func (s *GatewayService) isModelSupportedByAccountWithContext(ctx context.Contex
 	return s.isModelSupportedByAccount(account, requestedModel)
 }
 
-// isModelSupportedByAccount 根据账户平台检查模型支持（无 context，用于非 Antigravity 平台）
+// isModelSupportedByAccount
 func (s *GatewayService) isModelSupportedByAccount(account *Account, requestedModel string) bool {
 	if account.Platform == PlatformAntigravity {
 		if strings.TrimSpace(requestedModel) == "" {
@@ -3855,11 +3784,11 @@ func (s *GatewayService) isModelSupportedByAccount(account *Account, requestedMo
 		_, ok := ResolveBedrockModelID(account, requestedModel)
 		return ok
 	}
-	// OpenAI 透传模式：仅替换认证，允许所有模型
+	// OpenAI
 	if account.Platform == PlatformOpenAI && account.IsOpenAIPassthroughEnabled() {
 		return true
 	}
-	// OAuth/SetupToken 账号使用 Anthropic 标准映射（短ID → 长ID）
+	// OAuth/SetupToken →
 	if account.Platform == PlatformAnthropic && account.Type != AccountTypeAPIKey {
 		if account.Type == AccountTypeServiceAccount {
 			requestedModel = normalizeVertexAnthropicModelID(claude.NormalizeModelID(requestedModel))
@@ -3867,11 +3796,10 @@ func (s *GatewayService) isModelSupportedByAccount(account *Account, requestedMo
 			requestedModel = claude.NormalizeModelID(requestedModel)
 		}
 	}
-	// 其他平台使用账户的模型支持检查
 	return account.IsModelSupported(requestedModel)
 }
 
-// GetAccessToken 获取账号凭证
+// GetAccessToken
 func (s *GatewayService) GetAccessToken(ctx context.Context, account *Account) (string, string, error) {
 	switch account.Type {
 	case AccountTypeOAuth, AccountTypeSetupToken:
@@ -3884,7 +3812,7 @@ func (s *GatewayService) GetAccessToken(ctx context.Context, account *Account) (
 		}
 		return apiKey, "apikey", nil
 	case AccountTypeBedrock:
-		return "", "bedrock", nil // Bedrock 使用 SigV4 签名或 API Key，由 forwardBedrock 处理
+		return "", "bedrock", nil // Bedrock 使用 SigV4 签名or API Key，由 forwardBedrock 处理
 	case AccountTypeServiceAccount:
 		if account.Platform != PlatformAnthropic {
 			return "", "", fmt.Errorf("unsupported service account platform: %s", account.Platform)
@@ -3903,7 +3831,7 @@ func (s *GatewayService) GetAccessToken(ctx context.Context, account *Account) (
 }
 
 func (s *GatewayService) getOAuthToken(ctx context.Context, account *Account) (string, string, error) {
-	// 对于 Anthropic OAuth 账号，使用 ClaudeTokenProvider 获取缓存的 token
+	//
 	if account.Platform == PlatformAnthropic && account.Type == AccountTypeOAuth && s.claudeTokenProvider != nil {
 		accessToken, err := s.claudeTokenProvider.GetAccessToken(ctx, account)
 		if err != nil {
@@ -3912,36 +3840,33 @@ func (s *GatewayService) getOAuthToken(ctx context.Context, account *Account) (s
 		return accessToken, "oauth", nil
 	}
 
-	// 其他情况（Gemini 有自己的 TokenProvider，setup-token 类型等）直接从账号读取
+	//
 	accessToken := account.GetCredential("access_token")
 	if accessToken == "" {
 		return "", "", errors.New("access_token not found in credentials")
 	}
-	// Token刷新由后台 TokenRefreshService 处理，此处只返回当前token
+	// Token
 	return accessToken, "oauth", nil
 }
 
-// 重试相关常量
 const (
-	// 最大尝试次数（包含首次请求）。过多重试会导致请求堆积与资源耗尽。
 	maxRetryAttempts = 5
 
-	// 指数退避：第 N 次失败后的等待 = retryBaseDelay * 2^(N-1)，并且上限为 retryMaxDelay。
+	// = retryBaseDelay * 2^(N-1)，
 	retryBaseDelay = 300 * time.Millisecond
 	retryMaxDelay  = 3 * time.Second
 
-	// 最大重试耗时（包含请求本身耗时 + 退避等待时间）。
-	// 用于防止极端情况下 goroutine 长时间堆积导致资源耗尽。
+	//
 	maxRetryElapsed = 10 * time.Second
 )
 
 func (s *GatewayService) shouldRetryUpstreamError(account *Account, statusCode int) bool {
-	// OAuth/Setup Token 账号：仅 403 重试
+	// OAuth/Setup Token
 	if account.IsOAuth() {
 		return statusCode == 403
 	}
 
-	// API Key 账号：未配置的错误码重试
+	// API Key
 	return !account.ShouldHandleErrorCode(statusCode)
 }
 
@@ -3956,7 +3881,7 @@ func (s *GatewayService) shouldFailoverUpstreamError(statusCode int) bool {
 }
 
 func retryBackoffDelay(attempt int) time.Duration {
-	// attempt 从 1 开始，表示第 attempt 次请求刚失败，需要等待后进行第 attempt+1 次请求。
+	// attempt +1
 	if attempt <= 0 {
 		return retryBaseDelay
 	}
@@ -3989,14 +3914,13 @@ func sleepWithContext(ctx context.Context, d time.Duration) error {
 	}
 }
 
-// isClaudeCodeClient 判断请求是否来自真正的 Claude Code 客户端。
-// 判定条件：
-//  1. User-Agent 匹配 claude-cli/X.Y.Z（大小写不敏感）
-//  2. metadata.user_id 符合 Claude Code 格式（legacy 或 JSON 格式）
+// isClaudeCodeClient
+//  1. User-Agent
+//  2. metadata.user_id
 //
-// 只检查 metadata.user_id 非空不够严格：第三方工具（opencode 等）可能伪造 UA
-// 并附带任意 metadata.user_id 字符串，从而绕过 mimicry。必须通过 ParseMetadataUserID
-// 验证格式才能确认是真正的 Claude Code 客户端。
+//
+//
+//
 func isClaudeCodeClient(userAgent string, metadataUserID string) bool {
 	if !claudeCliUserAgentRe.MatchString(userAgent) {
 		return false
@@ -4004,9 +3928,9 @@ func isClaudeCodeClient(userAgent string, metadataUserID string) bool {
 	return ParseMetadataUserID(metadataUserID) != nil
 }
 
-// normalizeSystemParam 将 json.RawMessage 类型的 system 参数转为标准 Go 类型（string / []any / nil），
-// 避免 type switch 中 json.RawMessage（底层 []byte）无法匹配 case string / case []any / case nil 的问题。
-// 这是 Go 的 typed nil 陷阱：(json.RawMessage, nil) ≠ (nil, nil)。
+// normalizeSystemParam []any / nil），
+// []byte）[]any / case nil
+// (json.RawMessage, nil) ≠ (nil, nil)。
 func normalizeSystemParam(system any) any {
 	raw, ok := system.(json.RawMessage)
 	if !ok {
@@ -4022,8 +3946,8 @@ func normalizeSystemParam(system any) any {
 	return parsed
 }
 
-// systemIncludesClaudeCodePrompt 检查 system 中是否已包含 Claude Code 提示词
-// 使用前缀匹配支持多种变体（标准版、Agent SDK 版等）
+// systemIncludesClaudeCodePrompt
+//
 func systemIncludesClaudeCodePrompt(system any) bool {
 	system = normalizeSystemParam(system)
 	switch v := system.(type) {
@@ -4041,7 +3965,7 @@ func systemIncludesClaudeCodePrompt(system any) bool {
 	return false
 }
 
-// hasClaudeCodePrefix 检查文本是否以 Claude Code 提示词的特征前缀开头
+// hasClaudeCodePrefix
 func hasClaudeCodePrefix(text string) bool {
 	for _, prefix := range claudeCodePromptPrefixes {
 		if strings.HasPrefix(text, prefix) {
@@ -4051,8 +3975,8 @@ func hasClaudeCodePrefix(text string) bool {
 	return false
 }
 
-// injectClaudeCodePrompt 在 system 开头注入 Claude Code 提示词
-// 处理 null、字符串、数组三种格式
+// injectClaudeCodePrompt
+//
 func injectClaudeCodePrompt(body []byte, system any) []byte {
 	system = normalizeSystemParam(system)
 	claudeCodeBlock, err := marshalAnthropicSystemTextBlock(claudeCodeSystemPrompt, true)
@@ -4155,15 +4079,15 @@ func injectClaudeCodePrompt(body []byte, system any) []byte {
 	return result
 }
 
-// rewriteSystemForNonClaudeCode 将非 Claude Code 客户端的 system prompt 迁移至 messages，
-// system 字段仅保留 Claude Code 标识提示词。
-// Anthropic 基于 system 参数内容检测第三方应用，仅前置追加 Claude Code 提示词
-// 无法通过检测，因为后续内容仍为非 Claude Code 格式。
-// 策略：将原始 system prompt 提取并注入为 user/assistant 消息对，system 仅保留 Claude Code 标识。
+// rewriteSystemForNonClaudeCode
+// system
+// Anthropic
+//
+//
 func rewriteSystemForNonClaudeCode(body []byte, system any) []byte {
 	system = normalizeSystemParam(system)
 
-	// 1. 提取原始 system prompt 文本
+	// 1.
 	var originalSystemText string
 	switch v := system.(type) {
 	case string:
@@ -4180,21 +4104,20 @@ func rewriteSystemForNonClaudeCode(body []byte, system any) []byte {
 		originalSystemText = strings.Join(parts, "\n\n")
 	}
 
-	// 2. 构造 system 数组，对齐真实 Claude Code CLI 的 3-block 形态：
+	// 2.
 	//    [0] billing attribution block（cc_version={cliVer}.{fp}; cc_entrypoint=cli; cch=00000;）
-	//    [1] "You are Claude Code..." 身份前缀 block（带 cache_control）
-	//    [2] 工具无关的通用提示词扩充 block（带 cache_control 作为稳定缓存断点）
+	//    [1] "You are Claude Code..."
+	//    [2]
 	//
-	//    真实 CC 的 system 在身份前缀之后还有大段提示词，仅有 2 块会在块数/体量上明显
-	//    区别于真实 CLI。这里注入 claudeCodeSystemPromptExpansion（中性段落）把形态做到
-	//    接近真实，同时不注入会污染被代理用户行为的工具专属指令。
 	//
-	//    billing block 的 cch=00000 是占位符，会被 buildUpstreamRequest 里的
-	//    signBillingHeaderCCH 替换成 xxhash64 签名。缺失 billing block 的系统 payload
-	//    是 Anthropic 判定第三方的关键信号之一（真实 CLI 每个请求都带）。
+	//
+	//
+	//    billing block =00000
+	//    signBillingHeaderCCH
+	//
 	billingBlock, billingErr := buildBillingAttributionBlockJSON(body, claude.CLICurrentVersion)
-	// 身份块不带 cache_control；缓存断点统一落在最后一个静态块（扩充块）上，
-	// 使 billing+身份+扩充 整段静态前缀都被同一断点覆盖，且只消耗 1 个断点配额。
+	//
+	// ++
 	ccPromptBlock, ccErr := marshalAnthropicSystemTextBlock(claudeCodeSystemPrompt, false)
 	ccExpansionBlock, expErr := marshalAnthropicSystemTextBlock(claudeCodeSystemPromptExpansion, true)
 	if billingErr != nil || ccErr != nil || expErr != nil {
@@ -4207,8 +4130,8 @@ func rewriteSystemForNonClaudeCode(body []byte, system any) []byte {
 		return body
 	}
 
-	// 3. 将原始 system prompt 作为 user/assistant 消息对注入到 messages 开头
-	//    模型仍通过 messages 接收完整指令，保留客户端功能
+	// 3.
+	//
 	ccPromptTrimmed := strings.TrimSpace(claudeCodeSystemPrompt)
 	if originalSystemText != "" && originalSystemText != ccPromptTrimmed && !hasClaudeCodePrefix(originalSystemText) {
 		instrMsg, err1 := json.Marshal(map[string]any{
@@ -4228,7 +4151,7 @@ func rewriteSystemForNonClaudeCode(body []byte, system any) []byte {
 			return out
 		}
 
-		// 重建 messages 数组：[instruction, ack, ...originalMessages]
+		// [instruction, ack, ...originalMessages]
 		items := [][]byte{instrMsg, ackMsg}
 		messagesResult := gjson.GetBytes(out, "messages")
 		if messagesResult.IsArray() {
@@ -4315,8 +4238,8 @@ func collectCacheControlPaths(body []byte) (invalidThinking []cacheControlPath, 
 	return invalidThinking, messagePaths, toolPaths, systemPaths
 }
 
-// enforceCacheControlLimit 强制执行 cache_control 块数量限制（最多 4 个）
-// 超限时优先移除工具断点，再移除 messages 断点，最后才移除 system 断点。
+// enforceCacheControlLimit
+//
 func enforceCacheControlLimit(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -4326,7 +4249,7 @@ func enforceCacheControlLimit(body []byte) []byte {
 	out := body
 	modified := false
 
-	// 先清理 thinking 块中的非法 cache_control（thinking 块不支持该字段）
+	//
 	for _, item := range invalidThinking {
 		if !gjson.GetBytes(out, item.path).Exists() {
 			continue
@@ -4348,7 +4271,7 @@ func enforceCacheControlLimit(body []byte) []byte {
 		return body
 	}
 
-	// 超限：优先从 tools 中移除，再从 messages 中移除，最后才从 system 中移除。
+	//
 	remaining := count - maxCacheControlBlocks
 	for i := len(toolPaths) - 1; i >= 0 && remaining > 0; i-- {
 		path := toolPaths[i]
@@ -4400,8 +4323,8 @@ func enforceCacheControlLimit(body []byte) []byte {
 	return body
 }
 
-// injectAnthropicCacheControlTTL1h 将已有 ephemeral cache_control 块的 ttl 强制写为 1h。
-// 仅修改已经存在的 cache_control，不新增缓存断点。
+// injectAnthropicCacheControlTTL1h
+//
 func injectAnthropicCacheControlTTL1h(body []byte) []byte {
 	return forceEphemeralCacheControlTTL(body, cacheTTLTarget1h)
 }
@@ -4481,14 +4404,14 @@ func (s *GatewayService) shouldInjectAnthropicCacheTTL1h(ctx context.Context, ac
 	return s.settingService.IsAnthropicCacheTTL1hInjectionEnabled(ctx)
 }
 
-// Forward 转发请求到Claude API
+// Forward
 func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *Account, parsed *ParsedRequest) (*ForwardResult, error) {
 	startTime := time.Now()
 	if parsed == nil {
 		return nil, fmt.Errorf("parse request: empty request")
 	}
 
-	// Web Search 模拟：纯 web_search 请求时，直接调用搜索 API 构造响应
+	// Web Search
 	if account != nil && s.shouldEmulateWebSearch(ctx, account, parsed.GroupID, parsed.Body.Bytes()) {
 		return s.handleWebSearchEmulation(ctx, c, account, parsed)
 	}
@@ -4543,7 +4466,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	reqStream := parsed.Stream
 	originalModel := reqModel
 
-	// === DEBUG: 打印客户端原始请求（headers + body 摘要）===
+	// === DEBUG: + body ===
 	if c != nil {
 		s.debugLogGatewaySnapshot("CLIENT_ORIGINAL", c.Request.Header, body, map[string]string{
 			"account":      fmt.Sprintf("%d(%s)", account.ID, account.Name),
@@ -4553,22 +4476,21 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		})
 	}
 
-	// Claude Code 客户端判定：UA 匹配 claude-cli/* 且携带 metadata.user_id。
-	// 真正的 Claude Code 客户端自带完整的 system prompt、cache_control 断点和 header，
-	// 不需要代理做任何 body 级别的 mimicry；强行替换反而会破坏客户端的缓存策略
-	// （长 system prompt 被替换为 ~45 tokens 的短 prompt，低于 Anthropic 1024 token
-	// 最低缓存门槛，导致系统级缓存失效）。
+	// Claude Code *
 	//
-	// 对于非 Claude Code 的第三方客户端（opencode 等），仍然走完整 mimicry。
+	//
+	// （~45 tokens
+	//
+	//
 	isClaudeCode := IsClaudeCodeClient(ctx) || isClaudeCodeClient(c.GetHeader("User-Agent"), parsed.MetadataUserID)
 	shouldMimicClaudeCode := account.IsOAuth() && !isClaudeCode
 
 	if shouldMimicClaudeCode {
-		// 与 Parrot 对齐：OAuth 账号无条件重写 system（即使客户端已发了 Claude Code
-		// 风格的 system prompt）。原因：第三方工具（opencode 等）会发 "You are Claude
-		// Code..." system prompt 但缺少 billing attribution block，导致 Anthropic
-		// 检测到"有 CC prompt 但无 billing block"的不一致而判为 third-party。
-		// Parrot 的 transform_request 从不检查客户端 system 内容，直接覆盖。
+		//
+		// "You are Claude
+		// Code..." system prompt
+		// ""
+		// Parrot
 		systemRewritten := false
 		if !strings.Contains(strings.ToLower(reqModel), "haiku") {
 			systemRaw, _ := parsed.SystemValue()
@@ -4578,14 +4500,14 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 			systemRewritten = true
 		}
 
-		// system 被重写时保留 CC prompt 的 cache_control: ephemeral（匹配真实 Claude Code 行为）；
-		// 未重写时（haiku / 已含 CC 前缀）剥离客户端 cache_control，与原有行为一致。
-		// 两种情况下 enforceCacheControlLimit 都会兜底处理上限。
+		// system
+		//
+		//
 		normalizeOpts := claudeOAuthNormalizeOptions{stripSystemCacheControl: !systemRewritten}
 		if s.identityService != nil {
 			fp, err := s.identityService.GetOrCreateFingerprint(ctx, account.ID, c.Request.Header)
 			if err == nil && fp != nil {
-				// metadata 透传开启时跳过 metadata 注入
+				// metadata
 				_, mimicMPT, _ := s.settingService.GetGatewayForwardingSettings(ctx)
 				if !mimicMPT {
 					if metadataUserID := s.buildOAuthMetadataUserID(parsed, account, fp); metadataUserID != "" {
@@ -4602,9 +4524,9 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 			return nil, err
 		}
 
-		// D/E/F: 可选 messages cache 策略 + 工具名混淆 + tools[-1] 断点
-		// 与 forward_as_chat_completions / forward_as_responses 路径对齐，
-		// 原生 /v1/messages 路径也走同一套可配置字段级改写。
+		// D/E/F: + + tools[-1]
+		//
+		//
 		if err := replaceBody(s.rewriteMessageCacheControlIfEnabled(ctx, body)); err != nil {
 			return nil, err
 		}
@@ -4620,14 +4542,13 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		}
 	}
 
-	// 强制执行 cache_control 块数量限制（最多 4 个）
+	//
 	if err := replaceBody(enforceCacheControlLimit(body)); err != nil {
 		return nil, err
 	}
 
-	// 应用模型映射：
-	// - APIKey 账号：使用账号级别的显式映射（如果配置），否则透传原始模型名
-	// - OAuth/SetupToken 账号：使用 Anthropic 标准映射（短ID → 长ID）
+	// - APIKey
+	// - OAuth/SetupToken →
 	mappedModel := reqModel
 	mappingSource := ""
 	if account.Type == AccountTypeAPIKey {
@@ -4656,7 +4577,6 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		}
 	}
 	if mappedModel != reqModel {
-		// 替换请求体中的模型名
 		if err := replaceBody(s.replaceModelInBody(body, mappedModel)); err != nil {
 			return nil, err
 		}
@@ -4671,13 +4591,12 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		}
 	}
 
-	// 获取凭证
 	token, tokenType, err := s.GetAccessToken(ctx, account)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取代理URL（自定义 base URL 模式下，proxy 通过 buildCustomRelayURL 作为查询参数传递）
+	//
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
 		if !account.IsCustomBaseURLEnabled() || account.GetCustomBaseURL() == "" {
@@ -4685,10 +4604,9 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		}
 	}
 
-	// 解析 TLS 指纹 profile（同一请求生命周期内不变，避免重试循环中重复解析）
+	//
 	tlsProfile := s.tlsFPProfileService.ResolveTLSProfile(account)
 
-	// 调试日志：记录即将转发的账号信息
 	logger.LegacyPrintf("service.gateway", "[Forward] Using account: ID=%d Name=%s Platform=%s Type=%s TLSFingerprint=%v Proxy=%s",
 		account.ID, account.Name, account.Platform, account.Type, tlsProfile, proxyURL)
 	// Pre-filter: strip empty text blocks (including nested in tool_result) to prevent upstream 400.
@@ -4696,22 +4614,19 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		return nil, err
 	}
 
-	// 重试循环
 	var resp *http.Response
 	lastWireBody := body
 	retryStart := time.Now()
 	for attempt := 1; attempt <= maxRetryAttempts; attempt++ {
-		// 构建上游请求（每次重试需要重新构建，因为请求体需要重新读取）
 		upstreamCtx, releaseUpstreamCtx := detachStreamUpstreamContext(ctx, reqStream)
 		upstreamReq, wireBody, err := s.buildUpstreamRequest(upstreamCtx, c, account, body, token, tokenType, reqModel, reqStream, shouldMimicClaudeCode)
 		releaseUpstreamCtx()
 		if err != nil {
 			return nil, err
 		}
-		// 记录本次实际发送的 wire body；只有请求成功后才写回 ParsedRequest，避免 400 retry 基于已签名 CCH 再改写。
+		//
 		lastWireBody = wireBody
 
-		// 发送请求
 		resp, err = s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, tlsProfile)
 		if err != nil {
 			if resp != nil && resp.Body != nil {
@@ -4739,7 +4654,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
 
-		// 优先检测thinking block签名错误（400）并重试一次
+		//
 		if resp.StatusCode == 400 {
 			respBody, readErr := s.readUpstreamErrorBody(resp)
 			if readErr == nil {
@@ -4773,7 +4688,6 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 							strings.Contains(m, "function_response")
 					}
 
-					// 避免在重试预算已耗尽时再发起额外请求
 					if time.Since(retryStart) >= maxRetryElapsed {
 						resp.Body = io.NopCloser(bytes.NewReader(respBody))
 						break
@@ -4793,7 +4707,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 						retryResp, retryErr := s.httpUpstream.DoWithTLS(retryReq, proxyURL, account.ID, account.Concurrency, tlsProfile)
 						if retryErr == nil {
 							if retryResp.StatusCode < 400 {
-								// 重试请求被上游接受后同步 ParsedRequest，保证 usage/日志看到真实请求体。
+								//
 								lastWireBody = retryWireBody
 								if err := replaceBody(retryWireBody); err != nil {
 									_ = retryResp.Body.Close()
@@ -4834,7 +4748,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 										retryResp2, retryErr2 := s.httpUpstream.DoWithTLS(retryReq2, proxyURL, account.ID, account.Concurrency, tlsProfile)
 										if retryErr2 == nil {
 											if retryResp2.StatusCode < 400 {
-												// 二阶段工具块降级成功时也必须更新当前 body。
+												//
 												lastWireBody = retryWireBody2
 												if err := replaceBody(retryWireBody2); err != nil {
 													_ = retryResp2.Body.Close()
@@ -4883,7 +4797,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 					resp.Body = io.NopCloser(bytes.NewReader(respBody))
 					break
 				}
-				// 不是签名错误（或整流器已关闭），继续检查 budget 约束
+				//
 				errMsg := extractUpstreamErrorMessage(respBody)
 				if isThinkingBudgetConstraintError(errMsg) && s.settingService.IsBudgetRectifierEnabled(ctx) {
 					appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
@@ -4913,7 +4827,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 							budgetRetryResp, retryErr := s.httpUpstream.DoWithTLS(budgetRetryReq, proxyURL, account.ID, account.Concurrency, tlsProfile)
 							if retryErr == nil {
 								if budgetRetryResp.StatusCode < 400 {
-									// budget 修正请求成功后，ParsedRequest 也要描述被接受的修正版。
+									// budget
 									lastWireBody = budgetWireBody
 									if err := replaceBody(budgetWireBody); err != nil {
 										_ = budgetRetryResp.Body.Close()
@@ -4937,7 +4851,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 			}
 		}
 
-		// 检查是否需要通用重试（排除400，因为400已经在上面特殊处理过了）
+		//
 		if resp.StatusCode >= 400 && resp.StatusCode != 400 && s.shouldRetryUpstreamError(account, resp.StatusCode) {
 			if attempt < maxRetryAttempts {
 				elapsed := time.Since(retryStart)
@@ -4979,12 +4893,10 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 				}
 				continue
 			}
-			// 最后一次尝试也失败，跳出循环处理重试耗尽
 			break
 		}
 
-		// 不需要重试（成功或不可重试的错误），跳出循环
-		// DEBUG: 输出响应 headers（用于检测 rate limit 信息）
+		// DEBUG:
 		if account.Platform == PlatformGemini && resp.StatusCode < 400 && s.cfg != nil && s.cfg.Gateway.GeminiDebugResponseHeaders {
 			logger.LegacyPrintf("service.gateway", "[DEBUG] Gemini API Response Headers for account %d:", account.ID)
 			for k, v := range resp.Header {
@@ -4998,14 +4910,12 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	// 处理重试耗尽的情况
 	if resp.StatusCode >= 400 && s.shouldRetryUpstreamError(account, resp.StatusCode) {
 		if s.shouldFailoverUpstreamError(resp.StatusCode) {
 			respBody, _ := s.readUpstreamErrorBody(resp)
 			_ = resp.Body.Close()
 			resp.Body = io.NopCloser(bytes.NewReader(respBody))
 
-			// 调试日志：打印重试耗尽后的错误响应
 			logger.LegacyPrintf("service.gateway", "[Forward] Upstream error (retry exhausted, failover): Account=%d(%s) Status=%d RequestID=%s Body=%s",
 				account.ID, account.Name, resp.StatusCode, resp.Header.Get("x-request-id"), truncateString(string(respBody), 1000))
 
@@ -5034,13 +4944,11 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		return s.handleRetryExhaustedError(ctx, resp, c, account)
 	}
 
-	// 处理可切换账号的错误
 	if resp.StatusCode >= 400 && s.shouldFailoverUpstreamError(resp.StatusCode) {
 		respBody, _ := s.readUpstreamErrorBody(resp)
 		_ = resp.Body.Close()
 		resp.Body = io.NopCloser(bytes.NewReader(respBody))
 
-		// 调试日志：打印上游错误响应
 		logger.LegacyPrintf("service.gateway", "[Forward] Upstream error (failover): Account=%d(%s) Status=%d RequestID=%s Body=%s",
 			account.ID, account.Name, resp.StatusCode, resp.Header.Get("x-request-id"), truncateString(string(respBody), 1000))
 
@@ -5066,7 +4974,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		}
 	}
 	if resp.StatusCode >= 400 {
-		// 可选：对部分 400 触发 failover（默认关闭以保持语义）
+		//
 		if resp.StatusCode == 400 && s.cfg != nil && s.cfg.Gateway.FailoverOn400 {
 			respBody, readErr := s.readUpstreamErrorBody(resp)
 			if readErr != nil {
@@ -5114,16 +5022,14 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		return s.handleErrorResponse(ctx, resp, c, account, reqModel)
 	}
 
-	// 处理正常响应
 
 	if !bytes.Equal(lastWireBody, body) {
-		// 成功后再同步最终 wire body，避免失败重试从已签名 CCH 的 body 继续派生。
+		//
 		if err := replaceBody(lastWireBody); err != nil {
 			return nil, err
 		}
 	}
 
-	// 触发上游接受回调（提前释放串行锁，不等流完成）
 	if parsed.OnUpstreamAccepted != nil {
 		parsed.OnUpstreamAccepted()
 	}
@@ -5154,7 +5060,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	return &ForwardResult{
 		RequestID:        resp.Header.Get("x-request-id"),
 		Usage:            *usage,
-		Model:            originalModel, // 使用原始模型用于计费和日志
+		Model:            originalModel, // 使用原始model用于计费和日志
 		UpstreamModel:    mappedModel,
 		Stream:           reqStream,
 		Duration:         time.Since(startTime),
@@ -5219,7 +5125,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 	// Pre-filter: strip empty text blocks (including nested in tool_result) to prevent upstream 400.
 	input.Body = StripEmptyTextBlocks(input.Body)
 	if input.Parsed != nil {
-		// 透传分支也会改写实际 wire body，成功 usage hash 依赖这里同步当前 body。
+		//
 		if err := input.Parsed.ReplaceBody(input.Body); err != nil {
 			return nil, err
 		}
@@ -5235,7 +5141,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 			return nil, err
 		}
 		if input.Parsed != nil && !bytes.Equal(wireBody, input.Body) {
-			// build 阶段会按 beta 能力清理 body，发送前同步到 ParsedRequest 当前视图。
+			// build
 			if err := input.Parsed.ReplaceBody(wireBody); err != nil {
 				return nil, err
 			}
@@ -5269,7 +5175,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
 
-		// 透传分支禁止 400 请求体降级重试（该重试会改写请求体）
+		//
 		if resp.StatusCode >= 400 && resp.StatusCode != 400 && s.shouldRetryUpstreamError(account, resp.StatusCode) {
 			if attempt < maxRetryAttempts {
 				elapsed := time.Since(retryStart)
@@ -5443,9 +5349,9 @@ func (s *GatewayService) buildUpstreamRequestAnthropicAPIKeyPassthrough(
 		targetURL = validatedURL + "/v1/messages?beta=true"
 	}
 
-	// 能力维度 body sanitize：透传路径上 anthropic-beta header 原样透传客户端值，
-	// 依此决定是否保留 body 中的 context_management。避免“客户端 body 带字段但
-	// header 忘记带 beta token”的客户端 bug 在透传场景下让上游 400。
+	//
+	// “
+	// header ”
 	clientBeta := ""
 	if c != nil && c.Request != nil {
 		clientBeta = getHeaderRaw(c.Request.Header, "anthropic-beta")
@@ -5472,7 +5378,6 @@ func (s *GatewayService) buildUpstreamRequestAnthropicAPIKeyPassthrough(
 		}
 	}
 
-	// 覆盖入站鉴权残留，并注入上游认证
 	req.Header.Del("authorization")
 	req.Header.Del("x-api-key")
 	req.Header.Del("x-goog-api-key")
@@ -5604,7 +5509,6 @@ func (s *GatewayService) handleStreamingResponseAnthropicAPIKeyPassthrough(
 		case ev, ok := <-events:
 			if !ok {
 				if !clientDisconnected {
-					// 兜底补刷，确保最后一个未以空行结尾的事件也能及时送达客户端。
 					flusher.Flush()
 				}
 				if !sawTerminalEvent {
@@ -5662,7 +5566,7 @@ func (s *GatewayService) handleStreamingResponseAnthropicAPIKeyPassthrough(
 					clientDisconnected = true
 					logger.LegacyPrintf("service.gateway", "[Anthropic passthrough] Client disconnected during streaming, continue draining upstream for usage: account=%d", account.ID)
 				} else if line == "" {
-					// 按 SSE 事件边界刷出，减少每行 flush 带来的 syscall 开销。
+					//
 					flusher.Flush()
 					lastDataAt = time.Now()
 					inPartialEvent = false
@@ -5731,7 +5635,7 @@ func (s *GatewayService) parseSSEUsagePassthrough(data string, usage *ClaudeUsag
 			usage.CacheCreationInputTokens = int(msgUsage.Get("cache_creation_input_tokens").Int())
 			usage.CacheReadInputTokens = int(msgUsage.Get("cache_read_input_tokens").Int())
 
-			// 保持与通用解析一致：message_start 允许覆盖 5m/1h 明细（包括 0）。
+			//
 			cc5m := msgUsage.Get("cache_creation.ephemeral_5m_input_tokens")
 			cc1h := msgUsage.Get("cache_creation.ephemeral_1h_input_tokens")
 			if cc5m.Exists() || cc1h.Exists() {
@@ -5865,9 +5769,9 @@ func writeAnthropicPassthroughResponseHeaders(dst http.Header, src http.Header, 
 	}
 }
 
-// ApplyBedrockCCCompat 应用 Bedrock CC 兼容转换（渠道级模型映射后调用）
-// 清理 body 中 Anthropic API 专有字段、修复 thinking/tool_use ID、过滤 beta token，
-// 同时过滤 HTTP header 中的 anthropic-beta（防止 Passthrough 路径透传不支持的 token）。
+// ApplyBedrockCCCompat
+//
+//
 func (s *GatewayService) ApplyBedrockCCCompat(c *gin.Context, body []byte, model string, account *Account, groupID *int64) []byte {
 	if !s.isBedrockCCCompatEnabled(c.Request.Context(), account, groupID) {
 		return body
@@ -5876,7 +5780,7 @@ func (s *GatewayService) ApplyBedrockCCCompat(c *gin.Context, body []byte, model
 	body = sanitizeBedrockThinking(body, model)
 	body = sanitizeBedrockToolUseIDs(body)
 	body = sanitizeBedrockCCBetaTokens(body, model)
-	// 过滤 HTTP header 中的 anthropic-beta，只保留 Bedrock 支持的 token
+	//
 	if betaHeader := c.GetHeader("anthropic-beta"); betaHeader != "" {
 		if filtered := ResolveBedrockBetaTokens(betaHeader, body, model); len(filtered) > 0 {
 			c.Request.Header.Set("anthropic-beta", strings.Join(filtered, ", "))
@@ -5887,7 +5791,7 @@ func (s *GatewayService) ApplyBedrockCCCompat(c *gin.Context, body []byte, model
 	return body
 }
 
-// isBedrockCCCompatEnabled 检查渠道是否启用了 Bedrock CC 兼容模式
+// isBedrockCCCompatEnabled
 func (s *GatewayService) isBedrockCCCompatEnabled(ctx context.Context, account *Account, groupID *int64) bool {
 	if groupID == nil || s.channelService == nil {
 		return false
@@ -5899,7 +5803,7 @@ func (s *GatewayService) isBedrockCCCompatEnabled(ctx context.Context, account *
 	return ch.IsBedrockCCCompatEnabled(account.Platform)
 }
 
-// forwardBedrock 转发请求到 AWS Bedrock
+// forwardBedrock
 func (s *GatewayService) forwardBedrock(
 	ctx context.Context,
 	c *gin.Context,
@@ -5925,7 +5829,7 @@ func (s *GatewayService) forwardBedrock(
 		betaHeader = c.GetHeader("anthropic-beta")
 	}
 
-	// 准备请求体（注入 anthropic_version/anthropic_beta，移除 Bedrock 不支持的字段，清理 cache_control）
+	//
 	betaTokens, err := s.resolveBedrockBetaTokensForRequest(ctx, account, betaHeader, body, mappedModel)
 	if err != nil {
 		return nil, err
@@ -5944,7 +5848,6 @@ func (s *GatewayService) forwardBedrock(
 	logger.LegacyPrintf("service.gateway", "[Bedrock] 命中 Bedrock 分支: account=%d name=%s model=%s->%s stream=%v",
 		account.ID, account.Name, reqModel, mappedModel, reqStream)
 
-	// 根据账号类型选择认证方式
 	var signer *BedrockSigner
 	var bedrockAPIKey string
 	if account.IsBedrockAPIKey() {
@@ -5959,30 +5862,28 @@ func (s *GatewayService) forwardBedrock(
 		}
 	}
 
-	// 执行上游请求（含重试）
 	resp, err := s.executeBedrockUpstream(ctx, c, account, bedrockBody, mappedModel, region, reqStream, signer, bedrockAPIKey, proxyURL)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	// 将 Bedrock 的 x-amzn-requestid 映射到 x-request-id，
-	// 使通用错误处理函数（handleErrorResponse、handleRetryExhaustedError）能正确提取 AWS request ID。
+	//
+	//
 	if awsReqID := resp.Header.Get("x-amzn-requestid"); awsReqID != "" && resp.Header.Get("x-request-id") == "" {
 		resp.Header.Set("x-request-id", awsReqID)
 	}
 
-	// 错误/failover 处理
+	//
 	if resp.StatusCode >= 400 {
 		return s.handleBedrockUpstreamErrors(ctx, resp, c, account)
 	}
 
-	// Bedrock 分支绕过通用 Forward 成功路径，这里保持上游接受回调语义一致。
+	// Bedrock
 	if parsed.OnUpstreamAccepted != nil {
 		parsed.OnUpstreamAccepted()
 	}
 
-	// 响应处理
 	var usage *ClaudeUsage
 	var firstTokenMs *int
 	var clientDisconnect bool
@@ -6016,7 +5917,7 @@ func (s *GatewayService) forwardBedrock(
 	}, nil
 }
 
-// executeBedrockUpstream 执行 Bedrock 上游请求（含重试逻辑）
+// executeBedrockUpstream
 func (s *GatewayService) executeBedrockUpstream(
 	ctx context.Context,
 	c *gin.Context,
@@ -6120,7 +6021,7 @@ func (s *GatewayService) executeBedrockUpstream(
 	return resp, nil
 }
 
-// handleBedrockUpstreamErrors 处理 Bedrock 上游 4xx/5xx 错误（failover + 错误响应）
+// handleBedrockUpstreamErrors +
 func (s *GatewayService) handleBedrockUpstreamErrors(
 	ctx context.Context,
 	resp *http.Response,
@@ -6181,7 +6082,7 @@ func (s *GatewayService) handleBedrockUpstreamErrors(
 	return s.handleErrorResponse(ctx, resp, c, account)
 }
 
-// buildUpstreamRequestBedrock 构建 Bedrock 上游请求
+// buildUpstreamRequestBedrock
 func (s *GatewayService) buildUpstreamRequestBedrock(
 	ctx context.Context,
 	body []byte,
@@ -6200,7 +6101,7 @@ func (s *GatewayService) buildUpstreamRequestBedrock(
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	// SigV4 签名
+	// SigV4
 	if err := signer.SignRequest(ctx, req, body); err != nil {
 		return nil, fmt.Errorf("sign bedrock request: %w", err)
 	}
@@ -6208,7 +6109,7 @@ func (s *GatewayService) buildUpstreamRequestBedrock(
 	return req, nil
 }
 
-// buildUpstreamRequestBedrockAPIKey 构建 Bedrock API Key (Bearer Token) 上游请求
+// buildUpstreamRequestBedrockAPIKey (Bearer Token)
 func (s *GatewayService) buildUpstreamRequestBedrockAPIKey(
 	ctx context.Context,
 	body []byte,
@@ -6231,8 +6132,8 @@ func (s *GatewayService) buildUpstreamRequestBedrockAPIKey(
 	return req, nil
 }
 
-// handleBedrockNonStreamingResponse 处理 Bedrock 非流式响应
-// Bedrock InvokeModel 非流式响应的 body 格式与 Claude API 兼容
+// handleBedrockNonStreamingResponse
+// Bedrock InvokeModel
 func (s *GatewayService) handleBedrockNonStreamingResponse(
 	ctx context.Context,
 	resp *http.Response,
@@ -6244,8 +6145,7 @@ func (s *GatewayService) handleBedrockNonStreamingResponse(
 		return nil, err
 	}
 
-	// 转换 Bedrock 特有的 amazon-bedrock-invocationMetrics 为标准 Anthropic usage 格式
-	// 并移除该字段避免透传给客户端
+	//
 	body = transformBedrockInvocationMetrics(body)
 
 	usage := parseClaudeUsageFromResponseBody(body)
@@ -6264,7 +6164,7 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 		return req, body, err
 	}
 
-	// 确定目标URL
+	//
 	targetURL := claudeAPIURL
 	if account.Type == AccountTypeAPIKey {
 		baseURL := account.GetBaseURL()
@@ -6292,26 +6192,26 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 		clientHeaders = c.Request.Header
 	}
 
-	// OAuth账号：应用统一指纹和metadata重写（受设置开关控制）
+	// OAuth
 	var fingerprint *Fingerprint
 	enableFP, enableMPT, enableCCH := true, false, false
 	if s.settingService != nil {
 		enableFP, enableMPT, enableCCH = s.settingService.GetGatewayForwardingSettings(ctx)
 	}
 	if account.IsOAuth() && s.identityService != nil {
-		// 1. 获取或创建指纹（包含随机生成的ClientID）
+		// 1.
 		fp, err := s.identityService.GetOrCreateFingerprint(ctx, account.ID, clientHeaders)
 		if err != nil {
 			logger.LegacyPrintf("service.gateway", "Warning: failed to get fingerprint for account %d: %v", account.ID, err)
-			// 失败时降级为透传原始headers
+			//
 		} else {
 			if enableFP {
 				fingerprint = fp
 			}
 
-			// 2. 重写metadata.user_id（需要指纹中的ClientID和账号的account_uuid）
-			// 如果启用了会话ID伪装，会在重写后替换 session 部分为固定值
-			// 当 metadata 透传开启时跳过重写
+			// 2.
+			//
+			//
 			if !enableMPT {
 				accountUUID := account.GetExtraString("account_uuid")
 				if accountUUID != "" && fp.ClientID != "" {
@@ -6323,34 +6223,33 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 		}
 	}
 
-	// 同步 billing header cc_version 与实际发送的 User-Agent 版本
+	//
 	if fingerprint != nil {
 		body = syncBillingHeaderVersion(body, fingerprint.UserAgent)
 	}
 
-	// === 计算最终 anthropic-beta header（先于 body sanitize 与 CCH 签名）===
+	// === ===
 	//
-	// 顺序约束：
-	//   1) 算 finalBeta（纯函数，不依赖 req.Header；mimicry 路径会忽略客户端 beta，
-	//      与原“OAuth + mimicClaudeCode 跳过白名单透传”行为对齐）
-	//   2) 按 finalBeta 做能力维度 body sanitize（如 context-management beta 缺失 →
-	//      strip body.context_management，与 Bedrock 路径对称）
-	//   3) CCH 签名（必须使用 strip 后的 body，否则 hash 与最终 body 不一致 →
-	//      被 Anthropic 判 third-party）
-	//   4) NewRequest（body 至此最终敲定）
-	//   5) 透传白名单 / fingerprint / mimic header / 写入 finalBeta
+	//   1)
+	//      “OAuth + mimicClaudeCode ”
+	//   2) →
+	//      strip body.context_management，
+	//   3) CCH →
+	//
+	//   4) NewRequest（body
+	//   5)
 	policyFilterSet := s.getBetaPolicyFilterSet(ctx, c, account, modelID)
 	effectiveDropSet := mergeDropSets(policyFilterSet)
 	finalBetaHeader, finalBetaShouldSet := s.computeFinalAnthropicBeta(
 		tokenType, mimicClaudeCode, modelID, clientHeaders, body, effectiveDropSet,
 	)
 
-	// 能力维度 body sanitize：与最终 anthropic-beta header 对称
+	//
 	if sanitized, changed := sanitizeAnthropicBodyForBetaTokens(body, finalBetaHeader); changed {
 		body = sanitized
 	}
 
-	// CCH 签名：将 cch=00000 占位符替换为 xxHash64 签名（需在所有 body 修改之后）
+	// CCH =00000
 	if enableCCH {
 		body = signBillingHeaderCCH(body)
 	}
@@ -6360,18 +6259,17 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 		return nil, nil, err
 	}
 
-	// 设置认证头（保持原始大小写）
 	if tokenType == "oauth" {
 		setHeaderRaw(req.Header, "authorization", "Bearer "+token)
 	} else {
 		setHeaderRaw(req.Header, "x-api-key", token)
 	}
 
-	// 白名单透传 headers
-	// OAuth mimicry 路径：跳过客户端 header 透传，与 Parrot 对齐。
-	// Parrot 的 build_upstream_headers 只发 9 个精确 header，不透传任何客户端 header。
-	// 透传客户端 header 会引入不一致的 x-stainless-* / anthropic-beta / user-agent /
-	// x-claude-code-session-id 等值，和我们注入的伪装 header 冲突，被 Anthropic 判 third-party。
+	//
+	// OAuth mimicry
+	// Parrot
+	// * / anthropic-beta / user-agent /
+	// x-claude-code-session-id
 	if tokenType != "oauth" || !mimicClaudeCode {
 		for key, values := range clientHeaders {
 			lowerKey := strings.ToLower(key)
@@ -6384,12 +6282,12 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 		}
 	}
 
-	// OAuth账号：应用缓存的指纹到请求头（覆盖白名单透传的头）
+	// OAuth
 	if fingerprint != nil {
 		s.identityService.ApplyFingerprint(req, fingerprint)
 	}
 
-	// 确保必要的headers存在（保持原始大小写）
+	//
 	if getHeaderRaw(req.Header, "content-type") == "" {
 		setHeaderRaw(req.Header, "content-type", "application/json")
 	}
@@ -6400,21 +6298,21 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 		applyClaudeOAuthHeaderDefaults(req)
 	}
 
-	// OAuth + mimic Claude Code：强制注入 CLI 指纹相关 header
+	// OAuth + mimic Claude Code：
 	// （user-agent/x-stainless-*/x-app/Accept/x-stainless-helper-method/x-client-request-id）
 	if tokenType == "oauth" && mimicClaudeCode {
 		applyClaudeCodeMimicHeaders(req, reqStream)
 	}
 
-	// 写入最终 anthropic-beta header
-	// 注：透传分支白名单可能写入了客户端 anthropic-beta，无条件 Del 一次再按 finalBeta
-	// 决定是否 set，确保 dropSet 过滤后的结果一定覆盖客户端原始值。
+	//
+	//
+	//
 	deleteHeaderAllForms(req.Header, "anthropic-beta")
 	if finalBetaShouldSet {
 		setHeaderRaw(req.Header, "anthropic-beta", finalBetaHeader)
 	}
 
-	// 同步 X-Claude-Code-Session-Id 头：取 body 中已处理的 metadata.user_id 的 session_id 覆盖
+	//
 	if sessionHeader := getHeaderRaw(req.Header, "X-Claude-Code-Session-Id"); sessionHeader != "" {
 		if uid := gjson.GetBytes(body, "metadata.user_id").String(); uid != "" {
 			if parsed := ParseMetadataUserID(uid); parsed != nil {
@@ -6423,7 +6321,7 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 		}
 	}
 
-	// === DEBUG: 打印上游转发请求（headers + body 摘要），与 CLIENT_ORIGINAL 对比 ===
+	// === DEBUG: + body ===
 	s.debugLogGatewaySnapshot("UPSTREAM_FORWARD", req.Header, body, map[string]string{
 		"url":                 req.URL.String(),
 		"token_type":          tokenType,
@@ -6459,9 +6357,9 @@ func (s *GatewayService) buildUpstreamRequestAnthropicVertex(
 		return nil, err
 	}
 
-	// 能力维度 sanitize：Vertex 路径上 anthropic-beta header 原样透传客户端值
-	// （下面白名单跳过 anthropic-version 但保留 anthropic-beta），依此决定是否
-	// 保留 body 中的 context_management，与 Anthropic 直连 / Bedrock 路径对称。
+	//
+	// （
+	//
 	if c != nil && c.Request != nil {
 		clientBeta := getHeaderRaw(c.Request.Header, "anthropic-beta")
 		if sanitized, changed := sanitizeAnthropicBodyForBetaTokens(vertexBody, clientBeta); changed {
@@ -6508,23 +6406,23 @@ func (s *GatewayService) buildUpstreamRequestAnthropicVertex(
 	return req, nil
 }
 
-// getBetaHeader 处理anthropic-beta header
-// 对于OAuth账号，需要确保包含oauth-2025-04-20
+// getBetaHeader
+//
 func (s *GatewayService) getBetaHeader(modelID string, clientBetaHeader string) string {
-	// 如果客户端传了anthropic-beta
+	//
 	if clientBetaHeader != "" {
-		// 已包含oauth beta则直接返回
+		//
 		if strings.Contains(clientBetaHeader, claude.BetaOAuth) {
 			return clientBetaHeader
 		}
 
-		// 需要添加oauth beta
+		//
 		parts := strings.Split(clientBetaHeader, ",")
 		for i, p := range parts {
 			parts[i] = strings.TrimSpace(p)
 		}
 
-		// 在claude-code-20250219后面插入oauth beta
+		//
 		claudeCodeIdx := -1
 		for i, p := range parts {
 			if p == claude.BetaClaudeCode {
@@ -6534,7 +6432,7 @@ func (s *GatewayService) getBetaHeader(modelID string, clientBetaHeader string) 
 		}
 
 		if claudeCodeIdx >= 0 {
-			// 在claude-code后面插入
+			//
 			newParts := make([]string, 0, len(parts)+1)
 			newParts = append(newParts, parts[:claudeCodeIdx+1]...)
 			newParts = append(newParts, claude.BetaOAuth)
@@ -6542,12 +6440,11 @@ func (s *GatewayService) getBetaHeader(modelID string, clientBetaHeader string) 
 			return strings.Join(newParts, ",")
 		}
 
-		// 没有claude-code，放在第一位
+		//
 		return claude.BetaOAuth + "," + clientBetaHeader
 	}
 
-	// 客户端没传，根据模型生成
-	// haiku 模型不需要 claude-code beta
+	// haiku
 	if strings.Contains(strings.ToLower(modelID), "haiku") {
 		return claude.HaikuBetaHeader
 	}
@@ -6636,24 +6533,23 @@ func mergeAnthropicBetaDropping(required []string, incoming string, drop map[str
 	return strings.Join(out, ",")
 }
 
-// computeFinalAnthropicBeta 计算发往上游的最终 anthropic-beta header 值。
+// computeFinalAnthropicBeta
 //
-// 设计动机：将原本在 buildUpstreamRequest 内联在一起、依赖 req.Header 的
-// anthropic-beta 计算逻辑抽成纯函数。这样调用方可以在 NewRequest 之前
-// 就提前拿到最终 beta header，进而能按它对 body 做能力维度 sanitize 后再做
-// CCH 签名——一举修复了以下之前由顺序依赖导致的能力维度 sanitize
-// 无法部署的问题（签名与最终 body 不一致可以被判 third-party）。
 //
-// 返回 (value, shouldSet)：
-//   - shouldSet=false 意为“不主动设置 anthropic-beta header”，与原代码“
-//     API-key 账号 + 客户端未传 anthropic-beta + InjectBetaForAPIKey 未开启或
-//     requestNeedsBetaFeatures=false”的行为对齐。
-//   - shouldSet=true 时 value 可能为空字符串（例如客户端透传的 beta 被 dropSet
-//     全部过滤掉），这与原代码中 setHeaderRaw 的结果一致。
+// anthropic-beta
 //
-// clientHeaders 是客户端原始 HTTP header（通常为 c.Request.Header）；nil 时按“客户端
-// 未传”处理。body 是已经 metadata 重写 / billing version sync 之后但未 sanitize 上游
-// 不兼容字段之前的版本。
+// CCH ——
+//
+//
+// (value, shouldSet)：
+//   - shouldSet=false “”，“
+//     API-key + + InjectBetaForAPIKey
+//     requestNeedsBetaFeatures=false”
+//   - shouldSet=true
+//
+//
+// clientHeaders “
+// ”
 func (s *GatewayService) computeFinalAnthropicBeta(
 	tokenType string,
 	mimicClaudeCode bool,
@@ -6669,15 +6565,15 @@ func (s *GatewayService) computeFinalAnthropicBeta(
 
 	if tokenType == "oauth" {
 		if mimicClaudeCode {
-			// mimic 路径：原代码跳过白名单透传，incomingBeta 总是空字符串。
-			// 这里传空 string 以严格对齐原行为。
+			// mimic
+			//
 			requiredBetas := []string{claude.BetaOAuth, claude.BetaInterleavedThinking}
 			if !strings.Contains(strings.ToLower(modelID), "haiku") {
 				requiredBetas = claude.FullClaudeCodeMimicryBetas()
 			}
 			return mergeAnthropicBetaDropping(requiredBetas, "", effectiveDropSet), true
 		}
-		// 真 Claude Code 客户端透传路径
+		//
 		return stripBetaTokensWithSet(s.getBetaHeader(modelID, clientBeta), effectiveDropSet), true
 	}
 
@@ -6695,16 +6591,15 @@ func (s *GatewayService) computeFinalAnthropicBeta(
 	return "", false
 }
 
-// computeFinalCountTokensAnthropicBeta 是 count_tokens 路径上 anthropic-beta header 的
-// 计算纯函数。语义与 computeFinalAnthropicBeta 对齐，但备份了 count_tokens 独有的
-// 两条特殊规则：
+// computeFinalCountTokensAnthropicBeta
 //
-//   - OAuth mimic：requiredBetas 为 FullClaudeCodeMimicryBetas + BetaTokenCounting
-//     （与 messages 不同的是：不按 haiku 排除；count_tokens 始终携带 token-counting beta）
-//   - OAuth 透传 + 客户端未传 anthropic-beta：补齐 CountTokensBetaHeader
-//   - OAuth 透传 + 客户端传了：补齐 BetaTokenCounting（如果未含）
 //
-// 返回语义同 computeFinalAnthropicBeta。
+//   - OAuth mimic：requiredBetas + BetaTokenCounting
+//     （
+//   - OAuth +
+//   - OAuth +
+//
+//
 func (s *GatewayService) computeFinalCountTokensAnthropicBeta(
 	tokenType string,
 	mimicClaudeCode bool,
@@ -6720,10 +6615,10 @@ func (s *GatewayService) computeFinalCountTokensAnthropicBeta(
 
 	if tokenType == "oauth" {
 		if mimicClaudeCode {
-			// 与原代码严格等价：original buildCountTokensRequest 在 count_tokens mimic
-			// 分支上**不**会跳过白名单透传（与 messages mimic 路径不同），所以
-			// incomingBeta = req.Header[anthropic-beta] = 客户端透传过来的 client beta。
-			// 重构后直接从 clientHeaders 拿同一个值，保持行为一致。
+			//
+			// ****
+			// incomingBeta = req.Header[anthropic-beta] =
+			//
 			requiredBetas := append(claude.FullClaudeCodeMimicryBetas(), claude.BetaTokenCounting)
 			return mergeAnthropicBetaDropping(requiredBetas, clientBeta, effectiveDropSet), true
 		}
@@ -6955,19 +6850,19 @@ func (s *GatewayService) resolveBedrockBetaTokensForRequest(
 	body []byte,
 	modelID string,
 ) ([]string, error) {
-	// 1. 对原始 header 中的 beta token 做 block 检查（快速失败）
+	// 1.
 	policy := s.evaluateBetaPolicy(ctx, betaHeader, account, modelID)
 	if policy.blockErr != nil {
 		return nil, policy.blockErr
 	}
 
-	// 2. 解析 header + body 自动注入 + Bedrock 转换/过滤
+	// 2. + body + Bedrock
 	betaTokens := ResolveBedrockBetaTokens(betaHeader, body, modelID)
 
-	// 3. 对最终 token 列表再做 block 检查，捕获通过 body 自动注入绕过 header block 的情况。
-	//    例如：管理员 block 了 interleaved-thinking，客户端不在 header 中带该 token，
-	//    但请求体中包含 thinking 字段 → autoInjectBedrockBetaTokens 会自动补齐 →
-	//    如果不做此检查，block 规则会被绕过。
+	// 3.
+	//
+	//    → autoInjectBedrockBetaTokens →
+	//
 	if blockErr := s.checkBetaPolicyBlockForTokens(ctx, betaTokens, account, modelID); blockErr != nil {
 		return nil, blockErr
 	}
@@ -6975,8 +6870,8 @@ func (s *GatewayService) resolveBedrockBetaTokensForRequest(
 	return filterBetaTokens(betaTokens, policy.filterSet), nil
 }
 
-// checkBetaPolicyBlockForTokens 检查 token 列表中是否有被管理员 block 规则命中的 token。
-// 用于补充 evaluateBetaPolicy 对 header 的检查，覆盖 body 自动注入的 token。
+// checkBetaPolicyBlockForTokens
+//
 func (s *GatewayService) checkBetaPolicyBlockForTokens(ctx context.Context, tokens []string, account *Account, model string) *BetaBlockedError {
 	if s.settingService == nil || len(tokens) == 0 {
 		return nil
@@ -7030,7 +6925,7 @@ func applyClaudeCodeMimicHeaders(req *http.Request, isStream bool) {
 	// Start with the standard defaults (fill missing).
 	applyClaudeOAuthHeaderDefaults(req)
 	// Then force key headers to match Claude Code fingerprint regardless of what the client sent.
-	// 使用 resolveWireCasing 确保 key 与真实 wire format 一致（如 "x-app" 而非 "X-App"）
+	// "x-app" "X-App"）
 	for key, value := range claude.DefaultHeaders {
 		if value == "" {
 			continue
@@ -7042,8 +6937,7 @@ func applyClaudeCodeMimicHeaders(req *http.Request, isStream bool) {
 	if isStream {
 		setHeaderRaw(req.Header, "x-stainless-helper-method", "stream")
 	}
-	// Real Claude CLI 每个请求都会生成一个新的 UUID 放在 x-client-request-id。
-	// 上游会以此作为会话/请求指纹的一部分，缺失或重复都可能触发第三方判定。
+	// Real Claude CLI
 	if getHeaderRaw(req.Header, "x-client-request-id") == "" {
 		setHeaderRaw(req.Header, "x-client-request-id", uuid.NewString())
 	}
@@ -7057,33 +6951,30 @@ func truncateForLog(b []byte, maxBytes int) string {
 		b = b[:maxBytes]
 	}
 	s := string(b)
-	// 保持一行，避免污染日志格式
 	s = strings.ReplaceAll(s, "\n", "\\n")
 	s = strings.ReplaceAll(s, "\r", "\\r")
 	return s
 }
 
-// shouldRectifySignatureError 统一判断是否应触发签名整流（strip thinking blocks 并重试）。
-// 根据账号类型检查对应的开关和匹配模式。
+// shouldRectifySignatureError
 func (s *GatewayService) shouldRectifySignatureError(ctx context.Context, account *Account, respBody []byte) bool {
 	if account.Type == AccountTypeAPIKey {
-		// API Key 账号：独立开关，一次读取配置
+		// API Key
 		settings, err := s.settingService.GetRectifierSettings(ctx)
 		if err != nil || !settings.Enabled || !settings.APIKeySignatureEnabled {
 			return false
 		}
-		// 先检查内置模式（同 OAuth），再检查自定义关键词
+		//
 		if s.isThinkingBlockSignatureError(respBody) {
 			return true
 		}
 		return matchSignaturePatterns(respBody, settings.APIKeySignaturePatterns)
 	}
-	// OAuth/SetupToken/Upstream/Bedrock 等：保持原有行为（内置模式 + 原开关）
+	// OAuth/SetupToken/Upstream/Bedrock +
 	return s.isThinkingBlockSignatureError(respBody) && s.settingService.IsSignatureRectifierEnabled(ctx)
 }
 
-// isSignatureErrorPattern 仅做模式匹配，不检查开关。
-// 用于已进入重试流程后的二阶段检测（此时开关已在首次调用时验证过）。
+// isSignatureErrorPattern
 func (s *GatewayService) isSignatureErrorPattern(ctx context.Context, account *Account, respBody []byte) bool {
 	if s.isThinkingBlockSignatureError(respBody) {
 		return true
@@ -7098,7 +6989,7 @@ func (s *GatewayService) isSignatureErrorPattern(ctx context.Context, account *A
 	return false
 }
 
-// matchSignaturePatterns 检查响应体是否匹配自定义关键词列表（不区分大小写）。
+// matchSignaturePatterns
 func matchSignaturePatterns(respBody []byte, patterns []string) bool {
 	if len(patterns) == 0 {
 		return false
@@ -7116,36 +7007,36 @@ func matchSignaturePatterns(respBody []byte, patterns []string) bool {
 	return false
 }
 
-// isThinkingBlockSignatureError 检测是否是thinking block相关错误
-// 这类错误可以通过过滤thinking blocks并重试来解决
+// isThinkingBlockSignatureError
+//
 func (s *GatewayService) isThinkingBlockSignatureError(respBody []byte) bool {
 	msg := strings.ToLower(strings.TrimSpace(extractUpstreamErrorMessage(respBody)))
 	if msg == "" {
 		return false
 	}
 
-	// 检测signature相关的错误（更宽松的匹配）
-	// 例如: "Invalid `signature` in `thinking` block", "***.signature" 等
+	//
+	// "Invalid `signature` in `thinking` block", "***.signature"
 	if strings.Contains(msg, "signature") {
 		return true
 	}
 
-	// 检测 thinking block 顺序/类型错误
-	// 例如: "Expected `thinking` or `redacted_thinking`, but found `text`"
+	//
+	// "Expected `thinking` or `redacted_thinking`, but found `text`"
 	if strings.Contains(msg, "expected") && (strings.Contains(msg, "thinking") || strings.Contains(msg, "redacted_thinking")) {
 		logger.LegacyPrintf("service.gateway", "[SignatureCheck] Detected thinking block type error")
 		return true
 	}
 
-	// 检测 thinking block 被修改的错误
-	// 例如: "thinking or redacted_thinking blocks in the latest assistant message cannot be modified"
+	//
+	// "thinking or redacted_thinking blocks in the latest assistant message cannot be modified"
 	if strings.Contains(msg, "cannot be modified") && (strings.Contains(msg, "thinking") || strings.Contains(msg, "redacted_thinking")) {
 		logger.LegacyPrintf("service.gateway", "[SignatureCheck] Detected thinking block modification error")
 		return true
 	}
 
-	// 检测空消息内容错误（可能是过滤 thinking blocks 后导致的，或客户端发送了空 text block）
-	// 例如: "all messages must have non-empty content"
+	//
+	// "all messages must have non-empty content"
 	//       "messages: text content blocks must be non-empty"
 	if strings.Contains(msg, "non-empty content") || strings.Contains(msg, "empty content") ||
 		strings.Contains(msg, "content blocks must be non-empty") {
@@ -7153,10 +7044,10 @@ func (s *GatewayService) isThinkingBlockSignatureError(respBody []byte) bool {
 		return true
 	}
 
-	// 检测 thinking block 缺少 thinking 字段的错误（跨模型切换时常见：
-	// 其他模型回过的 assistant 历史里有 type=thinking 但没有 thinking 文本，
-	// 喂给开启 extended thinking 的 claude 时会被拒）
-	// 例如: "messages.1.content.0.thinking: each thinking block must contain thinking"
+	//
+	// =thinking
+	//
+	// "messages.1.content.0.thinking: each thinking block must contain thinking"
 	if strings.Contains(msg, "thinking block must contain") {
 		logger.LegacyPrintf("service.gateway", "[SignatureCheck] Detected thinking block missing content error")
 		return true
@@ -7166,22 +7057,21 @@ func (s *GatewayService) isThinkingBlockSignatureError(respBody []byte) bool {
 }
 
 func (s *GatewayService) shouldFailoverOn400(respBody []byte) bool {
-	// 只对"可能是兼容性差异导致"的 400 允许切换，避免无意义重试。
-	// 默认保守：无法识别则不切换。
+	// ""
 	msg := strings.ToLower(strings.TrimSpace(extractUpstreamErrorMessage(respBody)))
 	if msg == "" {
 		return false
 	}
 
-	// 缺少/错误的 beta header：换账号/链路可能成功（尤其是混合调度时）。
-	// 更精确匹配 beta 相关的兼容性问题，避免误触发切换。
+	//
+	//
 	if strings.Contains(msg, "anthropic-beta") ||
 		strings.Contains(msg, "beta feature") ||
 		strings.Contains(msg, "requires beta") {
 		return true
 	}
 
-	// thinking/tool streaming 等兼容性约束（常见于中间转换链路）
+	// thinking/tool streaming
 	if strings.Contains(msg, "thinking") || strings.Contains(msg, "thought_signature") || strings.Contains(msg, "signature") {
 		return true
 	}
@@ -7192,10 +7082,10 @@ func (s *GatewayService) shouldFailoverOn400(respBody []byte) bool {
 	return false
 }
 
-// sanitizeStreamError 返回不含网络地址的客户端可见错误描述。
-// 默认 (*net.OpError).Error() 会拼接 Source/Addr 字段，泄露内部 IP/端口与上游
-// 服务器地址（例如 "read tcp 10.0.0.1:54321->52.1.2.3:443: read: connection
-// reset by peer"）。该函数只保留可识别的错误类别，原始 err 仍在调用点写入日志。
+// sanitizeStreamError
+// (*net.OpError).Error()
+// "read tcp 10.0.0.1:54321->52.1.2.3:443: read: connection
+// reset by peer"）。
 func sanitizeStreamError(err error) string {
 	if err == nil {
 		return ""
@@ -7235,17 +7125,17 @@ func sanitizeStreamError(err error) string {
 	return "upstream connection error"
 }
 
-// ExtractUpstreamErrorMessage 从上游响应体中提取错误消息
-// 支持 Claude 风格的错误格式：{"type":"error","error":{"type":"...","message":"..."}}
+// ExtractUpstreamErrorMessage
+// {"type":"error","error":{"type":"...","message":"..."}}
 func ExtractUpstreamErrorMessage(body []byte) string {
 	return extractUpstreamErrorMessage(body)
 }
 
 func extractUpstreamErrorMessage(body []byte) string {
-	// Claude 风格：{"type":"error","error":{"type":"...","message":"..."}}
+	// Claude {"type":"error","error":{"type":"...","message":"..."}}
 	if m := gjson.GetBytes(body, "error.message").String(); strings.TrimSpace(m) != "" {
 		inner := strings.TrimSpace(m)
-		// 有些上游会把完整 JSON 作为字符串塞进 message
+		//
 		if strings.HasPrefix(inner, "{") {
 			if innerMsg := gjson.Get(inner, "error.message").String(); strings.TrimSpace(innerMsg) != "" {
 				return innerMsg
@@ -7254,12 +7144,12 @@ func extractUpstreamErrorMessage(body []byte) string {
 		return m
 	}
 
-	// ChatGPT 内部 API 风格：{"detail":"..."}
+	// ChatGPT {"detail":"..."}
 	if d := gjson.GetBytes(body, "detail").String(); strings.TrimSpace(d) != "" {
 		return d
 	}
 
-	// 兜底：尝试顶层 message
+	//
 	return gjson.GetBytes(body, "message").String()
 }
 
@@ -7314,7 +7204,6 @@ func (s *GatewayService) readUpstreamErrorBody(resp *http.Response) ([]byte, err
 func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, requestedModel ...string) (*ForwardResult, error) {
 	body, _ := s.readUpstreamErrorBody(resp)
 
-	// 调试日志：打印上游错误响应
 	logger.LegacyPrintf("service.gateway", "[Forward] Upstream error (non-retryable): Account=%d(%s) Status=%d RequestID=%s Body=%s",
 		account.ID, account.Name, resp.StatusCode, resp.Header.Get("x-request-id"), truncateString(string(body), 1000))
 
@@ -7355,7 +7244,6 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 		Detail:             upstreamDetail,
 	})
 
-	// 处理上游错误，标记账号状态
 	shouldDisable := false
 	if s.rateLimitService != nil {
 		if len(requestedModel) > 0 {
@@ -7370,7 +7258,6 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 
 	MarkResponseCommitted(c)
 
-	// 记录上游错误响应体摘要便于排障（可选：由配置控制；不回显到客户端）
 	if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
 		logger.LegacyPrintf("service.gateway",
 			"Upstream error %d (account=%d platform=%s type=%s): %s",
@@ -7382,7 +7269,7 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 		)
 	}
 
-	// 非 failover 错误也支持错误透传规则匹配。
+	//
 	if status, errType, errMsg, matched := applyErrorPassthroughRule(
 		c,
 		account.Platform,
@@ -7410,7 +7297,6 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 		return nil, fmt.Errorf("upstream error: %d (passthrough rule matched) message=%s", resp.StatusCode, summary)
 	}
 
-	// 根据状态码返回适当的自定义错误响应（不透传上游详细信息）
 	var errType, errMsg string
 	var statusCode int
 
@@ -7451,7 +7337,6 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 		errMsg = "Upstream request failed"
 	}
 
-	// 返回自定义错误响应
 	c.JSON(statusCode, gin.H{
 		"type": "error",
 		"error": gin.H{
@@ -7470,12 +7355,12 @@ func (s *GatewayService) handleRetryExhaustedSideEffects(ctx context.Context, re
 	body, _ := s.readUpstreamErrorBody(resp)
 	statusCode := resp.StatusCode
 
-	// OAuth/Setup Token 账号的 403：标记账号异常
+	// OAuth/Setup Token
 	if account.IsOAuth() && statusCode == 403 {
 		s.rateLimitService.HandleUpstreamError(ctx, account, statusCode, resp.Header, body)
 		logger.LegacyPrintf("service.gateway", "Account %d: marked as error after %d retries for status %d", account.ID, maxRetryAttempts, statusCode)
 	} else {
-		// API Key 未配置错误码：不标记账号状态
+		// API Key
 		logger.LegacyPrintf("service.gateway", "Account %d: upstream error %d after %d retries (not marking account)", account.ID, statusCode, maxRetryAttempts)
 	}
 }
@@ -7489,9 +7374,9 @@ func (s *GatewayService) handleFailoverSideEffects(ctx context.Context, resp *ht
 	s.rateLimitService.HandleUpstreamError(ctx, account, resp.StatusCode, resp.Header, body)
 }
 
-// handleRetryExhaustedError 处理重试耗尽后的错误
-// OAuth 403：标记账号异常
-// API Key 未配置错误码：仅返回错误，不标记账号
+// handleRetryExhaustedError
+// OAuth 403：
+// API Key
 func (s *GatewayService) handleRetryExhaustedError(ctx context.Context, resp *http.Response, c *gin.Context, account *Account) (*ForwardResult, error) {
 	MarkResponseCommitted(c)
 	// Capture upstream error body before side-effects consume the stream.
@@ -7573,7 +7458,6 @@ func (s *GatewayService) handleRetryExhaustedError(ctx context.Context, resp *ht
 		return nil, fmt.Errorf("upstream error: %d (retries exhausted, passthrough rule matched) message=%s", resp.StatusCode, summary)
 	}
 
-	// 返回统一的重试耗尽错误响应
 	c.JSON(http.StatusBadGateway, gin.H{
 		"type": "error",
 		"error": gin.H{
@@ -7588,28 +7472,26 @@ func (s *GatewayService) handleRetryExhaustedError(ctx context.Context, resp *ht
 	return nil, fmt.Errorf("upstream error: %d (retries exhausted) message=%s", resp.StatusCode, upstreamMsg)
 }
 
-// streamingResult 流式响应结果
+// streamingResult
 type streamingResult struct {
 	usage            *ClaudeUsage
 	firstTokenMs     *int
-	clientDisconnect bool // 客户端是否在流式传输过程中断开
+	clientDisconnect bool // 客户端是否在streaming传输过程中断开
 }
 
 func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, startTime time.Time, originalModel, mappedModel string, mimicClaudeCode bool) (*streamingResult, error) {
-	// 更新5h窗口状态
 	s.rateLimitService.UpdateSessionWindow(ctx, account, resp.Header)
 
 	if s.responseHeaderFilter != nil {
 		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	}
 
-	// 设置SSE响应头
+	//
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 	c.Header("X-Accel-Buffering", "no")
 
-	// 透传其他响应头
 	if v := resp.Header.Get("x-request-id"); v != "" {
 		c.Header("x-request-id", v)
 	}
@@ -7623,7 +7505,7 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 	usage := &ClaudeUsage{}
 	var firstTokenMs *int
 	scanner := bufio.NewScanner(resp.Body)
-	// 设置更大的buffer以处理长行
+	//
 	maxLineSize := defaultMaxLineSize
 	if s.cfg != nil && s.cfg.Gateway.MaxLineSize > 0 {
 		maxLineSize = s.cfg.Gateway.MaxLineSize
@@ -7635,7 +7517,7 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 		line string
 		err  error
 	}
-	// 独立 goroutine 读取上游，避免读取阻塞导致超时/keepalive无法处理
+	//
 	events := make(chan scanEvent, 16)
 	done := make(chan struct{})
 	sendEvent := func(ev scanEvent) bool {
@@ -7667,7 +7549,6 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 	if s.cfg != nil && s.cfg.Gateway.StreamDataIntervalTimeout > 0 {
 		streamInterval = time.Duration(s.cfg.Gateway.StreamDataIntervalTimeout) * time.Second
 	}
-	// 仅监控上游数据间隔超时，避免下游写入阻塞导致误判
 	var intervalTicker *time.Ticker
 	if streamInterval > 0 {
 		intervalTicker = time.NewTicker(streamInterval)
@@ -7678,7 +7559,7 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 		intervalCh = intervalTicker.C
 	}
 
-	// 下游 keepalive：防止代理/Cloudflare Tunnel 因连接空闲而断开
+	//
 	keepaliveInterval := time.Duration(0)
 	if s.cfg != nil && s.cfg.Gateway.StreamKeepaliveInterval > 0 {
 		keepaliveInterval = time.Duration(s.cfg.Gateway.StreamKeepaliveInterval) * time.Second
@@ -7694,10 +7575,9 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 	}
 	lastDataAt := time.Now()
 
-	// 仅发送一次错误事件，避免多次写入导致协议混乱（写失败时尽力通知客户端）。
-	// 事件格式遵循 Anthropic SSE 标准：{"type":"error","error":{"type":<reason>,"message":<message>}}
-	// 这样 Anthropic SDK / Claude Code 等客户端能按标准 error 类型解析，UI 能显示具体错误文案，
-	// 服务端 ExtractUpstreamErrorMessage 也能从透传的 body 中提取 message。
+	// {"type":"error","error":{"type":<reason>,"message":<message>}}
+	//
+	//
 	errorEventSent := false
 	sendErrorEvent := func(reason, message string) {
 		if errorEventSent {
@@ -7715,7 +7595,7 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 			},
 		})
 		if err != nil {
-			// json.Marshal 不可能在已知 string-only 输入上失败，保守 fallback
+			// json.Marshal
 			body = []byte(fmt.Sprintf(`{"type":"error","error":{"type":%q,"message":%q}}`, reason, message))
 		}
 		_, _ = fmt.Fprintf(w, "event: error\ndata: %s\n\n", body)
@@ -7766,7 +7646,7 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 
 		var event map[string]any
 		if err := json.Unmarshal([]byte(dataLine), &event); err != nil {
-			// JSON 解析失败，直接透传原始数据
+			// JSON
 			block := ""
 			if eventName != "" {
 				block = "event: " + eventName + "\n"
@@ -7781,7 +7661,7 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 		}
 		eventChanged := false
 
-		// 兼容 Kimi cached_tokens → cache_read_input_tokens
+		// → cache_read_input_tokens
 		if eventType == "message_start" {
 			if msg, ok := event["message"].(map[string]any); ok {
 				if u, ok := msg["usage"].(map[string]any); ok {
@@ -7795,8 +7675,8 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 			}
 		}
 
-		// Cache TTL Override: 重写 SSE 事件中的 cache_creation 分类。
-		// 账号级设置优先；全局 1h 请求注入开启时，默认把 usage 计费归回 5m。
+		// Cache TTL Override:
+		//
 		if overrideTarget, ok := s.resolveCacheTTLUsageOverrideTarget(ctx, account); ok {
 			if eventType == "message_start" {
 				if msg, ok := event["message"].(map[string]any); ok {
@@ -7836,7 +7716,6 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 
 		newData, err := json.Marshal(event)
 		if err != nil {
-			// 序列化失败，直接透传原始数据
 			block := ""
 			if eventName != "" {
 				block = "event: " + eventName + "\n"
@@ -7857,7 +7736,6 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 		select {
 		case ev, ok := <-events:
 			if !ok {
-				// 上游完成，返回结果
 				if !sawTerminalEvent {
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, fmt.Errorf("stream usage incomplete: missing terminal event")
 				}
@@ -7867,26 +7745,25 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 				if sawTerminalEvent {
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, nil
 				}
-				// 检测 context 取消（客户端断开会导致 context 取消，进而影响上游读取）
+				//
 				if errors.Is(ev.err, context.Canceled) || errors.Is(ev.err, context.DeadlineExceeded) {
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, fmt.Errorf("stream usage incomplete: %w", ev.err)
 				}
-				// 客户端已通过写入失败检测到断开，上游也出错了，返回已收集的 usage
+				//
 				if clientDisconnected {
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, fmt.Errorf("stream usage incomplete after disconnect: %w", ev.err)
 				}
-				// 客户端未断开，正常的错误处理
 				if errors.Is(ev.err, bufio.ErrTooLong) {
 					logger.LegacyPrintf("service.gateway", "SSE line too long: account=%d max_size=%d error=%v", account.ID, maxLineSize, ev.err)
 					sendErrorEvent("response_too_large", fmt.Sprintf("upstream SSE line exceeded %d bytes", maxLineSize))
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs}, ev.err
 				}
-				// 上游中途读错误（unexpected EOF / connection reset 等，常见于 HTTP/2 GOAWAY）：
-				// 若尚未向客户端写过任何字节，包成 UpstreamFailoverError 让 handler 层走 failover/重试。
-				// 已经开始写流时 SSE 协议无 resume，只能透传错误事件给客户端。
-				// 注意:面向客户端的 disconnectMsg 必须用 sanitizeStreamError 剥离地址,
-				// 默认 *net.OpError 的 Error() 会泄露内部 IP/端口和上游地址。完整 ev.err
-				// 仅在下方 LegacyPrintf 内部日志中保留供运维诊断。
+				//
+				//
+				//
+				//
+				// *net.OpError ()
+				//
 				disconnectMsg := "upstream stream disconnected: " + sanitizeStreamError(ev.err)
 				if !c.Writer.Written() {
 					logger.LegacyPrintf("service.gateway", "Upstream stream read error before any client output (account=%d), failing over: %v", account.ID, ev.err)
@@ -7958,7 +7835,6 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 				return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, fmt.Errorf("stream usage incomplete after timeout")
 			}
 			logger.LegacyPrintf("service.gateway", "Stream data interval timeout: account=%d model=%s interval=%s", account.ID, originalModel, streamInterval)
-			// 处理流超时，可能标记账户为临时不可调度或错误状态
 			if s.rateLimitService != nil {
 				s.rateLimitService.HandleStreamTimeout(ctx, account, originalModel)
 			}
@@ -7972,8 +7848,8 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 			if time.Since(lastDataAt) < keepaliveInterval {
 				continue
 			}
-			// SSE ping 事件：Anthropic 原生格式，客户端会正确处理，
-			// 同时保持连接活跃防止 Cloudflare Tunnel 等代理断开
+			// SSE ping
+			//
 			if _, werr := fmt.Fprint(w, "event: ping\ndata: {\"type\": \"ping\"}\n\n"); werr != nil {
 				clientDisconnected = true
 				logger.LegacyPrintf("service.gateway", "Client disconnected during keepalive ping, continuing to drain upstream for billing")
@@ -8145,10 +8021,10 @@ func parseSSEUsageInt(value any) (int, bool) {
 	return 0, false
 }
 
-// applyCacheTTLOverride 将所有 cache creation tokens 归入指定的 TTL 类型。
-// target 为 "5m" 或 "1h"。返回 true 表示发生了变更。
+// applyCacheTTLOverride
+// target "5m" "1h"。
 func applyCacheTTLOverride(usage *ClaudeUsage, target string) bool {
-	// Fallback: 如果只有聚合字段但无 5m/1h 明细，将聚合字段归入 5m 默认类别
+	// Fallback:
 	if usage.CacheCreation5mTokens == 0 && usage.CacheCreation1hTokens == 0 && usage.CacheCreationInputTokens > 0 {
 		usage.CacheCreation5mTokens = usage.CacheCreationInputTokens
 	}
@@ -8174,8 +8050,8 @@ func applyCacheTTLOverride(usage *ClaudeUsage, target string) bool {
 	return true
 }
 
-// rewriteCacheCreationJSON 在 JSON usage 对象中重写 cache_creation 嵌套对象的 TTL 分类。
-// usageObj 是 usage JSON 对象（map[string]any）。
+// rewriteCacheCreationJSON
+// usageObj [string]any）。
 func rewriteCacheCreationJSON(usageObj map[string]any, target string) bool {
 	ccObj, ok := usageObj["cache_creation"].(map[string]any)
 	if !ok {
@@ -8218,7 +8094,6 @@ func (s *GatewayService) resolveCacheTTLUsageOverrideTarget(ctx context.Context,
 }
 
 func (s *GatewayService) handleNonStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, originalModel, mappedModel string) (*ClaudeUsage, error) {
-	// 更新5h窗口状态
 	s.rateLimitService.UpdateSessionWindow(ctx, account, resp.Header)
 
 	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, anthropicTooLargeError)
@@ -8226,7 +8101,7 @@ func (s *GatewayService) handleNonStreamingResponse(ctx context.Context, resp *h
 		return nil, err
 	}
 
-	// 解析usage
+	//
 	var response struct {
 		Usage ClaudeUsage `json:"usage"`
 	}
@@ -8234,7 +8109,7 @@ func (s *GatewayService) handleNonStreamingResponse(ctx context.Context, resp *h
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
-	// 解析嵌套的 cache_creation 对象中的 5m/1h 明细
+	//
 	cc5m := gjson.GetBytes(body, "usage.cache_creation.ephemeral_5m_input_tokens")
 	cc1h := gjson.GetBytes(body, "usage.cache_creation.ephemeral_1h_input_tokens")
 	if cc5m.Exists() || cc1h.Exists() {
@@ -8242,7 +8117,7 @@ func (s *GatewayService) handleNonStreamingResponse(ctx context.Context, resp *h
 		response.Usage.CacheCreation1hTokens = int(cc1h.Int())
 	}
 
-	// 兼容 Kimi cached_tokens → cache_read_input_tokens
+	// → cache_read_input_tokens
 	if response.Usage.CacheReadInputTokens == 0 {
 		cachedTokens := gjson.GetBytes(body, "usage.cached_tokens").Int()
 		if cachedTokens > 0 {
@@ -8253,11 +8128,11 @@ func (s *GatewayService) handleNonStreamingResponse(ctx context.Context, resp *h
 		}
 	}
 
-	// Cache TTL Override: 重写 non-streaming 响应中的 cache_creation 分类。
-	// 账号级设置优先；全局 1h 请求注入开启时，默认把 usage 计费归回 5m。
+	// Cache TTL Override:
+	//
 	if overrideTarget, ok := s.resolveCacheTTLUsageOverrideTarget(ctx, account); ok {
 		if applyCacheTTLOverride(&response.Usage, overrideTarget) {
-			// 同步更新 body JSON 中的嵌套 cache_creation 对象
+			//
 			if newBody, err := sjson.SetBytes(body, "usage.cache_creation.ephemeral_5m_input_tokens", response.Usage.CacheCreation5mTokens); err == nil {
 				body = newBody
 			}
@@ -8267,7 +8142,7 @@ func (s *GatewayService) handleNonStreamingResponse(ctx context.Context, resp *h
 		}
 	}
 
-	// 如果有模型映射，替换响应中的model字段
+	//
 	if originalModel != mappedModel {
 		body = s.replaceModelInResponseBody(body, mappedModel, originalModel)
 	}
@@ -8283,14 +8158,13 @@ func (s *GatewayService) handleNonStreamingResponse(ctx context.Context, resp *h
 
 	body = reverseToolNamesIfPresent(c, body)
 
-	// 写入响应
 	c.Data(resp.StatusCode, contentType, body)
 
 	return &response.Usage, nil
 }
 
-// replaceModelInResponseBody 替换响应体中的model字段
-// 使用 gjson/sjson 精确替换，避免全量 JSON 反序列化
+// replaceModelInResponseBody
+//
 func (s *GatewayService) replaceModelInResponseBody(body []byte, fromModel, toModel string) []byte {
 	if m := gjson.GetBytes(body, "model"); m.Exists() && m.Str == fromModel {
 		newBody, err := sjson.SetBytes(body, "model", toModel)
@@ -8319,24 +8193,24 @@ func (s *GatewayService) getUserGroupRateMultiplier(ctx context.Context, userID,
 	return resolver.Resolve(ctx, userID, groupID, groupDefaultMultiplier)
 }
 
-// RecordUsageInput 记录使用量的输入参数。
-// 异步 worker 只接收计费所需快照，不能持有 ParsedRequest/RequestBodyRef 这类大请求体引用。
+// RecordUsageInput
+//
 type RecordUsageInput struct {
 	Result             *ForwardResult
 	APIKey             *APIKey
 	User               *User
 	Account            *Account
-	Subscription       *UserSubscription  // 可选：订阅信息
+	Subscription       *UserSubscription  // 可选：订阅info
 	InboundEndpoint    string             // 入站端点（客户端请求路径）
 	UpstreamEndpoint   string             // 上游端点（标准化后的上游路径）
 	UserAgent          string             // 请求的 User-Agent
 	IPAddress          string             // 请求的客户端 IP 地址
 	RequestPayloadHash string             // 请求体语义哈希，用于降低 request_id 误复用时的静默误去重风险
 	ForceCacheBilling  bool               // 强制缓存计费：将 input_tokens 转为 cache_read 计费（用于粘性会话切换）
-	APIKeyService      APIKeyQuotaUpdater // 可选：用于更新API Key配额
+	APIKeyService      APIKeyQuotaUpdater // 可选：用于updateAPI Key配额
 	QuotaPlatform      string             // user×platform 配额计量平台：handler 在请求 ctx 内经 QuotaPlatform() 算定后传入（后扣运行在 worker 池 background ctx 上，取不到 ForcePlatform）
 
-	ChannelUsageFields // 渠道映射信息（由 handler 在 Forward 前解析）
+	ChannelUsageFields // 渠道映射info（由 handler 在 Forward 前parse）
 }
 
 // APIKeyQuotaUpdater defines the interface for updating API Key quota and rate limit usage
@@ -8353,7 +8227,7 @@ type usageLogBestEffortWriter interface {
 	CreateBestEffort(ctx context.Context, log *UsageLog) error
 }
 
-// postUsageBillingParams 统一扣费所需的参数
+// postUsageBillingParams
 type postUsageBillingParams struct {
 	Cost                  *CostBreakdown
 	User                  *User
@@ -8367,9 +8241,9 @@ type postUsageBillingParams struct {
 	Platform              string // 来自 APIKey 关联 Group 的平台标识
 }
 
-// PlatformFromAPIKey 从 APIKey 关联的 Group 推导 platform 名称。
-// apiKey 为 nil 或 Group 信息缺失时返回空串（调用方据此 short-circuit quota 累加）。
-// 导出供 handler 层调用。
+// PlatformFromAPIKey
+// apiKey
+//
 func PlatformFromAPIKey(apiKey *APIKey) string {
 	if apiKey == nil || apiKey.Group == nil {
 		return ""
@@ -8377,13 +8251,13 @@ func PlatformFromAPIKey(apiKey *APIKey) string {
 	return apiKey.Group.Platform
 }
 
-// QuotaPlatform 返回 user×platform 配额计量使用的平台标识。
-// 强制平台路由（如 /antigravity）优先按 ctx 中的 ForcePlatform 计量，否则回退到
-// APIKey 关联 Group 的平台。
+// QuotaPlatform ×platform
 //
-// 注意：必须用带 ForcePlatform 的请求 context 调用（如 handler 的 c.Request.Context()）。
-// 后扣运行在 worker 池的 background ctx 上没有 ForcePlatform，因此后扣平台由 handler
-// 预先算定、经 RecordUsageInput.QuotaPlatform 传入，不要在后扣链路用 worker ctx 调用本函数。
+// APIKey
+//
+// ()）。
+//
+//
 func QuotaPlatform(ctx context.Context, apiKey *APIKey) string {
 	if fp, ok := ctx.Value(ctxkey.ForcePlatform).(string); ok && fp != "" {
 		return fp
@@ -8447,23 +8321,23 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 		}
 	}
 
-	// Platform quota 累加（legacy 兜底路径）：仅对 standard（余额）模式生效；订阅模式豁免；仅对有 limit 的用户写
-	//   - HasUserPlatformQuotaLimit 守卫:与正常路径对齐，无 limit 公司跳过
-	//   - 新增 Redis 同步写:enforcement 走 Redis，legacy 路径也必须同步写，否则 preflight 看不到消费
-	//   - flusher_enabled=false（降级）:保留原有同步直写 DB
-	//   - flusher_enabled=true:跳过直写 DB，由 flusher 异步批量刷（markDirty 在 IncrementUserPlatformQuotaUsage 内部完成）
-	//   - 失败仅记 ALERT log + counter，不阻断主扣费流程
+	// Platform quota
+	//   - HasUserPlatformQuotaLimit
+	//   -
+	//   - flusher_enabled=false（
+	//   - flusher_enabled=true:
+	//   - + counter，
 	if !p.IsSubscriptionBill && p.Platform != "" && cost.ActualCost > 0 && p.User != nil && deps.userPlatformQuotaRepo != nil {
 		if deps.billingCacheService.HasUserPlatformQuotaLimit(billingCtx, p.User.ID, p.Platform) {
 			deps.billingCacheService.IncrementUserPlatformQuotaUsage(p.User.ID, p.Platform, cost.ActualCost)
 			if deps.cfg == nil || !deps.cfg.Database.UserPlatformQuotaFlusherEnabled {
-				// 降级路径:flusher 未启用时保留原有同步直写 DB
+				//
 				if err := deps.userPlatformQuotaRepo.IncrementUsageWithReset(billingCtx, p.User.ID, p.Platform, cost.ActualCost, time.Now().UTC()); err != nil {
 					userPlatformQuotaDBIncrLegacyErrorTotal.Add(1)
 					logger.LegacyPrintf("service.gateway", "ALERT: legacy incr user platform quota DB failed user=%d platform=%s cost=%f: %v", p.User.ID, p.Platform, cost.ActualCost, err)
 				}
 			}
-			// flusher_enabled=true:不直写 DB，flusher 异步批量刷
+			// flusher_enabled=true:
 		}
 	}
 
@@ -8613,18 +8487,18 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 
 	deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
 
-	// Platform quota 累加：仅在 standard（余额）模式生效；订阅模式豁免；仅对有 limit 的用户写
-	// Redis 同步写 + DB 异步持久化（flag=false 降级）或 flusher 异步刷（flag=true）:
-	//   - HasUserPlatformQuotaLimit 守卫:无 limit 的公司跳过,避免无效写入 + 浪费 Redis 容量
-	//   - Redis 同步:确保下次 preflight 立即看到最新 usage,把 TOCTOU 超支窗口
-	//     限制在并发 in-flight 请求数量内（旧实现的异步入队会让超支无限累积直到 worker 处理）
-	//   - DB 异步(flusher_enabled=false):在独立 goroutine 中走 detached context,失败用 ALERT log 触发 oncall 对账
-	//   - flusher_enabled=true:不直写 DB,由 flusher 异步批量刷（markDirty 已在 IncrementUserPlatformQuotaUsage 内部完成）
+	// Platform quota
+	// Redis + DB =false =true）:
+	//   - HasUserPlatformQuotaLimit +
+	//   - Redis
+	//
+	//   - DB (flusher_enabled=false):
+	//   - flusher_enabled=true:
 	if !p.IsSubscriptionBill && p.Platform != "" && p.Cost.ActualCost > 0 && p.User != nil && deps.userPlatformQuotaRepo != nil {
 		if deps.billingCacheService.HasUserPlatformQuotaLimit(ctx, p.User.ID, p.Platform) {
 			deps.billingCacheService.IncrementUserPlatformQuotaUsage(p.User.ID, p.Platform, p.Cost.ActualCost)
 			if deps.cfg == nil || !deps.cfg.Database.UserPlatformQuotaFlusherEnabled {
-				// 降级路径:flusher 未启用时保留原有异步直写 DB
+				//
 				dbCtx, dbCancel := detachUpstreamContext(ctx)
 				userID, platform, cost := p.User.ID, p.Platform, p.Cost.ActualCost
 				go func() {
@@ -8635,15 +8509,15 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 					}()
 					defer dbCancel()
 					if err := deps.userPlatformQuotaRepo.IncrementUsageWithReset(dbCtx, userID, platform, cost, time.Now().UTC()); err != nil {
-						// 失败计数器:暴露给 GatewayUserPlatformQuotaIncrStats(),由 ops 面板做斜率告警。
+						// (),
 						userPlatformQuotaDBIncrErrorTotal.Add(1)
-						// ALERT 级别:DB 持久化失败意味着 Redis cache 失效后该笔 cost 永久丢失,
-						// 用户配额视图与实际消费会偏差,oncall 需要据此对账或人工补录。
+						// ALERT
+						//
 						logger.LegacyPrintf("service.gateway", "ALERT: incr user platform quota DB failed user=%d platform=%s cost=%f: %v", userID, platform, cost, err)
 					}
 				}()
 			}
-			// flusher_enabled=true:不直写 DB,flusher 异步批量刷
+			// flusher_enabled=true:
 		}
 	}
 
@@ -8750,7 +8624,7 @@ func detachUpstreamContext(ctx context.Context) (context.Context, context.Cancel
 	return context.WithoutCancel(ctx), func() {}
 }
 
-// billingDeps 扣费逻辑依赖的服务（由各 gateway service 提供）
+// billingDeps
 type billingDeps struct {
 	accountRepo           AccountRepository
 	userRepo              UserRepository
@@ -8800,14 +8674,14 @@ func writeUsageLogBestEffort(ctx context.Context, repo UsageLogRepository, usage
 	}
 }
 
-// recordUsageOpts 内部选项，参数化普通计费与长上下文计费的差异点。
+// recordUsageOpts
 type recordUsageOpts struct {
-	// 长上下文计费（仅 Gemini 路径需要）
+	//
 	LongContextThreshold  int
 	LongContextMultiplier float64
 }
 
-// RecordUsage 记录使用量并扣费（或更新订阅用量）
+// RecordUsage
 func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInput) error {
 	return s.recordUsageCore(ctx, &recordUsageCoreInput{
 		Result:             input.Result,
@@ -8827,13 +8701,13 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 	}, &recordUsageOpts{})
 }
 
-// RecordUsageLongContextInput 记录使用量的输入参数（支持长上下文双倍计费）
+// RecordUsageLongContextInput
 type RecordUsageLongContextInput struct {
 	Result                *ForwardResult
 	APIKey                *APIKey
 	User                  *User
 	Account               *Account
-	Subscription          *UserSubscription  // 可选：订阅信息
+	Subscription          *UserSubscription  // 可选：订阅info
 	InboundEndpoint       string             // 入站端点（客户端请求路径）
 	UpstreamEndpoint      string             // 上游端点（标准化后的上游路径）
 	UserAgent             string             // 请求的 User-Agent
@@ -8845,10 +8719,10 @@ type RecordUsageLongContextInput struct {
 	APIKeyService         APIKeyQuotaUpdater // API Key 配额服务（可选）
 	QuotaPlatform         string             // user×platform 配额计量平台：handler 在请求 ctx 内经 QuotaPlatform() 算定后传入（后扣运行在 worker 池 background ctx 上，取不到 ForcePlatform）
 
-	ChannelUsageFields // 渠道映射信息（由 handler 在 Forward 前解析）
+	ChannelUsageFields // 渠道映射info（由 handler 在 Forward 前parse）
 }
 
-// RecordUsageWithLongContext 记录使用量并扣费，支持长上下文双倍计费（用于 Gemini）
+// RecordUsageWithLongContext
 func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *RecordUsageLongContextInput) error {
 	return s.recordUsageCore(ctx, &recordUsageCoreInput{
 		Result:             input.Result,
@@ -8871,7 +8745,7 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 	})
 }
 
-// recordUsageCoreInput 是 recordUsageCore 的公共输入字段，从两种输入结构体中提取。
+// recordUsageCoreInput
 type recordUsageCoreInput struct {
 	Result             *ForwardResult
 	APIKey             *APIKey
@@ -8889,8 +8763,8 @@ type recordUsageCoreInput struct {
 	ChannelUsageFields
 }
 
-// recordUsageCore 是 RecordUsage 和 RecordUsageWithLongContext 的统一实现。
-// LongContextThreshold > 0 时 Token 计费回退走 CalculateCostWithLongContext。
+// recordUsageCore
+// LongContextThreshold > 0
 func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsageCoreInput, opts *recordUsageOpts) error {
 	result := input.Result
 	apiKey := input.APIKey
@@ -8899,8 +8773,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	subscription := input.Subscription
 	ApplyForwardImageBillingResolution(result)
 
-	// 强制缓存计费：将 input_tokens 转为 cache_read_input_tokens
-	// 用于粘性会话切换时的特殊计费处理
+	//
 	if input.ForceCacheBilling && result.Usage.InputTokens > 0 {
 		logger.LegacyPrintf("service.gateway", "force_cache_billing: %d input_tokens → cache_read_input_tokens (account=%d)",
 			result.Usage.InputTokens, account.ID)
@@ -8908,15 +8781,15 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		result.Usage.InputTokens = 0
 	}
 
-	// Cache TTL Override: 确保计费时 token 分类与账号设置一致。
-	// 账号级设置优先；全局 1h 请求注入开启时，默认把 usage 计费归回 5m。
+	// Cache TTL Override:
+	//
 	cacheTTLOverridden := false
 	if overrideTarget, ok := s.resolveCacheTTLUsageOverrideTarget(ctx, account); ok {
 		applyCacheTTLOverride(&result.Usage, overrideTarget)
 		cacheTTLOverridden = (result.Usage.CacheCreation5mTokens + result.Usage.CacheCreation1hTokens) > 0
 	}
 
-	// 获取费率倍数（优先级：用户专属 > 分组默认 > 系统默认）
+	// > >
 	multiplier := 1.0
 	if s.cfg != nil {
 		multiplier = s.cfg.Default.RateMultiplier
@@ -8927,7 +8800,6 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	}
 	imageMultiplier := resolveImageRateMultiplier(apiKey, multiplier)
 
-	// 确定计费模型
 	billingModel := forwardResultBillingModel(result.Model, result.UpstreamModel)
 	if input.BillingModelSource == BillingModelSourceChannelMapped && input.ChannelMappedModel != "" {
 		billingModel = input.ChannelMappedModel
@@ -8936,28 +8808,24 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		billingModel = input.OriginalModel
 	}
 
-	// 确定 RequestedModel（渠道映射前的原始模型）
+	//
 	requestedModel := result.Model
 	if input.OriginalModel != "" {
 		requestedModel = input.OriginalModel
 	}
 
-	// 计算费用
 	cost := s.calculateRecordUsageCost(ctx, result, apiKey, billingModel, multiplier, imageMultiplier, opts)
 
-	// 判断计费方式：订阅模式 vs 余额模式
 	isSubscriptionBilling := subscription != nil && apiKey.Group != nil && apiKey.Group.IsSubscriptionType()
 	billingType := BillingTypeBalance
 	if isSubscriptionBilling {
 		billingType = BillingTypeSubscription
 	}
 
-	// 创建使用日志
 	accountRateMultiplier := account.BillingRateMultiplier()
 	usageLog := s.buildRecordUsageLog(ctx, input, result, apiKey, user, account, subscription,
 		requestedModel, multiplier, imageMultiplier, accountRateMultiplier, billingType, cacheTTLOverridden, cost, opts)
 
-	// 计算账号统计定价费用（使用最终上游模型匹配自定义规则）
 	if apiKey.GroupID != nil {
 		applyAccountStatsCost(ctx, usageLog, s.channelService, s.billingService,
 			account.ID, *apiKey.GroupID, result.UpstreamModel, result.Model,
@@ -8981,9 +8849,8 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		return nil
 	}
 
-	// 配额平台由 handler 在请求 ctx 内经 QuotaPlatform() 算定并通过 input 传入；
-	// 后扣运行在 worker 池的 background ctx 上，无法再从 ctx 取 ForcePlatform。
-	// 缺省（未设置）时回退到分组平台，保持对其它调用方的兼容。
+	// ()
+	//
 	quotaPlatform := input.QuotaPlatform
 	if quotaPlatform == "" {
 		quotaPlatform = PlatformFromAPIKey(apiKey)
@@ -9010,7 +8877,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	return nil
 }
 
-// calculateRecordUsageCost 根据请求类型和选项计算费用。
+// calculateRecordUsageCost
 func (s *GatewayService) calculateRecordUsageCost(
 	ctx context.Context,
 	result *ForwardResult,
@@ -9020,7 +8887,7 @@ func (s *GatewayService) calculateRecordUsageCost(
 	imageMultiplier float64,
 	opts *recordUsageOpts,
 ) *CostBreakdown {
-	// 图片生成：渠道定价为 token 计费时走 token 路径，否则走图片计费
+	//
 	if result.ImageCount > 0 {
 		if resolved := s.resolveChannelPricing(ctx, billingModel, apiKey); resolved != nil && resolved.Mode == BillingModeToken {
 			return s.calculateTokenCost(ctx, result, apiKey, billingModel, multiplier, opts)
@@ -9028,12 +8895,12 @@ func (s *GatewayService) calculateRecordUsageCost(
 		return s.calculateImageCost(ctx, result, apiKey, billingModel, imageMultiplier)
 	}
 
-	// Token 计费
+	// Token
 	return s.calculateTokenCost(ctx, result, apiKey, billingModel, multiplier, opts)
 }
 
-// resolveChannelPricing 检查指定模型是否存在渠道级别定价。
-// 返回非 nil 的 ResolvedPricing 表示有渠道定价，nil 表示走默认定价路径。
+// resolveChannelPricing
+//
 func (s *GatewayService) resolveChannelPricing(ctx context.Context, billingModel string, apiKey *APIKey) *ResolvedPricing {
 	if s.resolver == nil || apiKey.Group == nil {
 		return nil
@@ -9046,7 +8913,7 @@ func (s *GatewayService) resolveChannelPricing(ctx context.Context, billingModel
 	return nil
 }
 
-// calculateImageCost 计算图片生成费用：渠道级别定价优先，否则走按次计费。
+// calculateImageCost
 func (s *GatewayService) calculateImageCost(
 	ctx context.Context,
 	result *ForwardResult,
@@ -9091,7 +8958,7 @@ func (s *GatewayService) calculateImageCost(
 	return s.billingService.CalculateImageCost(billingModel, sizeTier, result.ImageCount, groupConfig, multiplier)
 }
 
-// calculateTokenCost 计算 Token 计费：根据 opts 决定走普通/长上下文/渠道统一计费。
+// calculateTokenCost
 func (s *GatewayService) calculateTokenCost(
 	ctx context.Context,
 	result *ForwardResult,
@@ -9113,7 +8980,7 @@ func (s *GatewayService) calculateTokenCost(
 	var cost *CostBreakdown
 	var err error
 
-	// 优先尝试渠道定价 → CalculateCostUnified
+	// → CalculateCostUnified
 	if resolved := s.resolveChannelPricing(ctx, billingModel, apiKey); resolved != nil {
 		gid := apiKey.Group.ID
 		cost, err = s.billingService.CalculateCostUnified(CostInput{
@@ -9127,7 +8994,7 @@ func (s *GatewayService) calculateTokenCost(
 			Resolved:       resolved,
 		})
 	} else if opts.LongContextThreshold > 0 {
-		// 长上下文双倍计费（如 Gemini 200K 阈值）
+		//
 		cost, err = s.billingService.CalculateCostWithLongContext(
 			billingModel, tokens, multiplier,
 			opts.LongContextThreshold, opts.LongContextMultiplier,
@@ -9142,7 +9009,7 @@ func (s *GatewayService) calculateTokenCost(
 	return cost
 }
 
-// buildRecordUsageLog 构建使用日志并设置计费模式。
+// buildRecordUsageLog
 func (s *GatewayService) buildRecordUsageLog(
 	ctx context.Context,
 	input *recordUsageCoreInput,
@@ -9218,7 +9085,7 @@ func (s *GatewayService) buildRecordUsageLog(
 	return usageLog
 }
 
-// resolveBillingMode 根据计费结果和请求类型确定计费模式。
+// resolveBillingMode
 func resolveBillingMode(result *ForwardResult, cost *CostBreakdown) *string {
 	var mode string
 	switch {
@@ -9239,7 +9106,7 @@ func optionalSubscriptionID(subscription *UserSubscription) *int64 {
 	return nil
 }
 
-// ResolveChannelMapping 委托渠道服务解析模型映射
+// ResolveChannelMapping
 func (s *GatewayService) ResolveChannelMapping(ctx context.Context, groupID int64, model string) ChannelMappingResult {
 	if s.channelService == nil {
 		return ChannelMappingResult{MappedModel: model}
@@ -9247,12 +9114,12 @@ func (s *GatewayService) ResolveChannelMapping(ctx context.Context, groupID int6
 	return s.channelService.ResolveChannelMapping(ctx, groupID, model)
 }
 
-// ReplaceModelInBody 替换请求体中的模型名（导出供 handler 使用）
+// ReplaceModelInBody
 func (s *GatewayService) ReplaceModelInBody(body []byte, newModel string) []byte {
 	return ReplaceModelInBody(body, newModel)
 }
 
-// IsModelRestricted 检查模型是否被渠道限制
+// IsModelRestricted
 func (s *GatewayService) IsModelRestricted(ctx context.Context, groupID int64, model string) bool {
 	if s.channelService == nil {
 		return false
@@ -9260,8 +9127,8 @@ func (s *GatewayService) IsModelRestricted(ctx context.Context, groupID int64, m
 	return s.channelService.IsModelRestricted(ctx, groupID, model)
 }
 
-// ResolveChannelMappingAndRestrict 解析渠道映射。
-// 模型限制检查已移至调度阶段（checkChannelPricingRestriction），restricted 始终返回 false。
+// ResolveChannelMappingAndRestrict
+//
 func (s *GatewayService) ResolveChannelMappingAndRestrict(ctx context.Context, groupID *int64, model string) (ChannelMappingResult, bool) {
 	if s.channelService == nil {
 		return ChannelMappingResult{MappedModel: model}, false
@@ -9269,9 +9136,9 @@ func (s *GatewayService) ResolveChannelMappingAndRestrict(ctx context.Context, g
 	return s.channelService.ResolveChannelMappingAndRestrict(ctx, groupID, model)
 }
 
-// checkChannelPricingRestriction 根据渠道计费基准检查模型是否受定价列表限制。
-// 供调度阶段预检查（requested / channel_mapped）。
-// upstream 需逐账号检查，此处返回 false。
+// checkChannelPricingRestriction
+//
+// upstream
 func (s *GatewayService) checkChannelPricingRestriction(ctx context.Context, groupID *int64, requestedModel string) bool {
 	if groupID == nil || s.channelService == nil || requestedModel == "" {
 		return false
@@ -9284,8 +9151,8 @@ func (s *GatewayService) checkChannelPricingRestriction(ctx context.Context, gro
 	return s.channelService.IsModelRestricted(ctx, *groupID, billingModel)
 }
 
-// billingModelForRestriction 根据计费基准确定限制检查使用的模型。
-// upstream 返回空（需逐账号检查）。
+// billingModelForRestriction
+// upstream
 func billingModelForRestriction(source, requestedModel, channelMappedModel string) string {
 	switch source {
 	case BillingModelSourceRequested:
@@ -9299,8 +9166,8 @@ func billingModelForRestriction(source, requestedModel, channelMappedModel strin
 	}
 }
 
-// isUpstreamModelRestrictedByChannel 检查账号映射后的上游模型是否受渠道定价限制。
-// 仅在 BillingModelSource="upstream" 且 RestrictModels=true 时由调度循环调用。
+// isUpstreamModelRestrictedByChannel
+// ="upstream" =true
 func (s *GatewayService) isUpstreamModelRestrictedByChannel(ctx context.Context, groupID int64, account *Account, requestedModel string) bool {
 	if s.channelService == nil {
 		return false
@@ -9312,7 +9179,7 @@ func (s *GatewayService) isUpstreamModelRestrictedByChannel(ctx context.Context,
 	return s.channelService.IsModelRestricted(ctx, groupID, upstreamModel)
 }
 
-// resolveAccountUpstreamModel 确定账号将请求模型映射为什么上游模型。
+// resolveAccountUpstreamModel
 func resolveAccountUpstreamModel(account *Account, requestedModel string) string {
 	if account.Platform == PlatformAntigravity {
 		return mapAntigravityModel(account, requestedModel)
@@ -9320,7 +9187,7 @@ func resolveAccountUpstreamModel(account *Account, requestedModel string) string
 	return account.GetMappedModel(requestedModel)
 }
 
-// needsUpstreamChannelRestrictionCheck 判断是否需要在调度循环中逐账号检查上游模型的渠道限制。
+// needsUpstreamChannelRestrictionCheck
 func (s *GatewayService) needsUpstreamChannelRestrictionCheck(ctx context.Context, groupID *int64) bool {
 	if groupID == nil || s.channelService == nil {
 		return false
@@ -9336,9 +9203,9 @@ func (s *GatewayService) needsUpstreamChannelRestrictionCheck(ctx context.Contex
 	return ch.BillingModelSource == BillingModelSourceUpstream
 }
 
-// isStickyAccountUpstreamRestricted 检查粘性会话命中的账号是否受 upstream 渠道限制。
-// 合并 needsUpstreamChannelRestrictionCheck + isUpstreamModelRestrictedByChannel 两步调用，
-// 供 sticky session 条件链使用，避免内联多个函数调用导致行过长。
+// isStickyAccountUpstreamRestricted
+// + isUpstreamModelRestrictedByChannel
+//
 func (s *GatewayService) isStickyAccountUpstreamRestricted(ctx context.Context, groupID *int64, account *Account, requestedModel string) bool {
 	if groupID == nil {
 		return false
@@ -9349,8 +9216,7 @@ func (s *GatewayService) isStickyAccountUpstreamRestricted(ctx context.Context, 
 	return s.isUpstreamModelRestrictedByChannel(ctx, *groupID, account, requestedModel)
 }
 
-// ForwardCountTokens 转发 count_tokens 请求到上游 API
-// 特点：不记录使用量、仅支持非流式响应
+// ForwardCountTokens
 func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context, account *Account, parsed *ParsedRequest) error {
 	if parsed == nil {
 		s.countTokensError(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
@@ -9368,7 +9234,7 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 		return s.forwardCountTokensAnthropicAPIKeyPassthrough(ctx, c, account, passthroughBody)
 	}
 
-	// Bedrock 不支持 count_tokens 端点
+	// Bedrock
 	if account != nil && account.IsBedrock() {
 		s.countTokensError(c, http.StatusNotFound, "not_found_error", "count_tokens endpoint is not supported for Bedrock")
 		return nil
@@ -9414,16 +9280,15 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 		}
 	}
 
-	// Antigravity 账户不支持 count_tokens，返回 404 让客户端 fallback 到本地估算。
-	// 返回 nil 避免 handler 层记录为错误，也不设置 ops 上游错误上下文。
+	// Antigravity
+	//
 	if account.Platform == PlatformAntigravity {
 		s.countTokensError(c, http.StatusNotFound, "not_found_error", "count_tokens endpoint is not supported for this platform")
 		return nil
 	}
 
-	// 应用模型映射：
-	// - APIKey 账号：使用账号级别的显式映射（如果配置），否则透传原始模型名
-	// - OAuth/SetupToken 账号：使用 Anthropic 标准映射（短ID → 长ID）
+	// - APIKey
+	// - OAuth/SetupToken →
 	if reqModel != "" {
 		mappedModel := reqModel
 		mappingSource := ""
@@ -9451,23 +9316,21 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 		}
 	}
 
-	// 获取凭证
 	token, tokenType, err := s.GetAccessToken(ctx, account)
 	if err != nil {
 		s.countTokensError(c, http.StatusBadGateway, "upstream_error", "Failed to get access token")
 		return err
 	}
 
-	// 构建上游请求
 	upstreamReq, wireBody, err := s.buildCountTokensRequest(ctx, c, account, body, token, tokenType, reqModel, shouldMimicClaudeCode)
 	if err != nil {
 		s.countTokensError(c, http.StatusInternalServerError, "api_error", "Failed to build request")
 		return err
 	}
-	// 先记录首发 wire body；如果后面进入 400 retry，retry 会基于未签名的逻辑 body 重新构建。
+	//
 	acceptedWireBody := wireBody
 
-	// 获取代理URL（自定义 base URL 模式下，proxy 通过 buildCustomRelayURL 作为查询参数传递）
+	//
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
 		if !account.IsCustomBaseURLEnabled() || account.GetCustomBaseURL() == "" {
@@ -9475,7 +9338,6 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 		}
 	}
 
-	// 发送请求
 	resp, err := s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, s.tlsFPProfileService.ResolveTLSProfile(account))
 	if err != nil {
 		setOpsUpstreamError(c, 0, sanitizeUpstreamErrorMessage(err.Error()), "")
@@ -9483,7 +9345,6 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 		return fmt.Errorf("upstream request failed: %w", err)
 	}
 
-	// 读取响应体
 	countTokensTooLarge := func(c *gin.Context) {
 		s.countTokensError(c, http.StatusBadGateway, "upstream_error", "Upstream response too large")
 	}
@@ -9496,7 +9357,7 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 		return err
 	}
 
-	// 检测 thinking block 签名错误（400）并重试一次（过滤 thinking blocks）
+	//
 	if resp.StatusCode == 400 && s.shouldRectifySignatureError(ctx, account, respBody) {
 		logger.LegacyPrintf("service.gateway", "Account %d: detected thinking block signature error on count_tokens, retrying with filtered thinking blocks", account.ID)
 
@@ -9506,7 +9367,7 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 			retryResp, retryErr := s.httpUpstream.DoWithTLS(retryReq, proxyURL, account.ID, account.Concurrency, s.tlsFPProfileService.ResolveTLSProfile(account))
 			if retryErr == nil {
 				if retryResp.StatusCode < 400 {
-					// count_tokens 签名重试成功后记录最终 wire body，错误响应仍保留原 body 便于后续处理。
+					// count_tokens
 					acceptedWireBody = retryWireBody
 				}
 				resp = retryResp
@@ -9523,15 +9384,14 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 	}
 
 	if resp.StatusCode < 400 && !bytes.Equal(acceptedWireBody, body) {
-		// count_tokens 成功后再同步最终 wire body，避免 retry 从已签名 body 派生。
+		// count_tokens
 		if err := replaceBody(acceptedWireBody); err != nil {
 			return err
 		}
 	}
 
-	// 处理错误响应
 	if resp.StatusCode >= 400 {
-		// 标记账号状态（429/529等）
+		//
 		s.rateLimitService.HandleUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody)
 
 		upstreamMsg := strings.TrimSpace(extractUpstreamErrorMessage(respBody))
@@ -9546,7 +9406,6 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 		}
 		setOpsUpstreamError(c, resp.StatusCode, upstreamMsg, upstreamDetail)
 
-		// 记录上游错误摘要便于排障（不回显请求内容）
 		if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
 			logger.LegacyPrintf("service.gateway",
 				"count_tokens upstream error %d (account=%d platform=%s type=%s): %s",
@@ -9558,7 +9417,6 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 			)
 		}
 
-		// 返回简化的错误响应
 		errMsg := "Upstream request failed"
 		switch resp.StatusCode {
 		case 429:
@@ -9573,7 +9431,6 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 		return fmt.Errorf("upstream error: %d message=%s", resp.StatusCode, upstreamMsg)
 	}
 
-	// 透传成功响应
 	c.Data(resp.StatusCode, "application/json", respBody)
 	return nil
 }
@@ -9637,9 +9494,9 @@ func (s *GatewayService) forwardCountTokensAnthropicAPIKeyPassthrough(ctx contex
 		upstreamMsg := strings.TrimSpace(extractUpstreamErrorMessage(respBody))
 		upstreamMsg = sanitizeUpstreamErrorMessage(upstreamMsg)
 
-		// 中转站不支持 count_tokens 端点时（404），返回 404 让客户端 fallback 到本地估算。
-		// 仅在错误消息明确指向 count_tokens endpoint 不存在时生效，避免误吞其他 404（如错误 base_url）。
-		// 返回 nil 避免 handler 层记录为错误，也不设置 ops 上游错误上下文。
+		//
+		//
+		//
 		if isCountTokensUnsupported404(resp.StatusCode, respBody) {
 			logger.LegacyPrintf("service.gateway",
 				"[count_tokens] Upstream does not support count_tokens (404), returning 404: account=%d name=%s msg=%s",
@@ -9711,7 +9568,7 @@ func (s *GatewayService) buildCountTokensRequestAnthropicAPIKeyPassthrough(
 	}
 	body = sanitizeCountTokensRequestBody(body)
 
-	// 同 buildUpstreamRequestAnthropicAPIKeyPassthrough：能力维度 sanitize。
+	//
 	clientBeta := ""
 	if c != nil && c.Request != nil {
 		clientBeta = getHeaderRaw(c.Request.Header, "anthropic-beta")
@@ -9754,9 +9611,9 @@ func (s *GatewayService) buildCountTokensRequestAnthropicAPIKeyPassthrough(
 	return req, nil
 }
 
-// buildCountTokensRequest 构建 count_tokens 上游请求
+// buildCountTokensRequest
 func (s *GatewayService) buildCountTokensRequest(ctx context.Context, c *gin.Context, account *Account, body []byte, token, tokenType, modelID string, mimicClaudeCode bool) (*http.Request, []byte, error) {
-	// 确定目标 URL
+	//
 	targetURL := claudeAPICountTokensURL
 	if account.Type == AccountTypeAPIKey {
 		baseURL := account.GetBaseURL()
@@ -9784,8 +9641,8 @@ func (s *GatewayService) buildCountTokensRequest(ctx context.Context, c *gin.Con
 		clientHeaders = c.Request.Header
 	}
 
-	// OAuth 账号：应用统一指纹和重写 userID（受设置开关控制）
-	// 如果启用了会话ID伪装，会在重写后替换 session 部分为固定值
+	// OAuth
+	//
 	ctEnableFP, ctEnableMPT, ctEnableCCH := true, false, false
 	if s.settingService != nil {
 		ctEnableFP, ctEnableMPT, ctEnableCCH = s.settingService.GetGatewayForwardingSettings(ctx)
@@ -9806,19 +9663,19 @@ func (s *GatewayService) buildCountTokensRequest(ctx context.Context, c *gin.Con
 		}
 	}
 
-	// 同步 billing header cc_version 与实际发送的 User-Agent 版本
+	//
 	if ctFingerprint != nil && ctEnableFP {
 		body = syncBillingHeaderVersion(body, ctFingerprint.UserAgent)
 	}
 
-	// === 计算最终 anthropic-beta header（先于 body sanitize 与 CCH 签名）===
-	// 顺序约束同 buildUpstreamRequest。
+	// === ===
+	//
 	ctEffectiveDropSet := mergeDropSets(s.getBetaPolicyFilterSet(ctx, c, account, modelID))
 	finalBetaHeader, finalBetaShouldSet := s.computeFinalCountTokensAnthropicBeta(
 		tokenType, mimicClaudeCode, modelID, clientHeaders, body, ctEffectiveDropSet,
 	)
 
-	// 能力维度 body sanitize：与最终 anthropic-beta header 对称
+	//
 	if sanitized, changed := sanitizeAnthropicBodyForBetaTokens(body, finalBetaHeader); changed {
 		body = sanitized
 	}
@@ -9833,14 +9690,13 @@ func (s *GatewayService) buildCountTokensRequest(ctx context.Context, c *gin.Con
 		return nil, nil, err
 	}
 
-	// 设置认证头（保持原始大小写）
 	if tokenType == "oauth" {
 		setHeaderRaw(req.Header, "authorization", "Bearer "+token)
 	} else {
 		setHeaderRaw(req.Header, "x-api-key", token)
 	}
 
-	// 白名单透传 headers（恢复真实 wire casing）
+	//
 	for key, values := range clientHeaders {
 		lowerKey := strings.ToLower(key)
 		if allowedHeaders[lowerKey] {
@@ -9851,12 +9707,12 @@ func (s *GatewayService) buildCountTokensRequest(ctx context.Context, c *gin.Con
 		}
 	}
 
-	// OAuth 账号：应用指纹到请求头（受设置开关控制）
+	// OAuth
 	if ctEnableFP && ctFingerprint != nil {
 		s.identityService.ApplyFingerprint(req, ctFingerprint)
 	}
 
-	// 确保必要的 headers 存在（保持原始大小写）
+	//
 	if getHeaderRaw(req.Header, "content-type") == "" {
 		setHeaderRaw(req.Header, "content-type", "application/json")
 	}
@@ -9867,18 +9723,18 @@ func (s *GatewayService) buildCountTokensRequest(ctx context.Context, c *gin.Con
 		applyClaudeOAuthHeaderDefaults(req)
 	}
 
-	// OAuth + mimic Claude Code：强制注入 CLI 指纹 header
+	// OAuth + mimic Claude Code：
 	if tokenType == "oauth" && mimicClaudeCode {
 		applyClaudeCodeMimicHeaders(req, false)
 	}
 
-	// 写入最终 anthropic-beta header（Del 一次避免白名单透传值残留）
+	//
 	deleteHeaderAllForms(req.Header, "anthropic-beta")
 	if finalBetaShouldSet {
 		setHeaderRaw(req.Header, "anthropic-beta", finalBetaHeader)
 	}
 
-	// 同步 X-Claude-Code-Session-Id 头：取 body 中已处理的 metadata.user_id 的 session_id 覆盖
+	//
 	if sessionHeader := getHeaderRaw(req.Header, "X-Claude-Code-Session-Id"); sessionHeader != "" {
 		if uid := gjson.GetBytes(body, "metadata.user_id").String(); uid != "" {
 			if parsed := ParseMetadataUserID(uid); parsed != nil {
@@ -9916,7 +9772,7 @@ func sanitizeCountTokensRequestBody(body []byte) []byte {
 	return out
 }
 
-// countTokensError 返回 count_tokens 错误响应
+// countTokensError
 func (s *GatewayService) countTokensError(c *gin.Context, status int, errType, message string) {
 	c.JSON(status, gin.H{
 		"type": "error",
@@ -9927,8 +9783,8 @@ func (s *GatewayService) countTokensError(c *gin.Context, status int, errType, m
 	})
 }
 
-// buildCustomRelayURL 构建自定义中继转发 URL
-// 在 path 后附加 beta=true 和可选的 proxy 查询参数
+// buildCustomRelayURL
+// =true
 func (s *GatewayService) buildCustomRelayURL(baseURL, path string, account *Account) string {
 	u := strings.TrimRight(baseURL, "/") + path + "?beta=true"
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -10040,7 +9896,6 @@ func (s *GatewayService) InvalidateAvailableModelsCache(groupID *int64, platform
 	}
 
 	normalizedPlatform := strings.TrimSpace(platform)
-	// 完整匹配时精准失效；否则按维度批量失效。
 	if groupID != nil && normalizedPlatform != "" {
 		s.modelsListCache.Delete(modelsListCacheKey(groupID, normalizedPlatform))
 		return
@@ -10066,8 +9921,8 @@ func (s *GatewayService) InvalidateAvailableModelsCache(groupID *int64, platform
 	}
 }
 
-// reconcileCachedTokens 兼容 Kimi 等上游：
-// 将 OpenAI 风格的 cached_tokens 映射到 Claude 标准的 cache_read_input_tokens
+// reconcileCachedTokens
+//
 func reconcileCachedTokens(usage map[string]any) bool {
 	if usage == nil {
 		return false
@@ -10086,22 +9941,21 @@ func reconcileCachedTokens(usage map[string]any) bool {
 
 const debugGatewayBodyDefaultFilename = "gateway_debug.log"
 
-// initDebugGatewayBodyFile 初始化网关调试日志文件。
+// initDebugGatewayBodyFile
 //
-//   - "1"/"true" 等布尔值 → 当前目录下 gateway_debug.log
-//   - 已有目录路径        → 该目录下 gateway_debug.log
-//   - 其他               → 视为完整文件路径
+//   - "1"/"true" →
+//   - →
+//   - →
 func (s *GatewayService) initDebugGatewayBodyFile(path string) {
 	if parseDebugEnvBool(path) {
 		path = debugGatewayBodyDefaultFilename
 	}
 
-	// 如果 path 指向一个已存在的目录，自动追加默认文件名
+	//
 	if info, err := os.Stat(path); err == nil && info.IsDir() {
 		path = filepath.Join(path, debugGatewayBodyDefaultFilename)
 	}
 
-	// 确保父目录存在
 	if dir := filepath.Dir(path); dir != "." {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			slog.Error("failed to create gateway debug log directory", "dir", dir, "error", err)
@@ -10118,15 +9972,13 @@ func (s *GatewayService) initDebugGatewayBodyFile(path string) {
 	slog.Info("gateway debug logging enabled", "path", path)
 }
 
-// debugLogGatewaySnapshot 将网关请求的完整快照（headers + body）写入独立的调试日志文件，
-// 用于对比客户端原始请求和上游转发请求。
+// debugLogGatewaySnapshot + body）
 //
-// 启用方式（环境变量）：
 //
-//	SUB2API_DEBUG_GATEWAY_BODY=1                          # 写入 gateway_debug.log
-//	SUB2API_DEBUG_GATEWAY_BODY=/tmp/gateway_debug.log     # 写入指定路径
+//	SUB2API_DEBUG_GATEWAY_BODY=1                          #
+//	SUB2API_DEBUG_GATEWAY_BODY=/tmp/gateway_debug.log     #
 //
-// tag: "CLIENT_ORIGINAL" 或 "UPSTREAM_FORWARD"
+// tag: "CLIENT_ORIGINAL" "UPSTREAM_FORWARD"
 func (s *GatewayService) debugLogGatewaySnapshot(tag string, headers http.Header, body []byte, extra map[string]string) {
 	f := s.debugGatewayBodyFile.Load()
 	if f == nil {
@@ -10150,7 +10002,7 @@ func (s *GatewayService) debugLogGatewaySnapshot(tag string, headers http.Header
 		}
 	}
 
-	// 2. headers（按真实 Claude CLI wire 顺序排列，便于与抓包对比；auth 脱敏）
+	// 2. headers（
 	fmt.Fprint(&buf, "--- headers ---\n")
 	for _, k := range sortHeadersByWireOrder(headers) {
 		for _, v := range headers[k] {
@@ -10158,7 +10010,7 @@ func (s *GatewayService) debugLogGatewaySnapshot(tag string, headers http.Header
 		}
 	}
 
-	// 3. body（完整输出，格式化 JSON 便于 diff）
+	// 3. body（
 	fmt.Fprint(&buf, "--- body ---\n")
 	if len(body) == 0 {
 		fmt.Fprint(&buf, "  (empty)\n")
@@ -10167,11 +10019,10 @@ func (s *GatewayService) debugLogGatewaySnapshot(tag string, headers http.Header
 		if json.Indent(&pretty, body, "  ", "  ") == nil {
 			fmt.Fprintf(&buf, "  %s\n", pretty.Bytes())
 		} else {
-			// JSON 格式化失败时原样输出
+			// JSON
 			fmt.Fprintf(&buf, "  %s\n", body)
 		}
 	}
 
-	// 写入文件（调试用，并发写入可能交错但不影响可读性）
 	_, _ = f.WriteString(buf.String())
 }

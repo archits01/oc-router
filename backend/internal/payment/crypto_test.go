@@ -24,7 +24,7 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 		"short",
 		"a longer string with special chars: !@#$%^&*()",
 		`{"key":"value","num":42}`,
-		"你好世界 unicode test 🎉",
+		"hello world unicode test 🎉",
 		strings.Repeat("x", 10000),
 	}
 
@@ -130,7 +130,7 @@ func TestEncryptDecryptUnicodeJSON(t *testing.T) {
 	t.Parallel()
 	key := makeKey(t)
 
-	jsonContent := `{"name":"测试用户","email":"test@example.com","balance":100.50}`
+	jsonContent := `{"name":"testuser","email":"test@example.com","balance":100.50}`
 	encrypted, err := Encrypt(jsonContent, key)
 	if err != nil {
 		t.Fatalf("Encrypt JSON error: %v", err)

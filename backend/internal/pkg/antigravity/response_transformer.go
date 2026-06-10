@@ -10,12 +10,12 @@ import (
 	"time"
 )
 
-// TransformGeminiToClaude 将 Gemini 响应转换为 Claude 格式（非流式）
+// TransformGeminiToClaude
 func TransformGeminiToClaude(geminiResp []byte, originalModel string) ([]byte, *ClaudeUsage, error) {
-	// 解包 v1internal 响应
+	//
 	var v1Resp V1InternalResponse
 	if err := json.Unmarshal(geminiResp, &v1Resp); err != nil {
-		// 尝试直接解析为 GeminiResponse
+		//
 		var directResp GeminiResponse
 		if err2 := json.Unmarshal(geminiResp, &directResp); err2 != nil {
 			return nil, nil, fmt.Errorf("parse gemini response: %w", err)
@@ -24,7 +24,7 @@ func TransformGeminiToClaude(geminiResp []byte, originalModel string) ([]byte, *
 		v1Resp.ResponseID = directResp.ResponseID
 		v1Resp.ModelVersion = directResp.ModelVersion
 	} else if len(v1Resp.Response.Candidates) == 0 {
-		// 第一次解析成功但 candidates 为空，说明是直接的 GeminiResponse 格式
+		//
 		var directResp GeminiResponse
 		if err2 := json.Unmarshal(geminiResp, &directResp); err2 != nil {
 			return nil, nil, fmt.Errorf("parse gemini response as direct: %w", err2)
@@ -34,11 +34,9 @@ func TransformGeminiToClaude(geminiResp []byte, originalModel string) ([]byte, *
 		v1Resp.ModelVersion = directResp.ModelVersion
 	}
 
-	// 使用处理器转换
 	processor := NewNonStreamingProcessor()
 	claudeResp := processor.Process(&v1Resp.Response, v1Resp.ResponseID, originalModel)
 
-	// 序列化
 	respBytes, err := json.Marshal(claudeResp)
 	if err != nil {
 		return nil, nil, fmt.Errorf("marshal claude response: %w", err)
@@ -47,7 +45,7 @@ func TransformGeminiToClaude(geminiResp []byte, originalModel string) ([]byte, *
 	return respBytes, &claudeResp.Usage, nil
 }
 
-// NonStreamingProcessor 非流式响应处理器
+// NonStreamingProcessor
 type NonStreamingProcessor struct {
 	contentBlocks     []ClaudeContentItem
 	textBuilder       string
@@ -57,22 +55,22 @@ type NonStreamingProcessor struct {
 	hasToolCall       bool
 }
 
-// NewNonStreamingProcessor 创建非流式响应处理器
+// NewNonStreamingProcessor
 func NewNonStreamingProcessor() *NonStreamingProcessor {
 	return &NonStreamingProcessor{
 		contentBlocks: make([]ClaudeContentItem, 0),
 	}
 }
 
-// Process 处理 Gemini 响应
+// Process
 func (p *NonStreamingProcessor) Process(geminiResp *GeminiResponse, responseID, originalModel string) *ClaudeResponse {
-	// 获取 parts
+	//
 	var parts []GeminiPart
 	if len(geminiResp.Candidates) > 0 && geminiResp.Candidates[0].Content != nil {
 		parts = geminiResp.Candidates[0].Content.Parts
 	}
 
-	// 处理所有 parts
+	//
 	for _, part := range parts {
 		p.processPart(&part)
 	}
@@ -83,11 +81,10 @@ func (p *NonStreamingProcessor) Process(geminiResp *GeminiResponse, responseID, 
 		}
 	}
 
-	// 刷新剩余内容
 	p.flushThinking()
 	p.flushText()
 
-	// 处理 trailingSignature
+	//
 	if p.trailingSignature != "" {
 		p.contentBlocks = append(p.contentBlocks, ClaudeContentItem{
 			Type:      "thinking",
@@ -96,20 +93,19 @@ func (p *NonStreamingProcessor) Process(geminiResp *GeminiResponse, responseID, 
 		})
 	}
 
-	// 构建响应
 	return p.buildResponse(geminiResp, responseID, originalModel)
 }
 
-// processPart 处理单个 part
+// processPart
 func (p *NonStreamingProcessor) processPart(part *GeminiPart) {
 	signature := part.ThoughtSignature
 
-	// 1. FunctionCall 处理
+	// 1. FunctionCall
 	if part.FunctionCall != nil {
 		p.flushThinking()
 		p.flushText()
 
-		// 处理 trailingSignature
+		//
 		if p.trailingSignature != "" {
 			p.contentBlocks = append(p.contentBlocks, ClaudeContentItem{
 				Type:      "thinking",
@@ -121,7 +117,7 @@ func (p *NonStreamingProcessor) processPart(part *GeminiPart) {
 
 		p.hasToolCall = true
 
-		// 生成 tool_use id
+		//
 		toolID := part.FunctionCall.ID
 		if toolID == "" {
 			toolID = fmt.Sprintf("%s-%s", part.FunctionCall.Name, generateRandomID())
@@ -142,13 +138,13 @@ func (p *NonStreamingProcessor) processPart(part *GeminiPart) {
 		return
 	}
 
-	// 2. Text 处理
+	// 2. Text
 	if part.Text != "" || part.Thought {
 		if part.Thought {
 			// Thinking part
 			p.flushText()
 
-			// 处理 trailingSignature
+			//
 			if p.trailingSignature != "" {
 				p.flushThinking()
 				p.contentBlocks = append(p.contentBlocks, ClaudeContentItem{
@@ -164,9 +160,9 @@ func (p *NonStreamingProcessor) processPart(part *GeminiPart) {
 				p.thinkingSignature = signature
 			}
 		} else {
-			// 普通 Text
+			//
 			if part.Text == "" {
-				// 空 text 带签名 - 暂存
+				//
 				if signature != "" {
 					p.trailingSignature = signature
 				}
@@ -175,7 +171,7 @@ func (p *NonStreamingProcessor) processPart(part *GeminiPart) {
 
 			p.flushThinking()
 
-			// 处理之前的 trailingSignature
+			//
 			if p.trailingSignature != "" {
 				p.flushText()
 				p.contentBlocks = append(p.contentBlocks, ClaudeContentItem{
@@ -186,7 +182,7 @@ func (p *NonStreamingProcessor) processPart(part *GeminiPart) {
 				p.trailingSignature = ""
 			}
 
-			// 非空 text 带签名 - 特殊处理：先输出 text，再输出空 thinking 块
+			//
 			if signature != "" {
 				p.contentBlocks = append(p.contentBlocks, ClaudeContentItem{
 					Type: "text",
@@ -198,13 +194,13 @@ func (p *NonStreamingProcessor) processPart(part *GeminiPart) {
 					Signature: signature,
 				})
 			} else {
-				// 普通 text (无签名) - 累积到 builder
+				// () -
 				p.textBuilder += part.Text
 			}
 		}
 	}
 
-	// 3. InlineData (Image) 处理
+	// 3. InlineData (Image)
 	if part.InlineData != nil && part.InlineData.Data != "" {
 		p.flushThinking()
 		markdownImg := fmt.Sprintf("![image](data:%s;base64,%s)",
@@ -226,7 +222,7 @@ func (p *NonStreamingProcessor) processGrounding(grounding *GeminiGroundingMetad
 	p.flushText()
 }
 
-// flushText 刷新 text builder
+// flushText
 func (p *NonStreamingProcessor) flushText() {
 	if p.textBuilder == "" {
 		return
@@ -239,7 +235,7 @@ func (p *NonStreamingProcessor) flushText() {
 	p.textBuilder = ""
 }
 
-// flushThinking 刷新 thinking builder
+// flushThinking
 func (p *NonStreamingProcessor) flushThinking() {
 	if p.thinkingBuilder == "" && p.thinkingSignature == "" {
 		return
@@ -254,7 +250,7 @@ func (p *NonStreamingProcessor) flushThinking() {
 	p.thinkingSignature = ""
 }
 
-// buildResponse 构建最终响应
+// buildResponse
 func (p *NonStreamingProcessor) buildResponse(geminiResp *GeminiResponse, responseID, originalModel string) *ClaudeResponse {
 	var finishReason string
 	if len(geminiResp.Candidates) > 0 {
@@ -276,8 +272,8 @@ func (p *NonStreamingProcessor) buildResponse(geminiResp *GeminiResponse, respon
 		stopReason = "max_tokens"
 	}
 
-	// 注意：Gemini 的 promptTokenCount 包含 cachedContentTokenCount，
-	// 但 Claude 的 input_tokens 不包含 cache_read_input_tokens，需要减去
+	//
+	//
 	usage := ClaudeUsage{}
 	if geminiResp.UsageMetadata != nil {
 		cached := geminiResp.UsageMetadata.CachedContentTokenCount
@@ -287,7 +283,6 @@ func (p *NonStreamingProcessor) buildResponse(geminiResp *GeminiResponse, respon
 		usage.ImageOutputTokens = geminiResp.UsageMetadata.ImageOutputTokens()
 	}
 
-	// 生成响应 ID
 	respID := responseID
 	if respID == "" {
 		respID = geminiResp.ResponseID
@@ -345,17 +340,17 @@ func buildGroundingText(grounding *GeminiGroundingMetadata) string {
 	return builder.String()
 }
 
-// fallbackCounter 降级伪随机 ID 的全局计数器，混入 seed 避免高并发下 UnixNano 相同导致碰撞。
+// fallbackCounter
 var fallbackCounter uint64
 
-// generateRandomID 生成密码学安全的随机 ID
+// generateRandomID
 func generateRandomID() string {
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	id := make([]byte, 12)
 	randBytes := make([]byte, 12)
 	if _, err := rand.Read(randBytes); err != nil {
-		// 避免在请求路径里 panic：极端情况下熵源不可用时降级为伪随机。
-		// 这里主要用于生成响应/工具调用的临时 ID，安全要求不高但需尽量避免碰撞。
+		//
+		//
 		cnt := atomic.AddUint64(&fallbackCounter, 1)
 		seed := uint64(time.Now().UnixNano()) ^ cnt
 		seed ^= uint64(len(err.Error())) << 32

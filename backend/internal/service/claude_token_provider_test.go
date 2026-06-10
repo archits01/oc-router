@@ -171,11 +171,11 @@ func (p *testClaudeTokenProvider) GetAccessToken(ctx context.Context, account *A
 			expiresAt = account.GetCredentialAsTime("expires_at")
 			if expiresAt == nil || time.Until(*expiresAt) <= claudeTokenRefreshSkew {
 				if p.oauthService == nil {
-					refreshFailed = true // 无法刷新，标记失败
+					refreshFailed = true // 无法刷新，标记failed
 				} else {
 					tokenInfo, err := p.oauthService.RefreshAccountToken(ctx, account)
 					if err != nil {
-						refreshFailed = true // 刷新失败，标记以使用短 TTL
+						refreshFailed = true // 刷新failed，标记以使用短 TTL
 					} else {
 						// Build new credentials
 						newCredentials := make(map[string]any)
@@ -212,7 +212,7 @@ func (p *testClaudeTokenProvider) GetAccessToken(ctx context.Context, account *A
 	if p.tokenCache != nil {
 		ttl := 30 * time.Minute
 		if refreshFailed {
-			ttl = time.Minute // 刷新失败时使用短 TTL
+			ttl = time.Minute // 刷新failed时使用短 TTL
 		} else if expiresAt != nil {
 			until := time.Until(*expiresAt)
 			if until > claudeTokenCacheSkew {

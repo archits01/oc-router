@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// 捕获 ListUsers 入参、返回一个已删用户的 admin service 桩。
+//
 type searchUsersAdminStub struct {
 	service.AdminService
 	gotFilters service.UserListFilters
@@ -52,5 +52,5 @@ func TestAdminUsageSearchUsers_IncludesDeletedAndFlags(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	require.Len(t, resp.Data, 2)
 	require.False(t, resp.Data[0].Deleted)
-	require.True(t, resp.Data[1].Deleted, "已删用户必须标记 deleted=true")
+	require.True(t, resp.Data[1].Deleted, "已删user必须标记 deleted=true")
 }

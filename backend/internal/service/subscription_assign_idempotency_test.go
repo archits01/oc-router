@@ -277,7 +277,7 @@ func TestBulkAssignSubscriptionCreatedReusedAndConflict(t *testing.T) {
 		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
 	}
 	subRepo := newSubscriptionUserSubRepoStub()
-	// user 1: 语义一致，可 reused
+	// user 1:
 	subRepo.seed(&UserSubscription{
 		ID:        21,
 		UserID:    1,
@@ -286,7 +286,7 @@ func TestBulkAssignSubscriptionCreatedReusedAndConflict(t *testing.T) {
 		ExpiresAt: start.AddDate(0, 0, 30),
 		Notes:     "same-note",
 	})
-	// user 3: 语义冲突（有效期不一致），应 failed
+	// user 3:
 	subRepo.seed(&UserSubscription{
 		ID:        23,
 		UserID:    3,

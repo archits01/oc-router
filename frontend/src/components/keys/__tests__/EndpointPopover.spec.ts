@@ -31,7 +31,7 @@ describe('EndpointPopover', () => {
     vi.clearAllMocks()
   })
 
-  it('将说明提示渲染到 URL 上方而不是旧的 title 图标上', () => {
+  it('将说明提示渲染到 URL 上方而不Yes旧的 title 图标上', () => {
     const wrapper = mount(EndpointPopover, {
       props: {
         apiBaseUrl: 'https://default.example.com/v1',

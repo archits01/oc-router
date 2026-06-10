@@ -31,7 +31,7 @@ const (
 	opsUpstreamModelKey = "ops_upstream_model"
 	opsRequestTypeKey   = "ops_request_type"
 
-	// 错误过滤匹配常量 — shouldSkipOpsErrorLog 和错误分类共用
+	// — shouldSkipOpsErrorLog
 	opsErrContextCanceled            = "context canceled"
 	opsErrNoAvailableAccounts        = "no available accounts"
 	opsErrInvalidAPIKey              = "invalid_api_key"
@@ -40,7 +40,7 @@ const (
 	opsErrInsufficientAccountBalance = "insufficient account balance"
 	opsErrInsufficientQuota          = "insufficient_quota"
 
-	// 上游错误码常量 — 错误分类 (normalizeOpsErrorType / classifyOpsPhase / classifyOpsIsBusinessLimited)
+	// — (normalizeOpsErrorType / classifyOpsPhase / classifyOpsIsBusinessLimited)
 	opsCodeInsufficientBalance   = "INSUFFICIENT_BALANCE"
 	opsCodeUsageLimitExceeded    = "USAGE_LIMIT_EXCEEDED"
 	opsCodeSubscriptionNotFound  = "SUBSCRIPTION_NOT_FOUND"
@@ -71,8 +71,8 @@ const (
 	opsErrorLogBatchSize          = 32
 )
 
-// looksLikeSystemKey 粗筛"形似本系统 key"的输入:长度 16-128 且仅含 [a-zA-Z0-9_-]。
-// 不用前缀匹配(APIKeyPrefix 可配置)。用于反查审计表前挡掉随机扫描的乱码输入。
+// looksLikeSystemKey ""[a-zA-Z0-9_-]。
+// (APIKeyPrefix )。
 func looksLikeSystemKey(key string) bool {
 	if len(key) < 16 || len(key) > 128 {
 		return false
@@ -87,7 +87,7 @@ func looksLikeSystemKey(key string) bool {
 	return true
 }
 
-// keyPrefix 返回脱敏前缀(前 n 个字符);不足 n 则原样返回。
+// keyPrefix ();
 func keyPrefix(key string, n int) string {
 	if len(key) <= n {
 		return key
@@ -95,15 +95,15 @@ func keyPrefix(key string, n int) string {
 	return key[:n]
 }
 
-// extractAttemptedKey 按认证中间件同样的顺序从请求头提取提交的 key 明文。
-// 与 api_key_auth.go:43-59 一致:Authorization 仅取 Bearer scheme,非 Bearer 则忽略并继续 x-api-key → x-goog-api-key。
+// extractAttemptedKey
+// → x-goog-api-key。
 func extractAttemptedKey(c *gin.Context) string {
 	if h := c.GetHeader("Authorization"); h != "" {
 		parts := strings.SplitN(h, " ", 2)
 		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
 			return strings.TrimSpace(parts[1])
 		}
-		// 非 Bearer:与中间件一致,忽略 Authorization,继续尝试其它 header(不在此 return)。
+		// ()。
 	}
 	if k := c.GetHeader("x-api-key"); k != "" {
 		return strings.TrimSpace(k)
@@ -955,7 +955,7 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 
 		if apiKey != nil {
 			entry.APIKeyID = &apiKey.ID
-			// 有效(未删除)key 报错时快照前缀,key 之后被删也保留;与 INVALID_API_KEY 的 attempted_key_prefix 互斥。
+			// ()key
 			entry.APIKeyPrefix = keyPrefix(apiKey.Key, 8)
 			if apiKey.User != nil {
 				entry.UserID = &apiKey.User.ID
@@ -975,7 +975,7 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 			entry.ClientIP = &clientIP
 		}
 
-		// 已删除 key 归因:仅 INVALID_API_KEY 才尝试。响应已写出,此处不阻塞客户端。
+		//
 		if parsed.Code == opsCodeInvalidAPIKey {
 			if attemptedKey := extractAttemptedKey(c); attemptedKey != "" {
 				entry.AttemptedKeyPrefix = keyPrefix(attemptedKey, 8)
@@ -1097,10 +1097,10 @@ func parseOpsErrorResponse(body []byte) parsedOpsError {
 	return parsedOpsError{Message: truncateString(string(body), 1024)}
 }
 
-// getOpsAPIKey 返回用于 Ops 错误日志的 API Key：优先取已鉴权写入的正式 key；
-// 鉴权早退（分组停用/删除、Key 停用/过期/额度、用户停用、IP 限制等）时，
-// 正式 key 尚未写入，回退到 middleware 写入的 ops fallback key
-// （含 User/Group/Platform），从而让日志能展示 用户/分组/平台。
+// getOpsAPIKey
+//
+//
+// （
 func getOpsAPIKey(c *gin.Context) *service.APIKey {
 	if apiKey, ok := middleware2.GetAPIKeyFromContext(c); ok && apiKey != nil {
 		return apiKey
@@ -1250,7 +1250,7 @@ func classifyOpsIsBusinessLimited(errType, phase, code string, status int, messa
 		return true
 	}
 	if phase == "billing" || phase == "concurrency" {
-		// SLA/错误率排除“用户级业务限制”
+		// SLA/“”
 		return true
 	}
 	// Avoid treating upstream rate limits as business-limited.
@@ -1278,7 +1278,7 @@ func isOpsClientAuthError(code string, msg string) bool {
 		strings.Contains(msg, "api key is disabled") ||
 		strings.Contains(msg, "user associated with api key not found") ||
 		strings.Contains(msg, "user account is not active") ||
-		strings.Contains(msg, "api key 所属分组已删除") ||
+		strings.Contains(msg, "api key 所属分组已delete") ||
 		strings.Contains(msg, "api key 所属分组已停用") ||
 		strings.Contains(msg, "api key is not assigned to any group")
 }

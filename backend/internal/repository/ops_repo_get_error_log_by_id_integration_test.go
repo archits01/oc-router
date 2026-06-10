@@ -11,16 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestGetErrorLogByID_DeletedKeyOwner 验证:
-//  1. 带 deleted_key_owner_user_id 的记录能正确 JOIN users 返回 DeletedKeyOwnerEmail
-//  2. 新列全为 NULL 的普通记录 Scan 不报错,这些字段为空/nil
+// TestGetErrorLogByID_DeletedKeyOwner
+//  1.
+//  2.
 func TestGetErrorLogByID_DeletedKeyOwner(t *testing.T) {
 	ctx := context.Background()
 	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE ops_error_logs RESTART IDENTITY CASCADE")
 
 	repo := NewOpsRepository(integrationDB).(*opsRepository)
 
-	// ── Case 1: 带 deleted_key_owner 信息的记录 ──────────────────────────────
+	// ── Case 1: ──────────────────────────────
 	owner := mustCreateUser(t, integrationEntClient, &service.User{
 		Email: "deleted-key-owner-" + time.Now().Format("150405.000000000") + "@example.com",
 	})
@@ -49,7 +49,7 @@ func TestGetErrorLogByID_DeletedKeyOwner(t *testing.T) {
 	require.Equal(t, owner.Email, detail.DeletedKeyOwnerEmail)
 	require.Equal(t, "my-deleted-key", detail.DeletedKeyName)
 
-	// ── Case 2: 新列全为 NULL 的普通错误记录 ──────────────────────────────────
+	// ── Case 2: ──────────────────────────────────
 	var plainID int64
 	err = integrationDB.QueryRowContext(ctx, `
 		INSERT INTO ops_error_logs (
@@ -71,8 +71,8 @@ func TestGetErrorLogByID_DeletedKeyOwner(t *testing.T) {
 	require.Empty(t, plain.DeletedKeyName, "no key name for plain error")
 	require.Empty(t, plain.APIKeyPrefix, "no api key prefix for plain error")
 
-	// ── Case 3: 有效(未删除)key 报错,经 InsertErrorLog 快照 api_key_prefix ──────
-	// 走真实 InsertErrorLog 写入路径(覆盖新列 + $41 占位符),再 GetErrorLogByID 读回。
+	// ── Case 3: ()key ──────
+	// (+ $41 ),
 	validID, err := repo.InsertErrorLog(ctx, &service.OpsInsertErrorLogInput{
 		ErrorPhase:   "request",
 		ErrorType:    "api_error",

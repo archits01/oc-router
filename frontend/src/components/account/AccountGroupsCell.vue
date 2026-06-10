@@ -67,7 +67,7 @@
       </Transition>
     </Teleport>
 
-    <!-- 点击外部关闭 popover -->
+    <!-- 点击外部Close popover -->
     <div
       v-if="showPopover"
       class="fixed inset-0 z-40"
@@ -104,11 +104,9 @@ const displayGroups = computed(() => {
   if (props.groups.length <= props.maxDisplay) {
     return props.groups
   }
-  // 留一个位置给 +N 按钮
   return props.groups.slice(0, props.maxDisplay - 1)
 })
 
-// 隐藏的数量
 const hiddenCount = computed(() => {
   if (!props.groups) return 0
   if (props.groups.length <= props.maxDisplay) return 0
@@ -125,12 +123,10 @@ const popoverStyle = computed(() => {
   let top = rect.bottom + 8
   let left = rect.left
 
-  // 如果下方空间不足，显示在上方
   if (top + 280 > viewportHeight) {
     top = Math.max(8, rect.top - 280)
   }
 
-  // 如果右侧空间不足，向左偏移
   if (left + 384 > viewportWidth) {
     left = Math.max(8, viewportWidth - 392)
   }
@@ -141,7 +137,7 @@ const popoverStyle = computed(() => {
   }
 })
 
-// 关闭 popover 的键盘事件
+// Close popover 的键盘事件
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     showPopover.value = false

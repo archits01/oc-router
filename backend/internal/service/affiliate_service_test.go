@@ -92,10 +92,9 @@ func TestMaskEmail(t *testing.T) {
 func TestIsValidAffiliateCodeFormat(t *testing.T) {
 	t.Parallel()
 
-	// 邀请码格式校验同时服务于：
-	// 1) 系统自动生成的 12 位随机码（A-Z 去 I/O，2-9 去 0/1）
-	// 2) 管理员设置的自定义专属码（如 "VIP2026"、"NEW_USER-1"）
-	// 因此校验放宽到 [A-Z0-9_-]{4,32}（要求调用方先 ToUpper）。
+	// 1)
+	// 2) "VIP2026"、"NEW_USER-1"）
+	// [A-Z0-9_-]{4,32}（
 	cases := []struct {
 		name string
 		in   string

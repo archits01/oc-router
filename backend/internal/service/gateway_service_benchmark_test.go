@@ -13,7 +13,7 @@ var (
 	benchmarkIntSink    int
 )
 
-// BenchmarkGenerateSessionHash_Metadata 关注 JSON 解析与正则匹配开销。
+// BenchmarkGenerateSessionHash_Metadata
 func BenchmarkGenerateSessionHash_Metadata(b *testing.B) {
 	svc := &GatewayService{}
 	body := []byte(`{"metadata":{"user_id":"session_123e4567-e89b-12d3-a456-426614174000"},"messages":[{"content":"hello"}]}`)
@@ -22,7 +22,7 @@ func BenchmarkGenerateSessionHash_Metadata(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		parsed, err := ParseGatewayRequest(NewRequestBodyRef(body), "")
 		if err != nil {
-			b.Fatalf("解析请求失败: %v", err)
+			b.Fatalf("parserequest failed: %v", err)
 		}
 		benchmarkStringSink = svc.GenerateSessionHash(parsed)
 	}
@@ -39,7 +39,7 @@ func BenchmarkParseGatewayRequest_LargeAnthropicMessages(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				parsed, err := ParseGatewayRequest(NewRequestBodyRef(body), domain.PlatformAnthropic)
 				if err != nil {
-					b.Fatalf("解析 Anthropic 请求失败: %v", err)
+					b.Fatalf("parse Anthropic request failed: %v", err)
 				}
 				benchmarkIntSink = len(parsed.MessagesRaw())
 			}
@@ -58,7 +58,7 @@ func BenchmarkParseGatewayRequest_LargeGeminiContents(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				parsed, err := ParseGatewayRequest(NewRequestBodyRef(body), domain.PlatformGemini)
 				if err != nil {
-					b.Fatalf("解析 Gemini 请求失败: %v", err)
+					b.Fatalf("parse Gemini request failed: %v", err)
 				}
 				benchmarkIntSink = len(parsed.MessagesRaw())
 			}
@@ -73,7 +73,7 @@ func BenchmarkGenerateSessionHash_LargeAnthropicMessages(b *testing.B) {
 			body := buildLargeAnthropicMessagesBody(size.bytes, true)
 			parsed, err := ParseGatewayRequest(NewRequestBodyRef(body), domain.PlatformAnthropic)
 			if err != nil {
-				b.Fatalf("解析请求失败: %v", err)
+				b.Fatalf("parserequest failed: %v", err)
 			}
 
 			b.SetBytes(int64(len(body)))
@@ -116,7 +116,7 @@ func BenchmarkOpenAIResponses_LargeInputDecodeMap(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				reqBody, err := getOpenAIRequestBodyMap(nil, body)
 				if err != nil {
-					b.Fatalf("解析 OpenAI 请求失败: %v", err)
+					b.Fatalf("parse OpenAI request failed: %v", err)
 				}
 				benchmarkIntSink = len(reqBody)
 			}
@@ -138,7 +138,7 @@ func BenchmarkOpenAIResponses_LargeInputRawPatch(b *testing.B) {
 				view.MarkPatchSet("reasoning.effort", "none")
 				patched, err := view.ApplyPatches()
 				if err != nil {
-					b.Fatalf("应用 OpenAI raw patch 失败: %v", err)
+					b.Fatalf("failed to apply OpenAI raw patch: %v", err)
 				}
 				benchmarkIntSink = len(patched)
 			}
@@ -157,7 +157,7 @@ func BenchmarkOpenAIResponses_LargeInputImageBillingRaw(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				cfg, err := resolveOpenAIResponsesImageBillingConfigDetailedFromBody(body, "gpt-5.4")
 				if err != nil {
-					b.Fatalf("解析 OpenAI 图片计费配置失败: %v", err)
+					b.Fatalf("failed to parse OpenAI image billing config: %v", err)
 				}
 				benchmarkStringSink = cfg.Model + cfg.SizeTier + cfg.InputSize
 			}
@@ -193,7 +193,7 @@ func BenchmarkOpenAIResponses_LargeInputFunctionCallValidation(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				validation := ValidateFunctionCallOutputContextBytes(body)
 				if !validation.HasFunctionCallOutput || !validation.HasItemReferenceForAllCallIDs {
-					b.Fatalf("工具续链校验结果异常: %+v", validation)
+					b.Fatalf("tool chain continuation validation result abnormal: %+v", validation)
 				}
 				benchmarkIntSink++
 			}
@@ -201,7 +201,7 @@ func BenchmarkOpenAIResponses_LargeInputFunctionCallValidation(b *testing.B) {
 	}
 }
 
-// BenchmarkExtractCacheableContent_System 关注字符串拼接路径的性能。
+// BenchmarkExtractCacheableContent_System
 func BenchmarkExtractCacheableContent_System(b *testing.B) {
 	svc := &GatewayService{}
 	req := buildSystemCacheableRequest(12)

@@ -8,15 +8,15 @@ import (
 
 const antigravitySubscriptionAbnormal = "abnormal"
 
-// AntigravitySubscriptionResult 表示订阅检测后的规范化结果。
+// AntigravitySubscriptionResult
 type AntigravitySubscriptionResult struct {
 	PlanType           string
 	SubscriptionStatus string
 	SubscriptionError  string
 }
 
-// NormalizeAntigravitySubscription 从 LoadCodeAssistResponse 提取 plan_type + 异常状态。
-// 使用 GetTier()（返回 tier ID）+ TierIDToPlanType 映射。
+// NormalizeAntigravitySubscription +
+// ()（+ TierIDToPlanType
 func NormalizeAntigravitySubscription(resp *antigravity.LoadCodeAssistResponse) AntigravitySubscriptionResult {
 	if resp == nil {
 		return AntigravitySubscriptionResult{PlanType: "Free"}

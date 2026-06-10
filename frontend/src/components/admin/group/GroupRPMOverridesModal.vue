@@ -15,7 +15,7 @@
         </span>
       </div>
 
-      <!-- 操作区：添加用户 -->
+      <!-- Actions区：AddUser -->
       <div class="rounded-lg border border-gray-200 p-3 dark:border-dark-600">
         <h4 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
           {{ t('admin.groups.addUserRpm') }}
@@ -82,7 +82,7 @@
         </div>
       </div>
 
-      <!-- 加载状态 -->
+      <!-- 加载Status -->
       <div v-if="loading" class="flex justify-center py-6">
         <svg class="h-6 w-6 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

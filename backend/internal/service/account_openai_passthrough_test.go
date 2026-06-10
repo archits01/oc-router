@@ -29,7 +29,7 @@ func TestAccount_IsOpenAIPassthroughEnabled(t *testing.T) {
 		require.True(t, account.IsOpenAIPassthroughEnabled())
 	})
 
-	t.Run("非OpenAI账号始终关闭", func(t *testing.T) {
+	t.Run("非OpenAI账号始终shutting down", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformAnthropic,
 			Type:     AccountTypeOAuth,
@@ -40,7 +40,7 @@ func TestAccount_IsOpenAIPassthroughEnabled(t *testing.T) {
 		require.False(t, account.IsOpenAIPassthroughEnabled())
 	})
 
-	t.Run("空额外配置默认关闭", func(t *testing.T) {
+	t.Run("空额外configuration默认shutting down", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeOAuth,
@@ -50,7 +50,7 @@ func TestAccount_IsOpenAIPassthroughEnabled(t *testing.T) {
 }
 
 func TestAccount_IsOpenAIOAuthPassthroughEnabled(t *testing.T) {
-	t.Run("仅OAuth类型允许返回开启", func(t *testing.T) {
+	t.Run("仅OAuth类型允许returned开启", func(t *testing.T) {
 		oauthAccount := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeOAuth,
@@ -83,7 +83,7 @@ func TestAccount_IsCodexCLIOnlyEnabled(t *testing.T) {
 		require.True(t, account.IsCodexCLIOnlyEnabled())
 	})
 
-	t.Run("OpenAI OAuth 关闭", func(t *testing.T) {
+	t.Run("OpenAI OAuth shutting down", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeOAuth,
@@ -94,7 +94,7 @@ func TestAccount_IsCodexCLIOnlyEnabled(t *testing.T) {
 		require.False(t, account.IsCodexCLIOnlyEnabled())
 	})
 
-	t.Run("字段缺失默认关闭", func(t *testing.T) {
+	t.Run("字段缺失默认shutting down", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeOAuth,
@@ -103,7 +103,7 @@ func TestAccount_IsCodexCLIOnlyEnabled(t *testing.T) {
 		require.False(t, account.IsCodexCLIOnlyEnabled())
 	})
 
-	t.Run("类型非法默认关闭", func(t *testing.T) {
+	t.Run("类型非法默认shutting down", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeOAuth,
@@ -114,7 +114,7 @@ func TestAccount_IsCodexCLIOnlyEnabled(t *testing.T) {
 		require.False(t, account.IsCodexCLIOnlyEnabled())
 	})
 
-	t.Run("非 OAuth 账号始终关闭", func(t *testing.T) {
+	t.Run("非 OAuth 账号始终shutting down", func(t *testing.T) {
 		apiKeyAccount := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeAPIKey,
@@ -182,7 +182,7 @@ func TestAccount_IsOpenAIResponsesWebSocketV2Enabled(t *testing.T) {
 		require.False(t, account.IsOpenAIResponsesWebSocketV2Enabled())
 	})
 
-	t.Run("分类型键缺失时回退兼容键", func(t *testing.T) {
+	t.Run("分类型键缺失时fallback兼容键", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,
 			Type:     AccountTypeAPIKey,
@@ -193,7 +193,7 @@ func TestAccount_IsOpenAIResponsesWebSocketV2Enabled(t *testing.T) {
 		require.True(t, account.IsOpenAIResponsesWebSocketV2Enabled())
 	})
 
-	t.Run("非OpenAI账号默认关闭", func(t *testing.T) {
+	t.Run("非OpenAI账号默认shutting down", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformAnthropic,
 			Type:     AccountTypeAPIKey,

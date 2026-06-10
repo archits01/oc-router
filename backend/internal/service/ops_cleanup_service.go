@@ -39,8 +39,8 @@ return 0
 // - Multi-instance: best-effort Redis leader lock so only one node runs cleanup.
 // - Safety: deletes in batches to avoid long transactions.
 //
-// 附带：在 runCleanupOnce 末尾调用 ChannelMonitorService.RunDailyMaintenance，
-// 统一共享 cron schedule + leader lock + heartbeat，避免再引一套调度。
+//
+// + leader lock + heartbeat，
 type OpsCleanupService struct {
 	opsRepo           OpsRepository
 	db                *sql.DB
@@ -51,9 +51,9 @@ type OpsCleanupService struct {
 
 	instanceID string
 
-	// mu 守护 cron 实例切换 + effective 配置切换。
-	// 这里不再用 startOnce/stopOnce，是因为 Reload 需要"停旧 cron 重启新 cron"，
-	// 而 Once 一旦触发就无法再次执行；改为 started/stopped 布尔配合 mu。
+	// mu + effective
+	// ""，
+	//
 	mu        sync.Mutex
 	cron      *cron.Cron
 	started   bool
@@ -82,8 +82,7 @@ func NewOpsCleanupService(
 	}
 }
 
-// Start 首次启动 cron 调度。Enabled / Schedule 由 effective 配置决定（settings 优先 cfg）。
-// 重复调用幂等。
+// Start
 func (s *OpsCleanupService) Start() {
 	if s == nil {
 		return
@@ -107,7 +106,7 @@ func (s *OpsCleanupService) Start() {
 	}
 }
 
-// Stop 关闭 cron。幂等。
+// Stop
 func (s *OpsCleanupService) Stop() {
 	if s == nil {
 		return
@@ -121,7 +120,7 @@ func (s *OpsCleanupService) Stop() {
 	s.stopCronLocked()
 }
 
-// stopCronLocked 停掉当前 cron 实例（带 3s 超时）。调用方持锁。
+// stopCronLocked
 func (s *OpsCleanupService) stopCronLocked() {
 	if s.cron == nil {
 		return
@@ -135,8 +134,8 @@ func (s *OpsCleanupService) stopCronLocked() {
 	s.cron = nil
 }
 
-// applyScheduleLocked 重新计算 effective 配置并按其 schedule 重建 cron。调用方持锁。
-// 若 effective.Enabled=false（用户在 UI 关闭清理），停旧 cron 后直接返回，不创建新 cron。
+// applyScheduleLocked
+// =false（
 func (s *OpsCleanupService) applyScheduleLocked(ctx context.Context) error {
 	s.computeEffectiveLocked(ctx)
 	s.stopCronLocked()
@@ -174,10 +173,10 @@ func (s *OpsCleanupService) applyScheduleLocked(ctx context.Context) error {
 	return nil
 }
 
-// Reload 重新读取 ops_advanced_settings.data_retention 并按新配置重建 cron。
-// 适用于 admin 在 UI 修改清理设置后立即生效（schedule / enabled 改动需要 Reload；
-// retention 改动 runScheduled 顶部也会刷新，下一次触发即生效）。
-// 若 service 还未 Start 或已 Stop，Reload 不做任何事。
+// Reload
+//
+// retention
+//
 func (s *OpsCleanupService) Reload(ctx context.Context) error {
 	if s == nil {
 		return nil
@@ -190,14 +189,14 @@ func (s *OpsCleanupService) Reload(ctx context.Context) error {
 	return s.applyScheduleLocked(ctx)
 }
 
-// computeEffectiveLocked 计算"生效配置"并写入 s.effective。调用方持锁。
+// computeEffectiveLocked ""
 //
-// 优先级：UI 写入的 settings.ops_advanced_settings.data_retention（权威）覆盖 cfg.Ops.Cleanup 的副本。
-//   - Enabled：settings 直接覆盖
-//   - Schedule：settings 非空时覆盖，否则保留 cfg
-//   - *RetentionDays：settings >=0 时覆盖（包括 0=TRUNCATE），<0 沿用 cfg
 //
-// 若 settings 表无该 key（ErrSettingNotFound）或解析失败，整体 fallback 到 cfg.Ops.Cleanup。
+//   - Enabled：settings
+//   - Schedule：settings
+//   - *RetentionDays：settings >=0 =TRUNCATE），<0
+//
+//
 func (s *OpsCleanupService) computeEffectiveLocked(ctx context.Context) {
 	base := config.OpsCleanupConfig{}
 	if s.cfg != nil {
@@ -241,15 +240,15 @@ func (s *OpsCleanupService) computeEffectiveLocked(ctx context.Context) {
 	}
 }
 
-// snapshotEffective 取一份 effective 副本（runCleanupOnce 等读路径使用）。
+// snapshotEffective
 func (s *OpsCleanupService) snapshotEffective() config.OpsCleanupConfig {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.effective
 }
 
-// refreshEffectiveBeforeRun 在 cron 触发时刷新 effective，让 retention 改动当次即生效。
-// schedule 改动不影响当次（cron 调度由库管理，需要 Reload 才换 schedule）。
+// refreshEffectiveBeforeRun
+// schedule
 func (s *OpsCleanupService) refreshEffectiveBeforeRun(ctx context.Context) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -264,7 +263,7 @@ func (s *OpsCleanupService) runScheduled() {
 	ctx, cancel := context.WithTimeout(context.Background(), opsCleanupRunTimeout)
 	defer cancel()
 
-	// 让 retention 改动当次生效（schedule/enabled 改动需要 Reload）。
+	//
 	s.refreshEffectiveBeforeRun(ctx)
 
 	release, ok := s.tryAcquireLeaderLock(ctx)
@@ -319,9 +318,9 @@ func (s *OpsCleanupService) runCleanupOnce(ctx context.Context) (opsCleanupDelet
 		*t.counter = n
 	}
 
-	// Channel monitor 每日维护（聚合昨日明细 + 软删过期明细/聚合）。
-	// 失败只记日志，不影响 ops 清理的成功状态（与 ops 各步骤风格一致）；
-	// 维护本身已经把每步错误打到 slog，heartbeat result 不再分项记录。
+	// Channel monitor +
+	//
+	//
 	if s.channelMonitorSvc != nil {
 		if err := s.channelMonitorSvc.RunDailyMaintenance(ctx); err != nil {
 			logger.LegacyPrintf("service.ops_cleanup", "[OpsCleanup] channel monitor maintenance failed: %v", err)

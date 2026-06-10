@@ -32,11 +32,10 @@ const (
 	usageRecordDropLogInterval             = 5 * time.Second
 )
 
-// UsageRecordTask 是提交到使用量记录池的任务。
-// 任务实现应自行处理业务错误日志；池本身只负责调度与超时控制。
+// UsageRecordTask
 type UsageRecordTask func(ctx context.Context)
 
-// UsageRecordSubmitMode 表示任务提交结果。
+// UsageRecordSubmitMode
 type UsageRecordSubmitMode string
 
 const (
@@ -45,7 +44,7 @@ const (
 	UsageRecordSubmitModeSync     UsageRecordSubmitMode = "sync_fallback"
 )
 
-// UsageRecordWorkerPoolOptions 使用量记录池配置。
+// UsageRecordWorkerPoolOptions
 type UsageRecordWorkerPoolOptions struct {
 	WorkerCount           int
 	QueueSize             int
@@ -63,7 +62,7 @@ type UsageRecordWorkerPoolOptions struct {
 	AutoScaleCooldown     time.Duration
 }
 
-// UsageRecordWorkerPoolStats 使用量记录池运行时统计。
+// UsageRecordWorkerPoolStats
 type UsageRecordWorkerPoolStats struct {
 	MaxConcurrency     int
 	RunningWorkers     int64
@@ -78,8 +77,8 @@ type UsageRecordWorkerPoolStats struct {
 	SyncFallbackTasks  uint64
 }
 
-// UsageRecordWorkerPool 提供“有界队列 + 固定 worker”的异步执行器。
-// 用于替代请求路径里的直接 goroutine，避免高并发时无界堆积。
+// UsageRecordWorkerPool “+ ”
+//
 type UsageRecordWorkerPool struct {
 	pool                  pond.Pool
 	taskTimeout           time.Duration
@@ -105,13 +104,13 @@ type UsageRecordWorkerPool struct {
 	stopOnce              sync.Once
 }
 
-// NewUsageRecordWorkerPool 从配置构建使用量记录池。
+// NewUsageRecordWorkerPool
 func NewUsageRecordWorkerPool(cfg *config.Config) *UsageRecordWorkerPool {
 	opts := usageRecordPoolOptionsFromConfig(cfg)
 	return NewUsageRecordWorkerPoolWithOptions(opts)
 }
 
-// NewUsageRecordWorkerPoolWithOptions 根据给定参数构建使用量记录池。
+// NewUsageRecordWorkerPoolWithOptions
 func NewUsageRecordWorkerPoolWithOptions(opts UsageRecordWorkerPoolOptions) *UsageRecordWorkerPool {
 	opts = normalizeUsageRecordPoolOptions(opts)
 
@@ -140,8 +139,8 @@ func NewUsageRecordWorkerPoolWithOptions(opts UsageRecordWorkerPoolOptions) *Usa
 	return p
 }
 
-// Submit 提交一个使用量记录任务。
-// 提交失败（队列满）时按 overflowPolicy 执行降级策略：drop/sample/sync。
+// Submit
+//
 func (p *UsageRecordWorkerPool) Submit(task UsageRecordTask) UsageRecordSubmitMode {
 	if p == nil || task == nil {
 		return UsageRecordSubmitModeDropped
@@ -183,7 +182,7 @@ func (p *UsageRecordWorkerPool) Submit(task UsageRecordTask) UsageRecordSubmitMo
 	return UsageRecordSubmitModeDropped
 }
 
-// Stats 返回当前池状态与计数器。
+// Stats
 func (p *UsageRecordWorkerPool) Stats() UsageRecordWorkerPoolStats {
 	if p == nil || p.pool == nil {
 		return UsageRecordWorkerPoolStats{}
@@ -203,7 +202,7 @@ func (p *UsageRecordWorkerPool) Stats() UsageRecordWorkerPoolStats {
 	}
 }
 
-// Stop 停止池并等待队列任务完成。
+// Stop
 func (p *UsageRecordWorkerPool) Stop() {
 	if p == nil || p.pool == nil {
 		return
@@ -265,7 +264,6 @@ func (p *UsageRecordWorkerPool) autoScaleTick() {
 		return
 	}
 
-	// 扩容优先：队列占用率超过阈值时，按步长提升并发上限。
 	if queuePercent >= p.autoScaleUpPercent && current < p.autoScaleMaxWorkers {
 		target := current + p.autoScaleUpStep
 		if target > p.autoScaleMaxWorkers {
@@ -275,7 +273,6 @@ func (p *UsageRecordWorkerPool) autoScaleTick() {
 		return
 	}
 
-	// 缩容：仅在队列为空且运行利用率低时收缩，避免高负载下“无排队误缩容”导致震荡。
 	if queuePercent <= p.autoScaleDownPercent && waiting == 0 &&
 		runningPercent <= p.autoScaleDownPercent &&
 		current > p.autoScaleMinWorkers {

@@ -1,12 +1,12 @@
-# Sub2API Docker Image
+# OC Router Docker Image
 
-Sub2API is an AI API Gateway Platform for distributing and managing AI product subscription API quotas.
+OC Router is an AI API Gateway Platform for distributing and managing AI product subscription API quotas.
 
 ## Quick Start
 
 ```bash
 docker run -d \
-  --name sub2api \
+  --name oc-router \
   -p 8080:8080 \
   -e DATABASE_URL="postgres://user:pass@host:5432/sub2api" \
   -e REDIS_URL="redis://host:6379" \
@@ -19,7 +19,7 @@ docker run -d \
 version: '3.8'
 
 services:
-  sub2api:
+  oc-router:
     image: weishaw/sub2api:latest
     ports:
       - "8080:8080"

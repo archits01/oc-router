@@ -86,7 +86,7 @@ func disableOpenAITraining(ctx context.Context, clientFactory PrivacyClientFacto
 	return PrivacyModeTrainingOff
 }
 
-// ChatGPTAccountInfo 从 chatgpt.com/backend-api/accounts/check 获取的账号信息
+// ChatGPTAccountInfo
 type ChatGPTAccountInfo struct {
 	PlanType              string
 	Email                 string
@@ -143,7 +143,7 @@ func fetchChatGPTAccountInfo(ctx context.Context, clientFactory PrivacyClientFac
 		return nil
 	}
 
-	// 优先匹配 orgID 对应的账号（access_token JWT 中的 poid）
+	//
 	if orgID != "" {
 		if acctRaw, ok := accounts[orgID]; ok {
 			if acct, ok := acctRaw.(map[string]any); ok {
@@ -152,7 +152,7 @@ func fetchChatGPTAccountInfo(ctx context.Context, clientFactory PrivacyClientFac
 		}
 	}
 
-	// 未匹配到时，遍历所有账号：优先 is_default，次选非 free
+	//
 	if info.PlanType == "" {
 		type candidate struct {
 			planType  string
@@ -181,7 +181,7 @@ func fetchChatGPTAccountInfo(ctx context.Context, clientFactory PrivacyClientFac
 				paidC = candidate{planType, ea}
 			}
 		}
-		// 优先级：default > 非 free > 任意
+		// > >
 		switch {
 		case defaultC.planType != "":
 			info.PlanType, info.SubscriptionExpiresAt = defaultC.planType, defaultC.expiresAt
@@ -257,13 +257,13 @@ func fetchChatGPTSubscriptionExpiresAt(ctx context.Context, clientFactory Privac
 	return activeUntil
 }
 
-// fillAccountInfo 从单个 account 对象中提取 plan_type 和 subscription_expires_at
+// fillAccountInfo
 func fillAccountInfo(info *ChatGPTAccountInfo, acct map[string]any) {
 	info.PlanType = extractPlanType(acct)
 	info.SubscriptionExpiresAt = extractEntitlementExpiresAt(acct)
 }
 
-// extractPlanType 从单个 account 对象中提取 plan_type
+// extractPlanType
 func extractPlanType(acct map[string]any) string {
 	if account, ok := acct["account"].(map[string]any); ok {
 		if planType, ok := account["plan_type"].(string); ok && planType != "" {
@@ -278,8 +278,8 @@ func extractPlanType(acct map[string]any) string {
 	return ""
 }
 
-// extractEntitlementExpiresAt 从 entitlement 中提取 expires_at。
-// 预期为 RFC3339 字符串格式，如 "2026-05-02T20:32:12+00:00"。
+// extractEntitlementExpiresAt
+// "2026-05-02T20:32:12+00:00"。
 func extractEntitlementExpiresAt(acct map[string]any) string {
 	entitlement, ok := acct["entitlement"].(map[string]any)
 	if !ok {

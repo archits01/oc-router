@@ -48,8 +48,8 @@ const geminiModels = [
   'gemini-3-pro-preview'
 ]
 
-// Antigravity 官方支持的模型（精确匹配）
-// 基于官方 API 返回的模型列表，只支持 Claude 4.5+ 和 Gemini 2.5+
+// Antigravity 官方Supported Models（精确匹配）
+// 基于官方 API Back的模型列表，只支持 Claude 4.5+ 和 Gemini 2.5+
 const antigravityModels = [
   // Claude 4.5+ 系列
   'claude-fable-5',
@@ -76,7 +76,6 @@ const antigravityModels = [
   'gemini-3.1-pro-high',
   'gemini-3.1-pro-low',
   'gemini-3-pro-image',
-  // 其他
   'gpt-oss-120b-medium',
   'tab_flash_lite_preview'
 ]
@@ -91,7 +90,6 @@ const zhipuModels = [
   'cogview-3', 'cogvideo'
 ]
 
-// 阿里 通义千问
 const qwenModels = [
   'qwen-turbo', 'qwen-plus', 'qwen-max', 'qwen-max-longcontext', 'qwen-long',
   'qwen2-72b-instruct', 'qwen2-57b-a14b-instruct', 'qwen2-7b-instruct',
@@ -160,7 +158,6 @@ const moonshotModels = [
   'kimi-latest'
 ]
 
-// 字节跳动 豆包
 const doubaoModels = [
   'doubao-pro-256k', 'doubao-pro-128k', 'doubao-pro-32k', 'doubao-pro-4k',
   'doubao-lite-128k', 'doubao-lite-32k', 'doubao-lite-4k',
@@ -176,7 +173,6 @@ const minimaxModels = [
   'abab5.5-chat', 'abab5.5s-chat'
 ]
 
-// 百度 文心
 const baiduModels = [
   'ernie-4.0-8k-latest', 'ernie-4.0-8k', 'ernie-4.0-turbo-8k',
   'ernie-3.5-8k', 'ernie-3.5-128k',
@@ -185,14 +181,12 @@ const baiduModels = [
   'ernie-tiny-8k'
 ]
 
-// 讯飞 星火
 const sparkModels = [
   'spark-desk', 'spark-desk-v1.1', 'spark-desk-v2.1',
   'spark-desk-v3.1', 'spark-desk-v3.5', 'spark-desk-v4.0',
   'spark-lite', 'spark-pro', 'spark-max', 'spark-ultra'
 ]
 
-// 腾讯 混元
 const hunyuanModels = [
   'hunyuan-lite', 'hunyuan-standard', 'hunyuan-standard-256k',
   'hunyuan-pro', 'hunyuan-turbo', 'hunyuan-large',
@@ -206,7 +200,6 @@ const perplexityModels = [
   'llama-3-sonar-small-32k-chat', 'llama-3-sonar-large-32k-chat'
 ]
 
-// 所有模型（去重）
 const allModelsList: string[] = [
   ...openaiModels,
   ...claudeModels,
@@ -228,11 +221,9 @@ const allModelsList: string[] = [
   ...perplexityModels
 ]
 
-// 转换为下拉选项格式
 export const allModels = allModelsList.map(m => ({ value: m, label: m }))
 
 // =====================
-// 预设映射
 // =====================
 
 const anthropicPresetMappings = [
@@ -299,7 +290,6 @@ const antigravityPresetMappings = [
   { label: '3-Pro-Image→3.1', from: 'gemini-3-pro-image', to: 'gemini-3.1-flash-image', color: 'bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-400' },
   { label: '3-Flash透传', from: 'gemini-3-flash', to: 'gemini-3-flash', color: 'bg-lime-100 text-lime-700 hover:bg-lime-200 dark:bg-lime-900/30 dark:text-lime-400' },
   { label: '2.5-Flash-Lite透传', from: 'gemini-2.5-flash-lite', to: 'gemini-2.5-flash-lite', color: 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400' },
-  // 精确映射
   { label: 'Sonnet 4.6', from: 'claude-sonnet-4-6', to: 'claude-sonnet-4-6', color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400' },
   { label: 'Sonnet 4.5', from: 'claude-sonnet-4-5', to: 'claude-sonnet-4-5', color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400' },
   { label: 'Opus 4.6', from: 'claude-opus-4-6', to: 'claude-opus-4-6-thinking', color: 'bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-400' },
@@ -341,7 +331,6 @@ export async function fetchAntigravityDefaultMappings(): Promise<{ from: string;
 }
 
 // =====================
-// 常用错误码
 // =====================
 
 export const commonErrorCodes = [
@@ -355,10 +344,8 @@ export const commonErrorCodes = [
 ]
 
 // =====================
-// 辅助函数
 // =====================
 
-// 按平台获取模型
 export function getModelsByPlatform(platform: string): string[] {
   switch (platform) {
     case 'openai': return openaiModels
@@ -385,7 +372,6 @@ export function getModelsByPlatform(platform: string): string[] {
   }
 }
 
-// 按平台获取预设映射
 export function getPresetMappingsByPlatform(platform: string) {
   if (platform === 'openai') return openaiPresetMappings
   if (platform === 'gemini') return geminiPresetMappings
@@ -399,11 +385,9 @@ export function getPresetMappingsByPlatform(platform: string) {
 // =====================
 
 // isValidWildcardPattern 校验通配符格式：* 只能放在末尾
-// 导出供表单组件使用实时校验
 export function isValidWildcardPattern(pattern: string): boolean {
   const starIndex = pattern.indexOf('*')
-  if (starIndex === -1) return true // 无通配符，有效
-  // * 必须在末尾，且只能有一个
+  if (starIndex === -1) return true // 无通配符，Valid
   return starIndex === pattern.length - 1 && pattern.lastIndexOf('*') === starIndex
 }
 
@@ -451,9 +435,8 @@ export function buildModelMappingObject(
     for (const model of allowedModels) {
       const normalizedModel = model.trim()
       if (!normalizedModel) continue
-      // whitelist 模式的本意是"精确模型列表"，如果用户输入了通配符（如 claude-*），
+      // whitelist 模式的本意Yes"精确模型列表"，如果User输入了通配符（如 claude-*），
       // 写入 model_mapping 会导致 GetMappedModel() 把真实模型映射成 "claude-*"，从而转发失败。
-      // 因此这里跳过包含通配符的条目。
       if (!normalizedModel.includes('*')) {
         mapping[normalizedModel] = normalizedModel
       }
@@ -465,12 +448,10 @@ export function buildModelMappingObject(
       const from = m.from.trim()
       const to = m.to.trim()
       if (!from || !to) continue
-      // 校验通配符格式：* 只能放在末尾
       if (!isValidWildcardPattern(from)) {
         console.warn(`[buildModelMappingObject] 无效的通配符格式，跳过: ${from}`)
         continue
       }
-      // to 不允许包含通配符
       if (to.includes('*')) {
         console.warn(`[buildModelMappingObject] 目标模型不能包含通配符，跳过: ${from} -> ${to}`)
         continue

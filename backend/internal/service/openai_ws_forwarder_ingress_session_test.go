@@ -155,7 +155,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_KeepLeaseAcrossT
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	metrics := svc.SnapshotOpenAIWSPoolMetrics()
@@ -289,7 +289,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_FollowupCreateCa
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Len(t, captureConn.writes, 2)
@@ -424,7 +424,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_InjectsCodexImag
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Len(t, captureConn.writes, 1)
@@ -558,7 +558,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_DedicatedModeDoe
 		case serverErr := <-serverErrCh:
 			require.NoError(t, serverErr)
 		case <-time.After(5 * time.Second):
-			t.Fatal("等待 ingress websocket 结束超时")
+			t.Fatal("等待 ingress websocket 结束timeout")
 		}
 	}
 
@@ -690,7 +690,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughModeR
 				"server error should only be a normal close frame, got: %v", serverErr)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 passthrough websocket 结束超时")
+		t.Fatal("等待 passthrough websocket 结束timeout")
 	}
 
 	select {
@@ -704,7 +704,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughModeR
 		require.NotNil(t, result.ReasoningEffort)
 		require.Equal(t, "high", *result.ReasoningEffort)
 	case <-time.After(2 * time.Second):
-		t.Fatal("未收到 passthrough turn 结果回调")
+		t.Fatal("未received passthrough turn 结果回调")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount(), "passthrough 模式应直接建立上游 websocket")
@@ -821,7 +821,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughHeade
 			require.Contains(t, serverErr.Error(), "StatusNormalClosure")
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 passthrough websocket 结束超时")
+		t.Fatal("等待 passthrough websocket 结束timeout")
 	}
 
 	require.Equal(t, isolateOpenAISessionID(0, "pcache_passthrough"), captureDialer.lastHeaders.Get("session_id"))
@@ -923,7 +923,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ModeOffReturnsPo
 		require.Equal(t, coderws.StatusPolicyViolation, closeErr.StatusCode())
 		require.Equal(t, "websocket mode is disabled for this account", closeErr.Reason())
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 }
 
@@ -1051,7 +1051,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledPre
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount(), "严格增量不成立时应在同一连接内降级为 full create")
@@ -1198,18 +1198,18 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledPre
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 严格降级后预检换连超时")
+		t.Fatal("等待 ingress websocket 严格降级后预检换连timeout")
 	}
 
-	require.Equal(t, 2, dialer.DialCount(), "严格降级为 full create 后，预检 ping 失败应允许换连")
-	require.Equal(t, 1, firstConn.WriteCount(), "首连接在预检失败后不应继续发送第二轮")
+	require.Equal(t, 2, dialer.DialCount(), "严格降级为 full create 后，预检 ping failed应允许换连")
+	require.Equal(t, 1, firstConn.WriteCount(), "首连接在预检failed后不应继续发送第二轮")
 	require.GreaterOrEqual(t, firstConn.PingCount(), 1, "第二轮前应执行 preflight ping")
 	secondConn.mu.Lock()
 	secondWrites := append([]map[string]any(nil), secondConn.writes...)
 	secondConn.mu.Unlock()
 	require.Len(t, secondWrites, 1)
 	secondWrite := requestToJSONString(secondWrites[0])
-	require.False(t, gjson.Get(secondWrite, "previous_response_id").Exists(), "严格降级后重试应移除 previous_response_id")
+	require.False(t, gjson.Get(secondWrite, "previous_response_id").Exists(), "严格降级后retry应移除 previous_response_id")
 	require.Equal(t, 2, len(gjson.Get(secondWrite, "input").Array()))
 	require.Equal(t, "hello", gjson.Get(secondWrite, "input.0.text").String())
 	require.Equal(t, "world", gjson.Get(secondWrite, "input.1.text").String())
@@ -1339,7 +1339,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreEnabledSkip
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 store=true 场景 websocket 结束超时")
+		t.Fatal("等待 store=true 场景 websocket 结束timeout")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount())
@@ -1471,7 +1471,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledPre
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount())
@@ -1603,7 +1603,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledFun
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount())
@@ -1735,7 +1735,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledToo
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount())
@@ -1860,7 +1860,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledFun
 	writeMessage(`{"type":"response.create","model":"gpt-5.1","stream":false,"store":false,"input":[{"type":"input_text","text":"hello"}]}`)
 	firstTurn := readMessage()
 	require.Equal(t, "response.completed", gjson.GetBytes(firstTurn, "type").String())
-	require.Empty(t, gjson.GetBytes(firstTurn, "response.id").String(), "首轮响应不返回 response.id，模拟无法推导续链锚点")
+	require.Empty(t, gjson.GetBytes(firstTurn, "response.id").String(), "首轮响应不returned response.id，模拟无法推导续链锚点")
 
 	writeMessage(`{"type":"response.create","model":"gpt-5.1","stream":false,"store":false,"input":[{"type":"function_call_output","call_id":"call_auto_skip_1","output":"ok"}]}`)
 	secondTurn := readMessage()
@@ -1871,7 +1871,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledFun
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount())
@@ -2005,7 +2005,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledFun
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount())
@@ -2139,7 +2139,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledFun
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	require.Equal(t, 1, captureDialer.DialCount())
@@ -2282,10 +2282,10 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PreflightPingFai
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
-	require.Equal(t, 2, dialer.DialCount(), "第二轮 turn 前 ping 失败应触发换连")
-	require.Equal(t, 1, firstConn.WriteCount(), "preflight ping 失败后不应继续向旧连接发送第二轮 turn")
+	require.Equal(t, 2, dialer.DialCount(), "第二轮 turn 前 ping failed应触发换连")
+	require.Equal(t, 1, firstConn.WriteCount(), "preflight ping failed后不应继续向旧连接发送第二轮 turn")
 	require.GreaterOrEqual(t, firstConn.PingCount(), 1, "第二轮前应对旧连接执行 preflight ping")
 }
 
@@ -2424,11 +2424,11 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledStr
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 严格亲和自动恢复后结束超时")
+		t.Fatal("等待 ingress websocket 严格亲和自动恢复后结束timeout")
 	}
 
-	require.Equal(t, 2, dialer.DialCount(), "严格亲和 preflight ping 失败后应自动降级并换连重放")
-	require.Equal(t, 1, firstConn.WriteCount(), "preflight ping 失败后不应继续在旧连接写第二轮")
+	require.Equal(t, 2, dialer.DialCount(), "严格亲和 preflight ping failed后应自动降级并换连重放")
+	require.Equal(t, 1, firstConn.WriteCount(), "preflight ping failed后不应继续在旧连接写第二轮")
 	require.GreaterOrEqual(t, firstConn.PingCount(), 1, "第二轮前应执行 preflight ping")
 	secondConn.mu.Lock()
 	secondWrites := append([]map[string]any(nil), secondConn.writes...)
@@ -2576,10 +2576,10 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledPre
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket function_call_output 自包含重放后结束超时")
+		t.Fatal("等待 ingress websocket function_call_output 自包含重放后结束timeout")
 	}
 
-	require.Equal(t, 2, dialer.DialCount(), "带完整 tool 上下文的 function_call_output 应在 ping 失败后换新连接重放")
+	require.Equal(t, 2, dialer.DialCount(), "带完整 tool 上下文的 function_call_output 应在 ping failed后换新连接重放")
 	require.Equal(t, 1, firstConn.WriteCount())
 	require.GreaterOrEqual(t, firstConn.PingCount(), 1)
 	secondConn.mu.Lock()
@@ -2732,10 +2732,10 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledPre
 		require.Equal(t, coderws.StatusPolicyViolation, closeErr.StatusCode())
 		require.Contains(t, closeErr.Reason(), "upstream continuation connection is unavailable")
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
-	require.Equal(t, 1, dialer.DialCount(), "需要 previous_response_id 的 function_call_output 在原连接不可用时不应换新连接重试")
+	require.Equal(t, 1, dialer.DialCount(), "需要 previous_response_id 的 function_call_output 在原连接不可用时不应换新连接retry")
 	secondConn.mu.Lock()
 	secondWrites := append([]map[string]any(nil), secondConn.writes...)
 	secondConn.mu.Unlock()
@@ -2878,10 +2878,10 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledPre
 		require.Equal(t, coderws.StatusPolicyViolation, closeErr.StatusCode())
 		require.Contains(t, closeErr.Reason(), "upstream continuation connection is unavailable")
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
-	require.Equal(t, 1, dialer.DialCount(), "replay input 带 function_call_output 时不应换新连接重试")
+	require.Equal(t, 1, dialer.DialCount(), "replay input 带 function_call_output 时不应换新连接retry")
 	secondConn.mu.Lock()
 	secondWrites := append([]map[string]any(nil), secondConn.writes...)
 	secondConn.mu.Unlock()
@@ -3034,9 +3034,9 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_WriteFailBeforeD
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
-	require.Equal(t, 2, dialer.DialCount(), "第二轮 turn 上游写失败且未写下游时应自动重试并换连")
+	require.Equal(t, 2, dialer.DialCount(), "第二轮 turn 上游写failed且未写下游时应自动retry并换连")
 	hooksMu.Lock()
 	beforeTurn1 := beforeTurnCalls[1]
 	beforeTurn2 := beforeTurnCalls[2]
@@ -3044,7 +3044,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_WriteFailBeforeD
 	afterTurn2 := afterTurnCalls[2]
 	hooksMu.Unlock()
 	require.Equal(t, 1, beforeTurn1, "首轮 turn BeforeTurn 应执行一次")
-	require.Equal(t, 1, beforeTurn2, "同一 turn 重试不应重复触发 BeforeTurn")
+	require.Equal(t, 1, beforeTurn2, "同一 turn retry不应重复触发 BeforeTurn")
 	require.Equal(t, 1, afterTurn1, "首轮 turn AfterTurn 应执行一次")
 	require.Equal(t, 1, afterTurn2, "第二轮 turn AfterTurn 应执行一次")
 }
@@ -3182,22 +3182,22 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PreviousResponse
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
-	require.Equal(t, 2, dialer.DialCount(), "previous_response_not_found 恢复应触发换连重试")
+	require.Equal(t, 2, dialer.DialCount(), "previous_response_not_found 恢复应触发换连retry")
 
 	firstConn.mu.Lock()
 	firstWrites := append([]map[string]any(nil), firstConn.writes...)
 	firstConn.mu.Unlock()
-	require.Len(t, firstWrites, 2, "首个连接应处理首轮与失败的第二轮请求")
-	require.True(t, gjson.Get(requestToJSONString(firstWrites[1]), "previous_response_id").Exists(), "失败轮次首发请求应包含 previous_response_id")
+	require.Len(t, firstWrites, 2, "首个连接应处理首轮与failed的第二轮请求")
+	require.True(t, gjson.Get(requestToJSONString(firstWrites[1]), "previous_response_id").Exists(), "failed轮次首发请求应包含 previous_response_id")
 
 	secondConn.mu.Lock()
 	secondWrites := append([]map[string]any(nil), secondConn.writes...)
 	secondConn.mu.Unlock()
-	require.Len(t, secondWrites, 1, "恢复重试应在第二个连接发送一次请求")
-	require.False(t, gjson.Get(requestToJSONString(secondWrites[0]), "previous_response_id").Exists(), "恢复重试应移除 previous_response_id")
+	require.Len(t, secondWrites, 1, "恢复retry应在第二个连接发送一次请求")
+	require.False(t, gjson.Get(requestToJSONString(secondWrites[0]), "previous_response_id").Exists(), "恢复retry应移除 previous_response_id")
 }
 
 func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledStrictAffinityPreviousResponseNotFoundLayer2Recovery(t *testing.T) {
@@ -3332,15 +3332,15 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_StoreDisabledStr
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 严格亲和 Layer2 恢复结束超时")
+		t.Fatal("等待 ingress websocket 严格亲和 Layer2 恢复结束timeout")
 	}
 
-	require.Equal(t, 2, dialer.DialCount(), "严格亲和链路命中 previous_response_not_found 应触发 Layer2 恢复重试")
+	require.Equal(t, 2, dialer.DialCount(), "严格亲和链路命中 previous_response_not_found 应触发 Layer2 恢复retry")
 
 	firstConn.mu.Lock()
 	firstWrites := append([]map[string]any(nil), firstConn.writes...)
 	firstConn.mu.Unlock()
-	require.Len(t, firstWrites, 2, "首连接应收到首轮请求和失败的续链请求")
+	require.Len(t, firstWrites, 2, "首连接应received首轮请求和failed的续链请求")
 	require.True(t, gjson.Get(requestToJSONString(firstWrites[1]), "previous_response_id").Exists())
 
 	secondConn.mu.Lock()
@@ -3479,7 +3479,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PreviousResponse
 	firstTurn := readMessage()
 	require.Equal(t, "resp_turn_prev_once_1", gjson.GetBytes(firstTurn, "response.id").String())
 
-	// duplicate previous_response_id: 恢复重试时应删除所有重复键，避免再次 previous_response_not_found。
+	// duplicate previous_response_id:
 	writeMessage(`{"type":"response.create","model":"gpt-5.1","stream":false,"previous_response_id":"resp_turn_prev_once_1","input":[],"previous_response_id":"resp_turn_prev_duplicate"}`)
 	secondTurn := readMessage()
 	require.Equal(t, "resp_turn_prev_once_2", gjson.GetBytes(secondTurn, "response.id").String())
@@ -3489,10 +3489,10 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PreviousResponse
 	case serverErr := <-serverErrCh:
 		require.NoError(t, serverErr)
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
-	require.Equal(t, 2, dialer.DialCount(), "previous_response_not_found 恢复应只重试一次")
+	require.Equal(t, 2, dialer.DialCount(), "previous_response_not_found 恢复应只retry一次")
 
 	firstConn.mu.Lock()
 	firstWrites := append([]map[string]any(nil), firstConn.writes...)
@@ -3504,7 +3504,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PreviousResponse
 	secondWrites := append([]map[string]any(nil), secondConn.writes...)
 	secondConn.mu.Unlock()
 	require.Len(t, secondWrites, 1)
-	require.False(t, gjson.Get(requestToJSONString(secondWrites[0]), "previous_response_id").Exists(), "重复键场景恢复重试后不应保留 previous_response_id")
+	require.False(t, gjson.Get(requestToJSONString(secondWrites[0]), "previous_response_id").Exists(), "重复键场景恢复retry后不应保留 previous_response_id")
 }
 
 func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_RejectsMessageIDAsPreviousResponseID(t *testing.T) {
@@ -3599,7 +3599,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_RejectsMessageID
 		require.Equal(t, coderws.StatusPolicyViolation, closeErr.StatusCode())
 		require.Contains(t, closeErr.Reason(), "previous_response_id must be a response.id")
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 }
 
@@ -3748,8 +3748,8 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ClientDisconnect
 	cfg.Gateway.OpenAIWS.ReadTimeoutSeconds = 3
 	cfg.Gateway.OpenAIWS.WriteTimeoutSeconds = 3
 
-	// 多个上游事件：前几个为非 terminal 事件，最后一个为 terminal。
-	// 第一个事件延迟 250ms 让客户端 RST 有时间传播，使 writeClientMessage 可靠失败。
+	//
+	//
 	captureConn := &openAIWSCaptureConn{
 		readDelays: []time.Duration{250 * time.Millisecond, 0, 0},
 		events: [][]byte{
@@ -3843,14 +3843,14 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ClientDisconnect
 	err = clientConn.Write(writeCtx, coderws.MessageText, []byte(`{"type":"response.create","model":"custom-original-model","stream":false,"service_tier":"flex"}`))
 	cancelWrite()
 	require.NoError(t, err)
-	// 立即关闭客户端，模拟客户端在 relay 期间断连。
+	//
 	require.NoError(t, clientConn.CloseNow(), "模拟 ingress 客户端提前断连")
 
 	select {
 	case serverErr := <-serverErrCh:
-		require.NoError(t, serverErr, "客户端断连后应继续 drain 上游直到 terminal 或正常结束")
+		require.NoError(t, serverErr, "客户端断连后应继续 drain 上游直到 terminal or正常结束")
 	case <-time.After(5 * time.Second):
-		t.Fatal("等待 ingress websocket 结束超时")
+		t.Fatal("等待 ingress websocket 结束timeout")
 	}
 
 	select {
@@ -3861,6 +3861,6 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ClientDisconnect
 		require.NotNil(t, result.ServiceTier)
 		require.Equal(t, "flex", *result.ServiceTier)
 	case <-time.After(2 * time.Second):
-		t.Fatal("未收到断连后的 turn 结果回调")
+		t.Fatal("未received断连后的 turn 结果回调")
 	}
 }

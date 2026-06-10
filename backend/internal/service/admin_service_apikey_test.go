@@ -440,11 +440,11 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_ExclusiveGroup_AddsAllowedGroup(t
 	require.NoError(t, err)
 	require.NotNil(t, got.APIKey.GroupID)
 	require.Equal(t, int64(10), *got.APIKey.GroupID)
-	// 验证 AddGroupToAllowedGroups 被调用，且参数正确
+	//
 	require.True(t, userRepo.addGroupCalled)
 	require.Equal(t, int64(42), userRepo.addedUserID)
 	require.Equal(t, int64(10), userRepo.addedGroupID)
-	// 验证 result 标记了自动授权
+	//
 	require.True(t, got.AutoGrantedGroupAccess)
 	require.NotNil(t, got.GrantedGroupID)
 	require.Equal(t, int64(10), *got.GrantedGroupID)
@@ -462,7 +462,7 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_NonExclusiveGroup_NoAllowedGroupU
 	got, err := svc.AdminUpdateAPIKeyGroupID(context.Background(), 1, int64Ptr(10))
 	require.NoError(t, err)
 	require.NotNil(t, got.APIKey.GroupID)
-	// 非专属分组不触发 AddGroupToAllowedGroups
+	//
 	require.False(t, userRepo.addGroupCalled)
 	require.False(t, got.AutoGrantedGroupAccess)
 }
@@ -475,7 +475,6 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_SubscriptionGroup_Blocked(t *test
 	userSubRepo := &userSubRepoStubForGroupUpdate{getActiveErr: ErrSubscriptionNotFound}
 	svc := &adminServiceImpl{apiKeyRepo: apiKeyRepo, groupRepo: groupRepo, userRepo: userRepo, userSubRepo: userSubRepo}
 
-	// 无有效订阅时应拒绝绑定
 	_, err := svc.AdminUpdateAPIKeyGroupID(context.Background(), 1, int64Ptr(10))
 	require.Error(t, err)
 	require.Equal(t, "SUBSCRIPTION_REQUIRED", infraerrors.Reason(err))
@@ -523,12 +522,12 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_ExclusiveGroup_AllowedGroupAddFai
 	userRepo := &userRepoStubForGroupUpdate{addGroupErr: errors.New("db error")}
 	svc := &adminServiceImpl{apiKeyRepo: apiKeyRepo, groupRepo: groupRepo, userRepo: userRepo}
 
-	// 严格模式：AddGroupToAllowedGroups 失败时，整体操作报错
+	//
 	_, err := svc.AdminUpdateAPIKeyGroupID(context.Background(), 1, int64Ptr(10))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "add group to user allowed groups")
 	require.True(t, userRepo.addGroupCalled)
-	// apiKey 不应被更新
+	// apiKey
 	require.Nil(t, apiKeyRepo.updated)
 }
 
@@ -542,7 +541,7 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_Unbind_NoAllowedGroupUpdate(t *te
 	got, err := svc.AdminUpdateAPIKeyGroupID(context.Background(), 1, int64Ptr(0))
 	require.NoError(t, err)
 	require.Nil(t, got.APIKey.GroupID)
-	// 解绑时不修改 allowed_groups
+	//
 	require.False(t, userRepo.addGroupCalled)
 	require.False(t, got.AutoGrantedGroupAccess)
 }

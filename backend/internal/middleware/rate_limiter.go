@@ -12,7 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// RateLimitFailureMode Redis 故障策略
+// RateLimitFailureMode Redis
 type RateLimitFailureMode int
 
 const (
@@ -20,7 +20,7 @@ const (
 	RateLimitFailClose
 )
 
-// RateLimitOptions 限流可选配置
+// RateLimitOptions
 type RateLimitOptions struct {
 	FailureMode RateLimitFailureMode
 }
@@ -38,7 +38,7 @@ end
 return {current, repaired}
 `)
 
-// rateLimitRun 允许测试覆写脚本执行逻辑
+// rateLimitRun
 var rateLimitRun = func(ctx context.Context, client *redis.Client, key string, windowMillis int64) (int64, bool, error) {
 	values, err := rateLimitScript.Run(ctx, client, []string{key}, windowMillis).Slice()
 	if err != nil {
@@ -58,13 +58,13 @@ var rateLimitRun = func(ctx context.Context, client *redis.Client, key string, w
 	return count, repaired == 1, nil
 }
 
-// RateLimiter Redis 速率限制器
+// RateLimiter Redis
 type RateLimiter struct {
 	redis  *redis.Client
 	prefix string
 }
 
-// NewRateLimiter 创建速率限制器实例
+// NewRateLimiter
 func NewRateLimiter(redisClient *redis.Client) *RateLimiter {
 	return &RateLimiter{
 		redis:  redisClient,
@@ -72,15 +72,15 @@ func NewRateLimiter(redisClient *redis.Client) *RateLimiter {
 	}
 }
 
-// Limit 返回速率限制中间件
-// key: 限制类型标识
-// limit: 时间窗口内最大请求数
-// window: 时间窗口
+// Limit
+// key:
+// limit:
+// window:
 func (r *RateLimiter) Limit(key string, limit int, window time.Duration) gin.HandlerFunc {
 	return r.LimitWithOptions(key, limit, window, RateLimitOptions{})
 }
 
-// LimitWithOptions 返回速率限制中间件（带可选配置）
+// LimitWithOptions
 func (r *RateLimiter) LimitWithOptions(key string, limit int, window time.Duration, opts RateLimitOptions) gin.HandlerFunc {
 	failureMode := opts.FailureMode
 	if failureMode != RateLimitFailClose {
@@ -95,7 +95,7 @@ func (r *RateLimiter) LimitWithOptions(key string, limit int, window time.Durati
 
 		windowMillis := windowTTLMillis(window)
 
-		// 使用 Lua 脚本原子操作增加计数并设置过期
+		//
 		count, repaired, err := rateLimitRun(ctx, r.redis, redisKey, windowMillis)
 		if err != nil {
 			log.Printf("[RateLimit] redis error: key=%s mode=%s err=%v", redisKey, failureModeLabel(failureMode), err)
@@ -103,7 +103,7 @@ func (r *RateLimiter) LimitWithOptions(key string, limit int, window time.Durati
 				abortRateLimit(c)
 				return
 			}
-			// Redis 错误时放行，避免影响正常服务
+			// Redis
 			c.Next()
 			return
 		}
@@ -111,7 +111,6 @@ func (r *RateLimiter) LimitWithOptions(key string, limit int, window time.Durati
 			log.Printf("[RateLimit] ttl repaired: key=%s window_ms=%d", redisKey, windowMillis)
 		}
 
-		// 超过限制
 		if count > int64(limit) {
 			abortRateLimit(c)
 			return

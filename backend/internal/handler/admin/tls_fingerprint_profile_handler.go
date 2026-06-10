@@ -9,17 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// TLSFingerprintProfileHandler 处理 TLS 指纹模板的 HTTP 请求
+// TLSFingerprintProfileHandler
 type TLSFingerprintProfileHandler struct {
 	service *service.TLSFingerprintProfileService
 }
 
-// NewTLSFingerprintProfileHandler 创建 TLS 指纹模板处理器
+// NewTLSFingerprintProfileHandler
 func NewTLSFingerprintProfileHandler(service *service.TLSFingerprintProfileService) *TLSFingerprintProfileHandler {
 	return &TLSFingerprintProfileHandler{service: service}
 }
 
-// CreateTLSFingerprintProfileRequest 创建模板请求
+// CreateTLSFingerprintProfileRequest
 type CreateTLSFingerprintProfileRequest struct {
 	Name                string   `json:"name" binding:"required"`
 	Description         *string  `json:"description"`
@@ -35,7 +35,7 @@ type CreateTLSFingerprintProfileRequest struct {
 	Extensions          []uint16 `json:"extensions"`
 }
 
-// UpdateTLSFingerprintProfileRequest 更新模板请求（部分更新）
+// UpdateTLSFingerprintProfileRequest
 type UpdateTLSFingerprintProfileRequest struct {
 	Name                *string  `json:"name"`
 	Description         *string  `json:"description"`
@@ -51,7 +51,7 @@ type UpdateTLSFingerprintProfileRequest struct {
 	Extensions          []uint16 `json:"extensions"`
 }
 
-// List 获取所有模板
+// List
 // GET /api/v1/admin/tls-fingerprint-profiles
 func (h *TLSFingerprintProfileHandler) List(c *gin.Context) {
 	profiles, err := h.service.List(c.Request.Context())
@@ -62,7 +62,7 @@ func (h *TLSFingerprintProfileHandler) List(c *gin.Context) {
 	response.Success(c, profiles)
 }
 
-// GetByID 根据 ID 获取模板
+// GetByID
 // GET /api/v1/admin/tls-fingerprint-profiles/:id
 func (h *TLSFingerprintProfileHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -84,7 +84,7 @@ func (h *TLSFingerprintProfileHandler) GetByID(c *gin.Context) {
 	response.Success(c, profile)
 }
 
-// Create 创建模板
+// Create
 // POST /api/v1/admin/tls-fingerprint-profiles
 func (h *TLSFingerprintProfileHandler) Create(c *gin.Context) {
 	var req CreateTLSFingerprintProfileRequest
@@ -124,7 +124,7 @@ func (h *TLSFingerprintProfileHandler) Create(c *gin.Context) {
 	response.Success(c, created)
 }
 
-// Update 更新模板（支持部分更新）
+// Update
 // PUT /api/v1/admin/tls-fingerprint-profiles/:id
 func (h *TLSFingerprintProfileHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -149,7 +149,6 @@ func (h *TLSFingerprintProfileHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// 部分更新
 	profile := &model.TLSFingerprintProfile{
 		ID:                  id,
 		Name:                existing.Name,
@@ -216,7 +215,7 @@ func (h *TLSFingerprintProfileHandler) Update(c *gin.Context) {
 	response.Success(c, updated)
 }
 
-// Delete 删除模板
+// Delete
 // DELETE /api/v1/admin/tls-fingerprint-profiles/:id
 func (h *TLSFingerprintProfileHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)

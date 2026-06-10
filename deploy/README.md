@@ -1,6 +1,6 @@
-# Sub2API Deployment Files
+# OC Router Deployment Files
 
-This directory contains files for deploying Sub2API on Linux servers.
+This directory contains files for deploying OC Router on Linux servers.
 
 ## Deployment Methods
 
@@ -19,10 +19,10 @@ This directory contains files for deploying Sub2API on Linux servers.
 | `.env.example` | Docker environment variables template |
 | `DOCKER.md` | Docker Hub documentation |
 | `install.sh` | One-click binary installation script |
-| `install-datamanagementd.sh` | datamanagementd 一键安装脚本 |
-| `sub2api.service` | Systemd service unit file |
-| `sub2api-datamanagementd.service` | datamanagementd systemd service unit file |
-| `DATAMANAGEMENTD_CN.md` | datamanagementd 部署与联动说明（中文） |
+| `install-datamanagementd.sh` | datamanagementd one-click installation script |
+| `oc-router.service` | Systemd service unit file |
+| `oc-router-datamanagementd.service` | datamanagementd systemd service unit file |
+| `DATAMANAGEMENTD_CN.md` | datamanagementd deployment and integration guide |
 | `config.example.yaml` | Example configuration file |
 
 ---
@@ -56,10 +56,10 @@ chmod +x docker-deploy.sh
 docker compose -f docker-compose.local.yml up -d
 
 # View logs
-docker compose -f docker-compose.local.yml logs -f sub2api
+docker compose -f docker-compose.local.yml logs -f oc-router
 
 # If admin password was auto-generated, find it in logs:
-docker compose -f docker-compose.local.yml logs sub2api | grep "admin password"
+docker compose -f docker-compose.local.yml logs oc-router | grep "admin password"
 
 # Access Web UI
 # http://localhost:8080
@@ -72,7 +72,7 @@ If you prefer manual control:
 ```bash
 # Clone repository
 git clone https://github.com/Wei-Shaw/sub2api.git
-cd sub2api/deploy
+cd oc-router/deploy
 
 # Configure environment
 cp .env.example .env
@@ -91,7 +91,7 @@ mkdir -p data postgres_data redis_data
 docker compose -f docker-compose.local.yml up -d
 
 # View logs (check for auto-generated admin password)
-docker compose -f docker-compose.local.yml logs -f sub2api
+docker compose -f docker-compose.local.yml logs -f oc-router
 
 # Access Web UI
 # http://localhost:8080
@@ -121,7 +121,7 @@ When using Docker Compose with `AUTO_SETUP=true`:
 
 3. If `ADMIN_PASSWORD` is not set, check logs for the generated password:
    ```bash
-   docker compose logs sub2api | grep "admin password"
+   docker compose logs oc-router | grep "admin password"
    ```
 
 ### Database Migration Notes (PostgreSQL)
@@ -148,13 +148,13 @@ SELECT
   (SELECT COUNT(*) FROM user_allowed_groups) AS new_pair_count;
 ```
 
-### datamanagementd（数据管理）联动
+### datamanagementd (Data Management) Integration
 
-如需启用管理后台“数据管理”功能，请额外部署宿主机 `datamanagementd`：
+To enable the “Data Management” feature in the admin panel, deploy `datamanagementd` on the host machine:
 
-- 主进程固定探测 `/tmp/sub2api-datamanagement.sock`
-- Docker 场景下需把宿主机 Socket 挂载到容器内同路径
-- 详细步骤见：`deploy/DATAMANAGEMENTD_CN.md`
+- The main process probes the fixed path: `/tmp/oc-router-datamanagement.sock`
+- For Docker deployments, mount the host socket to the same path inside the container
+- Detailed steps: see `deploy/DATAMANAGEMENTD_CN.md`
 
 ### Commands
 
@@ -168,10 +168,10 @@ docker compose -f docker-compose.local.yml up -d
 docker compose -f docker-compose.local.yml down
 
 # View logs
-docker compose -f docker-compose.local.yml logs -f sub2api
+docker compose -f docker-compose.local.yml logs -f oc-router
 
-# Restart Sub2API only
-docker compose -f docker-compose.local.yml restart sub2api
+# Restart OC Router only
+docker compose -f docker-compose.local.yml restart oc-router
 
 # Update to latest version
 docker compose -f docker-compose.local.yml pull
@@ -192,10 +192,10 @@ docker compose up -d
 docker compose down
 
 # View logs
-docker compose logs -f sub2api
+docker compose logs -f oc-router
 
-# Restart Sub2API only
-docker compose restart sub2api
+# Restart OC Router only
+docker compose restart oc-router
 
 # Update to latest version
 docker compose pull
@@ -213,7 +213,7 @@ docker compose down -v
 | `JWT_SECRET` | **Recommended** | *(auto-generated)* | JWT secret (fixed for persistent sessions) |
 | `TOTP_ENCRYPTION_KEY` | **Recommended** | *(auto-generated)* | TOTP encryption key (fixed for persistent 2FA) |
 | `SERVER_PORT` | No | `8080` | Server port |
-| `ADMIN_EMAIL` | No | `admin@sub2api.local` | Admin email |
+| `ADMIN_EMAIL` | No | `admin@oc-router.local` | Admin email |
 | `ADMIN_PASSWORD` | No | *(auto-generated)* | Admin password |
 | `TZ` | No | `Asia/Shanghai` | Timezone |
 | `GEMINI_OAUTH_CLIENT_ID` | No | *(builtin)* | Google OAuth client ID (Gemini OAuth). Leave empty to use the built-in Gemini CLI client. |
@@ -234,13 +234,13 @@ When using `docker-compose.local.yml`, all data is stored in local directories, 
 cd /path/to/deployment
 docker compose -f docker-compose.local.yml down
 cd ..
-tar czf sub2api-complete.tar.gz deployment/
+tar czf oc-router-complete.tar.gz deployment/
 
 # Transfer to new server
-scp sub2api-complete.tar.gz user@new-server:/path/to/destination/
+scp oc-router-complete.tar.gz user@new-server:/path/to/destination/
 
 # On new server: Extract and start
-tar xzf sub2api-complete.tar.gz
+tar xzf oc-router-complete.tar.gz
 cd deployment/
 docker compose -f docker-compose.local.yml up -d
 ```
@@ -251,7 +251,7 @@ Your entire deployment (configuration + data) is migrated!
 
 ## Gemini OAuth Configuration
 
-Sub2API supports three methods to connect to Gemini:
+OC Router supports three methods to connect to Gemini:
 
 ### Method 1: Code Assist OAuth (Recommended for GCP Users)
 
@@ -296,7 +296,7 @@ Requires your own OAuth client credentials.
    - Go to "APIs & Services" → "Credentials"
    - Click "Create Credentials" → "OAuth client ID"
    - Application type: **Web application** (or **Desktop app**)
-   - Name: e.g., "Sub2API Gemini"
+   - Name: e.g., "OC Router Gemini"
    - Authorized redirect URIs: Add `http://localhost:1455/auth/callback`
 6. Copy the **Client ID** and **Client Secret**
 7. **⚠️ Publish to Production (IMPORTANT):**
@@ -315,8 +315,8 @@ Requires your own OAuth client credentials.
 GEMINI_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GEMINI_OAUTH_CLIENT_SECRET=GOCSPX-your-client-secret
 
-# 可选：如需使用 Gemini CLI 内置 OAuth Client（Code Assist / Google One）
-# 安全说明：本仓库不会内置该 client_secret，请在运行环境通过环境变量注入。
+# Optional: To use the built-in Gemini CLI OAuth Client (Code Assist / Google One)
+# Security note: This repository does not embed the client_secret; inject it via environment variable at runtime.
 # GEMINI_CLI_OAUTH_CLIENT_SECRET=GOCSPX-your-built-in-secret
 ```
 
@@ -359,13 +359,13 @@ curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install
 ### Manual Installation
 
 1. Download the latest release from [GitHub Releases](https://github.com/Wei-Shaw/sub2api/releases)
-2. Extract and copy the binary to `/opt/sub2api/`
-3. Copy `sub2api.service` to `/etc/systemd/system/`
+2. Extract and copy the binary to `/opt/oc-router/`
+3. Copy `oc-router.service` to `/etc/systemd/system/`
 4. Run:
    ```bash
    sudo systemctl daemon-reload
-   sudo systemctl enable sub2api
-   sudo systemctl start sub2api
+   sudo systemctl enable oc-router
+   sudo systemctl start oc-router
    ```
 5. Open the Setup Wizard in your browser to complete configuration
 
@@ -386,22 +386,22 @@ sudo ./install.sh uninstall
 
 ```bash
 # Start the service
-sudo systemctl start sub2api
+sudo systemctl start oc-router
 
 # Stop the service
-sudo systemctl stop sub2api
+sudo systemctl stop oc-router
 
 # Restart the service
-sudo systemctl restart sub2api
+sudo systemctl restart oc-router
 
 # Check status
-sudo systemctl status sub2api
+sudo systemctl status oc-router
 
 # View logs
-sudo journalctl -u sub2api -f
+sudo journalctl -u oc-router -f
 
 # Enable auto-start on boot
-sudo systemctl enable sub2api
+sudo systemctl enable oc-router
 ```
 
 ### Configuration
@@ -414,7 +414,7 @@ To change after installation:
 
 1. Edit the systemd service:
    ```bash
-   sudo systemctl edit sub2api
+   sudo systemctl edit oc-router
    ```
 
 2. Add or modify:
@@ -427,7 +427,7 @@ To change after installation:
 3. Reload and restart:
    ```bash
    sudo systemctl daemon-reload
-   sudo systemctl restart sub2api
+   sudo systemctl restart oc-router
    ```
 
 #### Gemini OAuth Configuration
@@ -436,7 +436,7 @@ If you need to use AI Studio OAuth for Gemini accounts, add the OAuth client cre
 
 1. Edit the service file:
    ```bash
-   sudo nano /etc/systemd/system/sub2api.service
+   sudo nano /etc/systemd/system/oc-router.service
    ```
 
 2. Add your OAuth credentials in the `[Service]` section (after the existing `Environment=` lines):
@@ -445,7 +445,7 @@ If you need to use AI Studio OAuth for Gemini accounts, add the OAuth client cre
    Environment=GEMINI_OAUTH_CLIENT_SECRET=GOCSPX-your-client-secret
    ```
 
-   如需使用“内置 Gemini CLI OAuth Client”（Code Assist / Google One），还需要注入：
+   To use the built-in Gemini CLI OAuth Client (Code Assist / Google One), also inject:
    ```ini
    Environment=GEMINI_CLI_OAUTH_CLIENT_SECRET=GOCSPX-your-built-in-secret
    ```
@@ -453,7 +453,7 @@ If you need to use AI Studio OAuth for Gemini accounts, add the OAuth client cre
 3. Reload and restart:
    ```bash
    sudo systemctl daemon-reload
-   sudo systemctl restart sub2api
+   sudo systemctl restart oc-router
    ```
 
 > **Note:** Code Assist OAuth does not require any configuration - it uses the built-in Gemini CLI client.
@@ -461,7 +461,7 @@ If you need to use AI Studio OAuth for Gemini accounts, add the OAuth client cre
 
 #### Application Configuration
 
-The main config file is at `/etc/sub2api/config.yaml` (created by Setup Wizard).
+The main config file is at `/etc/oc-router/config.yaml` (created by Setup Wizard).
 
 ### Prerequisites
 
@@ -473,12 +473,12 @@ The main config file is at `/etc/sub2api/config.yaml` (created by Setup Wizard).
 ### Directory Structure
 
 ```
-/opt/sub2api/
-├── sub2api              # Main binary
-├── sub2api.backup       # Backup (after upgrade)
+/opt/oc-router/
+├── oc-router            # Main binary
+├── oc-router.backup     # Backup (after upgrade)
 └── data/                # Runtime data
 
-/etc/sub2api/
+/etc/oc-router/
 └── config.yaml          # Configuration file
 ```
 
@@ -495,7 +495,7 @@ For **local directory version**:
 docker compose -f docker-compose.local.yml ps
 
 # View detailed logs
-docker compose -f docker-compose.local.yml logs --tail=100 sub2api
+docker compose -f docker-compose.local.yml logs --tail=100 oc-router
 
 # Check database connection
 docker compose -f docker-compose.local.yml exec postgres pg_isready
@@ -517,7 +517,7 @@ For **named volumes version**:
 docker compose ps
 
 # View detailed logs
-docker compose logs --tail=100 sub2api
+docker compose logs --tail=100 oc-router
 
 # Check database connection
 docker compose exec postgres pg_isready
@@ -533,13 +533,13 @@ docker compose restart
 
 ```bash
 # Check service status
-sudo systemctl status sub2api
+sudo systemctl status oc-router
 
 # View recent logs
-sudo journalctl -u sub2api -n 50
+sudo journalctl -u oc-router -n 50
 
 # Check config file
-sudo cat /etc/sub2api/config.yaml
+sudo cat /etc/oc-router/config.yaml
 
 # Check PostgreSQL
 sudo systemctl status postgresql
@@ -559,9 +559,9 @@ sudo systemctl status redis
 
 ## TLS Fingerprint Configuration
 
-Sub2API supports TLS fingerprint simulation to make requests appear as if they come from the official Claude CLI (Node.js client).
+OC Router supports TLS fingerprint simulation to make requests appear as if they come from the official Claude CLI (Node.js client).
 
-> **💡 Tip:** Visit **[tls.sub2api.org](https://tls.sub2api.org/)** to get TLS fingerprint information for different devices and browsers.
+> **💡 Tip:** Visit **[tls.oc-router.org](https://tls.oc-router.org/)** to get TLS fingerprint information for different devices and browsers.
 
 ### Default Behavior
 

@@ -278,8 +278,8 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 	}
 }
 
-// TestDeductUserBalance_ErrorPropagation 验证 P2-12 修复：
-// Redis 真实错误应传播，key 不存在（redis.Nil）应返回 nil。
+// TestDeductUserBalance_ErrorPropagation
+// Redis
 func (s *BillingCacheSuite) TestDeductUserBalance_ErrorPropagation() {
 	tests := []struct {
 		name      string
@@ -289,7 +289,7 @@ func (s *BillingCacheSuite) TestDeductUserBalance_ErrorPropagation() {
 		{
 			name: "key_not_exists_returns_nil",
 			fn: func(ctx context.Context, cache service.BillingCache) {
-				// key 不存在时，Lua 脚本返回 0（redis.Nil），应返回 nil 而非错误
+				// key
 				err := cache.DeductUserBalance(ctx, 99999, 1.0)
 				require.NoError(s.T(), err, "DeductUserBalance on non-existent key should return nil")
 			},
@@ -303,7 +303,7 @@ func (s *BillingCacheSuite) TestDeductUserBalance_ErrorPropagation() {
 
 				bal, err := cache.GetUserBalance(ctx, 200)
 				require.NoError(s.T(), err)
-				require.Equal(s.T(), 40.0, bal, "余额应为 40.0")
+				require.Equal(s.T(), 40.0, bal, "balance should be 40.0")
 			},
 		},
 		{
@@ -312,7 +312,7 @@ func (s *BillingCacheSuite) TestDeductUserBalance_ErrorPropagation() {
 				require.NoError(s.T(), cache.SetUserBalance(ctx, 201, 50.0))
 
 				cancelCtx, cancel := context.WithCancel(ctx)
-				cancel() // 立即取消
+				cancel() // immediately cancelled
 
 				err := cache.DeductUserBalance(cancelCtx, 201, 10.0)
 				require.Error(s.T(), err, "cancelled context should propagate error")
@@ -330,8 +330,8 @@ func (s *BillingCacheSuite) TestDeductUserBalance_ErrorPropagation() {
 	}
 }
 
-// TestUpdateSubscriptionUsage_ErrorPropagation 验证 P2-12 修复：
-// Redis 真实错误应传播，key 不存在（redis.Nil）应返回 nil。
+// TestUpdateSubscriptionUsage_ErrorPropagation
+// Redis
 func (s *BillingCacheSuite) TestUpdateSubscriptionUsage_ErrorPropagation() {
 	s.Run("key_not_exists_returns_nil", func() {
 		rdb := testRedis(s.T())

@@ -311,7 +311,7 @@
                 {{ t('admin.redeem.invitationHint') }}
               </p>
             </div>
-            <!-- 订阅类型：显示分组选择和有效天数 -->
+            <!-- 订阅类型：显示分组选择和Validdays数 -->
             <template v-if="generateForm.type === 'subscription'">
               <div>
                 <label class="input-label">{{ t('admin.redeem.selectGroup') }}</label>
@@ -653,7 +653,6 @@ const showResultDialog = ref(false)
 const generatedCodes = ref<RedeemCode[]>([])
 const subscriptionGroups = ref<Group[]>([])
 
-// 订阅类型分组选项
 const subscriptionGroupOptions = computed(() => {
   return subscriptionGroups.value
     .filter((g) => g.subscription_type === 'subscription')
@@ -837,7 +836,7 @@ const generateForm = reactive({
   custom_expiry_days: 7
 })
 
-// 监听类型变化，邀请码类型时自动设置 value 为 0
+// 监听类型变化，邀请码类型时自动Settings value 为 0
 watch(
   () => generateForm.type,
   (newType) => {
@@ -1018,7 +1017,6 @@ const buildBatchUpdateFields = (): BatchUpdateRedeemCodeFields | null => {
 }
 
 const handleGenerateCodes = async () => {
-  // 订阅类型必须选择分组
   if (generateForm.type === 'subscription' && !generateForm.group_id) {
     appStore.showError(t('admin.redeem.groupRequired'))
     return
@@ -1043,7 +1041,6 @@ const handleGenerateCodes = async () => {
     showGenerateDialog.value = false
     generatedCodes.value = result
     showResultDialog.value = true
-    // 重置表单
     generateForm.group_id = null
     generateForm.validity_days = 30
     generateForm.expiry_option = 'never'
@@ -1167,7 +1164,6 @@ const handleBatchUpdate = async () => {
   }
 }
 
-// 加载订阅类型分组
 const loadSubscriptionGroups = async () => {
   try {
     const groups = await adminAPI.groups.getAll()

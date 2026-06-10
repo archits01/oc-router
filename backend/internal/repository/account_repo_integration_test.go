@@ -437,7 +437,7 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			// 每个 case 重新获取隔离资源
+			//
 			tx := testEntTx(s.T())
 			client := tx.Client()
 			repo := newAccountRepositoryWithSQL(client, tx, nil)

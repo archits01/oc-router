@@ -126,9 +126,9 @@ func TestResolveBedrockBetaTokensForRequest_FiltersAfterBedrockTransform(t *test
 	}
 }
 
-// TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedComputerUse 验证：
-// 管理员 block 了 computer-use，客户端不在 header 中带该 token，
-// 但请求体包含 computer_use 工具 → 自动注入后应被 block。
+// TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedComputerUse
+//
+// →
 func TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedComputerUse(t *testing.T) {
 	settings := &BetaPolicySettings{
 		Rules: []BetaPolicyRule{
@@ -155,7 +155,7 @@ func TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedComputerUse(t 
 	}
 	account := &Account{Platform: PlatformAnthropic, Type: AccountTypeBedrock}
 
-	// header 中不带 beta token，但 body 中有 computer_use 工具
+	// header
 	_, err = svc.resolveBedrockBetaTokensForRequest(
 		context.Background(),
 		account,
@@ -171,9 +171,9 @@ func TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedComputerUse(t 
 	}
 }
 
-// TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedToolSearch 验证：
-// 管理员 block 了 tool-search-tool，客户端不在 header 中带 beta token，
-// 但请求体包含 tool search 工具 → 自动注入后应被 block。
+// TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedToolSearch
+//
+// →
 func TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedToolSearch(t *testing.T) {
 	settings := &BetaPolicySettings{
 		Rules: []BetaPolicyRule{
@@ -200,7 +200,7 @@ func TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedToolSearch(t *
 	}
 	account := &Account{Platform: PlatformAnthropic, Type: AccountTypeBedrock}
 
-	// header 中不带 beta token，但 body 中有 tool_search_tool 工具
+	// header
 	_, err = svc.resolveBedrockBetaTokensForRequest(
 		context.Background(),
 		account,
@@ -216,8 +216,8 @@ func TestResolveBedrockBetaTokensForRequest_BlocksBodyAutoInjectedToolSearch(t *
 	}
 }
 
-// TestResolveBedrockBetaTokensForRequest_PassesWhenNoBlockRuleMatches 验证：
-// body 自动注入的 token 如果没有对应的 block 规则，应正常通过。
+// TestResolveBedrockBetaTokensForRequest_PassesWhenNoBlockRuleMatches
+// body
 func TestResolveBedrockBetaTokensForRequest_PassesWhenNoBlockRuleMatches(t *testing.T) {
 	settings := &BetaPolicySettings{
 		Rules: []BetaPolicyRule{
@@ -244,7 +244,7 @@ func TestResolveBedrockBetaTokensForRequest_PassesWhenNoBlockRuleMatches(t *test
 	}
 	account := &Account{Platform: PlatformAnthropic, Type: AccountTypeBedrock}
 
-	// body 中有 computer_use 工具（会注入 computer-use token），但 block 规则只针对 context-1m
+	// body
 	tokens, err := svc.resolveBedrockBetaTokensForRequest(
 		context.Background(),
 		account,

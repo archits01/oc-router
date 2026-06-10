@@ -4,8 +4,7 @@ import (
 	"context"
 )
 
-// runCaddyStyleRelay 采用 Caddy reverseproxy 的双向隧道思想：
-// 连接建立后并发复制两个方向，任一方向退出触发收敛关闭。
+// runCaddyStyleRelay
 //
 // Reference:
 // - Project: caddyserver/caddy (Apache-2.0)

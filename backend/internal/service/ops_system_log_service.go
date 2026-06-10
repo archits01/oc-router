@@ -78,7 +78,6 @@ func (s *OpsService) CleanupSystemLogs(ctx context.Context, filter *OpsSystemLog
 		Conditions:  marshalSystemLogCleanupConditions(filter),
 		DeletedRows: deletedRows,
 	}); auditErr != nil {
-		// 审计失败不影响主流程，避免运维清理被阻塞。
 		log.Printf("[OpsSystemLog] cleanup audit failed: %v", auditErr)
 	}
 	return deletedRows, nil

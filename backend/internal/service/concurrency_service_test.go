@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// stubConcurrencyCacheForTest 用于并发服务单元测试的缓存桩
+// stubConcurrencyCacheForTest
 type stubConcurrencyCacheForTest struct {
 	acquireResult  bool
 	acquireErr     error
@@ -31,7 +31,6 @@ type stubConcurrencyCacheForTest struct {
 	usersLoadErr   error
 	cleanupErr     error
 
-	// 记录调用
 	releasedAccountIDs []int64
 	releasedRequestIDs []string
 	loadBatchCalls     atomic.Int64
@@ -147,8 +146,8 @@ func TestAcquireAccountSlot_UnlimitedConcurrency(t *testing.T) {
 	for _, maxConcurrency := range []int{0, -1} {
 		result, err := svc.AcquireAccountSlot(context.Background(), 1, maxConcurrency)
 		require.NoError(t, err)
-		require.True(t, result.Acquired, "maxConcurrency=%d 应无限制通过", maxConcurrency)
-		require.NotNil(t, result.ReleaseFunc, "ReleaseFunc 应为 no-op 函数")
+		require.True(t, result.Acquired, "maxConcurrency=%d should pass without limit", maxConcurrency)
+		require.NotNil(t, result.ReleaseFunc, "ReleaseFunc should be a no-op function")
 	}
 }
 
@@ -169,20 +168,19 @@ func TestAcquireAccountSlot_ReleaseDecrements(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, result.Acquired)
 
-	// 调用 ReleaseFunc 应释放槽位
+	//
 	result.ReleaseFunc()
 
 	require.Len(t, cache.releasedAccountIDs, 1)
 	require.Equal(t, int64(42), cache.releasedAccountIDs[0])
 	require.Len(t, cache.releasedRequestIDs, 1)
-	require.NotEmpty(t, cache.releasedRequestIDs[0], "requestID 不应为空")
+	require.NotEmpty(t, cache.releasedRequestIDs[0], "requestID should not be empty")
 }
 
 func TestAcquireUserSlot_IndependentFromAccount(t *testing.T) {
 	cache := &stubConcurrencyCacheForTest{acquireResult: true}
 	svc := NewConcurrencyService(cache)
 
-	// 用户槽位获取应独立于账户槽位
 	result, err := svc.AcquireUserSlot(context.Background(), 100, 3)
 	require.NoError(t, err)
 	require.True(t, result.Acquired)
@@ -207,13 +205,13 @@ func TestGenerateRequestID_UsesStablePrefixAndMonotonicCounter(t *testing.T) {
 	p2 := strings.Split(id2, "-")
 	require.Len(t, p1, 2)
 	require.Len(t, p2, 2)
-	require.Equal(t, p1[0], p2[0], "同一进程前缀应保持一致")
+	require.Equal(t, p1[0], p2[0], "same process prefix should remain consistent")
 
 	n1, err := strconv.ParseUint(p1[1], 36, 64)
 	require.NoError(t, err)
 	n2, err := strconv.ParseUint(p2[1], 36, 64)
 	require.NoError(t, err)
-	require.Equal(t, n1+1, n2, "计数器应单调递增")
+	require.Equal(t, n1+1, n2, "counter should monotonically increase")
 }
 
 func TestGetAccountsLoadBatch_ReturnsCorrectData(t *testing.T) {
@@ -301,13 +299,13 @@ func TestIncrementWaitCount_QueueFull(t *testing.T) {
 }
 
 func TestIncrementWaitCount_FailOpen(t *testing.T) {
-	// Redis 错误时应 fail-open（允许请求通过）
+	// Redis
 	cache := &stubConcurrencyCacheForTest{waitErr: errors.New("redis timeout")}
 	svc := NewConcurrencyService(cache)
 
 	allowed, err := svc.IncrementWaitCount(context.Background(), 1, 25)
-	require.NoError(t, err, "Redis 错误不应传播")
-	require.True(t, allowed, "Redis 错误时应 fail-open")
+	require.NoError(t, err, "Redis error should not propagate")
+	require.True(t, allowed, "should fail-open on Redis error")
 }
 
 func TestIncrementWaitCount_NilCache(t *testing.T) {
@@ -315,7 +313,7 @@ func TestIncrementWaitCount_NilCache(t *testing.T) {
 
 	allowed, err := svc.IncrementWaitCount(context.Background(), 1, 25)
 	require.NoError(t, err)
-	require.True(t, allowed, "nil cache 应 fail-open")
+	require.True(t, allowed, "nil cache should fail-open")
 }
 
 func TestCalculateMaxWait(t *testing.T) {
@@ -369,8 +367,8 @@ func TestIncrementAccountWaitCount_FailOpen(t *testing.T) {
 	svc := NewConcurrencyService(cache)
 
 	allowed, err := svc.IncrementAccountWaitCount(context.Background(), 1, 10)
-	require.NoError(t, err, "Redis 错误不应传播")
-	require.True(t, allowed, "Redis 错误时应 fail-open")
+	require.NoError(t, err, "Redis error should not propagate")
+	require.True(t, allowed, "should fail-open on Redis error")
 }
 
 func TestIncrementAccountWaitCount_NilCache(t *testing.T) {

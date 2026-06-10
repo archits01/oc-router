@@ -12,7 +12,7 @@ describe('useKeyedDebouncedSearch', () => {
     vi.useRealTimers()
   })
 
-  it('为不同 key 独立防抖触发搜索', async () => {
+  it('为不同 key 独立防抖触发Search', async () => {
     const search = vi.fn().mockResolvedValue([])
     const onSuccess = vi.fn()
 
@@ -44,7 +44,7 @@ describe('useKeyedDebouncedSearch', () => {
     expect(onSuccess).toHaveBeenCalledTimes(2)
   })
 
-  it('同 key 新请求会取消旧请求并忽略过期响应', async () => {
+  it('同 key 新请求会Cancel旧请求并忽略Expired响应', async () => {
     const resolves: Array<(value: string[]) => void> = []
     const search = vi.fn().mockImplementation(
       () => new Promise<string[]>((resolve) => {
@@ -79,7 +79,7 @@ describe('useKeyedDebouncedSearch', () => {
     expect(onSuccess).toHaveBeenCalledTimes(1)
   })
 
-  it('clearKey 会取消未执行任务', () => {
+  it('clearKey 会Cancel未执行任务', () => {
     const search = vi.fn().mockResolvedValue([])
     const onSuccess = vi.fn()
 

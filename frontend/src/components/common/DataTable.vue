@@ -213,7 +213,6 @@ const emit = defineEmits<{
   sort: [key: string, order: 'asc' | 'desc']
 }>()
 
-// 表格容器引用
 const tableWrapperRef = ref<HTMLElement | null>(null)
 const isScrollable = ref(false)
 const actionsColumnNeedsExpanding = ref(false)
@@ -221,11 +220,11 @@ const actionsColumnNeedsExpanding = ref(false)
 // --- 虚拟滚动「整表空白」根治 ---
 // 根因:本组件根 .table-wrapper 为 flex:1 / min-h-0,高度由父级 flex 链决定。@tanstack 虚拟化器
 // 仅在 observeElementRect 回调里写 scrollRect;一旦该回调读到 0 高度(加载瞬间 flex 未结算,或
-// 滚动中动态行高校正触发的 reflow),scrollRect 被钉死为 0 → calculateRange 返回 null → 整表空白。
+// 滚动中动态行高校正触发的 reflow),scrollRect 被钉死为 0 → calculateRange Back null → 整表空白。
 // 对策(见下方 virtualizer 选项):
 //   1) 覆写 observeElementRect,直接丢弃 height<=0 的读数,scrollRect 永不被钉成 0;
-//   2) initialRect 给一屏兜底高度,首个有效读数到来前也有行可渲染,绝不空白。
-// 兜底高度:表格区域大致 = 视口高度 - 顶栏/外边距/筛选/分页 ≈ 320px
+//   2) initialRect 给一屏兜底高度,首个Valid读数到来前也有行可渲染,绝不空白。
+// 兜底高度:表格区域大致 = 视口高度 - 顶栏/外边距/Filter/分页 ≈ 320px
 const estimatedViewportHeight = () => {
   if (typeof window === 'undefined') return 600
   return Math.max(window.innerHeight - 320, 400)
@@ -239,32 +238,27 @@ const observeElementRectNonZero = (
   if (rect.height > 0) cb(rect)
 })
 
-// 检查是否可滚动
 const checkScrollable = () => {
   if (tableWrapperRef.value) {
     isScrollable.value = tableWrapperRef.value.scrollWidth > tableWrapperRef.value.clientWidth
   }
 }
 
-// 检查操作列是否需要展开
 const checkActionsColumnWidth = () => {
   if (!tableWrapperRef.value) return
 
-  // 查找第一行的操作列单元格
   const firstActionCell = tableWrapperRef.value.querySelector('tbody tr:first-child td:last-child')
   if (!firstActionCell) return
 
-  // 查找操作列内容的容器div
+  // 查找Actions列内容的容器div
   const actionsContainer = firstActionCell.querySelector('div')
   if (!actionsContainer) return
 
-  // 临时展开以测量完整宽度
   const wasExpanded = actionsExpanded.value
   actionsExpanded.value = true
 
   // 等待DOM更新
   nextTick(() => {
-    // 测量所有按钮的总宽度
     const actionItems = actionsContainer.querySelectorAll('button, a, [role="button"]')
     if (actionItems.length <= 2) {
       actionsColumnNeedsExpanding.value = false
@@ -284,15 +278,12 @@ const checkActionsColumnWidth = () => {
     // 获取单元格可用宽度（减去padding）
     const cellWidth = (firstActionCell as HTMLElement).clientWidth - 32 // 减去左右padding
 
-    // 如果总宽度超过可用宽度，需要展开功能
     actionsColumnNeedsExpanding.value = totalWidth > cellWidth
 
-    // 恢复原来的展开状态
     actionsExpanded.value = wasExpanded
   })
 }
 
-// 监听尺寸变化
 let resizeObserver: ResizeObserver | null = null
 let resizeHandler: (() => void) | null = null
 let desktopViewportMediaQuery: MediaQueryList | null = null
@@ -361,7 +352,7 @@ interface Props {
   stickyFirstColumn?: boolean
   stickyActionsColumn?: boolean
   expandableActions?: boolean
-  actionsCount?: number // 操作按钮总数，用于判断是否需要展开功能
+  actionsCount?: number // Actions按钮总数，用于判断YesNo需要展开功能
   rowKey?: string | ((row: any) => string | number)
   /**
    * Default sort configuration (only applied when there is no persisted sort state)
@@ -539,7 +530,6 @@ watch(
   { immediate: true, flush: 'post' }
 )
 
-// 数据/列变化时重新检查滚动状态
 // 注意：不能监听 actionsExpanded，因为 checkActionsColumnWidth 会临时修改它，会导致无限循环
 watch(
   [() => props.data.length, columnsSignature],
@@ -551,7 +541,6 @@ watch(
   { flush: 'post' }
 )
 
-// 单独监听展开状态变化，只更新滚动状态
 watch(actionsExpanded, async () => {
   await nextTick()
   checkScrollable()
@@ -599,9 +588,9 @@ const rowVirtualizer = useVirtualizer(computed(() => ({
   getScrollElement: () => tableWrapperRef.value,
   estimateSize: () => props.estimateRowHeight ?? 56,
   overscan: props.overscan ?? 5,
-  // 兜底高度:首个有效高度读数到来前,先按一屏渲染,避免空白帧
+  // 兜底高度:首个Valid高度读数到来前,先按一屏渲染,避免空白帧
   initialRect: { width: 0, height: estimatedViewportHeight() },
-  // 关键:过滤 0 高度读数,杜绝 scrollRect 被钉成 0 → calculateRange 返回 null → 整表空白
+  // 关键:过滤 0 高度读数,杜绝 scrollRect 被钉成 0 → calculateRange Back null → 整表空白
   observeElementRect: observeElementRectNonZero,
   // 把测量类 ResizeObserver 回调批到 rAF,避免滚动中同步 reflow 风暴导致的校正抖动/空白
   useAnimationFrameWithResizeObserver: true,
@@ -639,7 +628,6 @@ const getStickyColumnClass = (column: Column, index: number) => {
   const classes: string[] = []
 
   if (props.stickyFirstColumn) {
-    // 如果第一列是勾选列，固定前两列（勾选+名称）
     if (hasSelectColumn.value) {
       if (index === 0) {
         classes.push('sticky-col sticky-col-left-first')
@@ -647,14 +635,12 @@ const getStickyColumnClass = (column: Column, index: number) => {
         classes.push('sticky-col sticky-col-left-second')
       }
     } else {
-      // 否则只固定第一列
       if (index === 0) {
         classes.push('sticky-col sticky-col-left')
       }
     }
   }
 
-  // 操作列固定（最后一列）
   if (props.stickyActionsColumn && column.key === 'actions') {
     classes.push('sticky-col sticky-col-right')
   }
@@ -662,11 +648,9 @@ const getStickyColumnClass = (column: Column, index: number) => {
   return classes.join(' ')
 }
 
-// 根据列数自适应调整内边距
 const getAdaptivePaddingClass = () => {
   const columnCount = props.columns.length
 
-  // 列数越多，内边距越小
   if (columnCount >= 10) {
     return 'px-2' // 8px
   } else if (columnCount >= 7) {
@@ -794,7 +778,7 @@ defineExpose({
   left: var(--select-col-width);
 }
 
-/* 操作列固定 */
+/* Actions列固定 */
 .sticky-col-right {
   right: 0;
 }
@@ -813,7 +797,7 @@ tbody .sticky-col {
   background-color: rgb(17 24 39);
 }
 
-/* hover 状态保持 */
+/* hover Status保持 */
 tbody tr:hover .sticky-col {
   background-color: rgb(249 250 251);
 }
@@ -849,7 +833,7 @@ tbody tr:hover .sticky-col {
   pointer-events: none;
 }
 
-/* 操作列左侧阴影 */
+/* Actions列左侧阴影 */
 .is-scrollable .sticky-col-right::before {
   content: '';
   position: absolute;
@@ -884,7 +868,7 @@ tbody tr:hover .sticky-col {
   scrollbar-width: auto !important; /* 阻止 Chrome 121 退化到原生 Mac 闪隐滚动条 */
 }
 
-/* 2. 重写 Webkit 滚动层，全部加上 !important 强制覆盖透明悬停陷阱 */
+/* 2. 重写 Webkit 滚动层，All加上 !important 强制覆盖透明悬停陷阱 */
 .table-wrapper::-webkit-scrollbar {
   height: 12px !important;
   width: 12px !important;
@@ -901,7 +885,7 @@ tbody tr:hover .sticky-col {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* 常驻、不透明的滑块，无视鼠标是否 hover 都在那！ */
+/* 常驻、不透明的滑块，无视鼠标YesNo hover 都在那！ */
 .table-wrapper::-webkit-scrollbar-thumb {
   background-color: rgba(107, 114, 128, 0.75) !important; 
   border-radius: 6px !important;

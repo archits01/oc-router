@@ -51,8 +51,8 @@ func TestCompositeTokenCacheInvalidator_Gemini(t *testing.T) {
 
 	err := invalidator.InvalidateToken(context.Background(), account)
 	require.NoError(t, err)
-	// 新行为：同时删除基于 project_id 和 account_id 的缓存键
-	// 这是为了处理：首次获取 token 时可能没有 project_id，之后自动检测到后会使用新 key
+	//
+	//
 	require.Equal(t, []string{"gemini:project-x", "gemini:account:10"}, cache.deletedKeys)
 }
 
@@ -70,7 +70,7 @@ func TestCompositeTokenCacheInvalidator_GeminiWithoutProjectID(t *testing.T) {
 
 	err := invalidator.InvalidateToken(context.Background(), account)
 	require.NoError(t, err)
-	// 没有 project_id 时，两个 key 相同，去重后只删除一个
+	//
 	require.Equal(t, []string{"gemini:account:10"}, cache.deletedKeys)
 }
 
@@ -88,7 +88,7 @@ func TestCompositeTokenCacheInvalidator_Antigravity(t *testing.T) {
 
 	err := invalidator.InvalidateToken(context.Background(), account)
 	require.NoError(t, err)
-	// 新行为：同时删除基于 project_id 和 account_id 的缓存键
+	//
 	require.Equal(t, []string{"ag:ag-project", "ag:account:99"}, cache.deletedKeys)
 }
 
@@ -106,7 +106,7 @@ func TestCompositeTokenCacheInvalidator_AntigravityWithoutProjectID(t *testing.T
 
 	err := invalidator.InvalidateToken(context.Background(), account)
 	require.NoError(t, err)
-	// 没有 project_id 时，两个 key 相同，去重后只删除一个
+	//
 	require.Equal(t, []string{"ag:account:99"}, cache.deletedKeys)
 }
 
@@ -272,8 +272,6 @@ func TestCompositeTokenCacheInvalidator_DeleteError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// 新行为：删除失败只记录日志，不返回错误
-			// 这是因为缓存失效失败不应影响主业务流程
 			err := invalidator.InvalidateToken(context.Background(), tt.account)
 			require.NoError(t, err)
 		})
@@ -281,7 +279,6 @@ func TestCompositeTokenCacheInvalidator_DeleteError(t *testing.T) {
 }
 
 func TestCompositeTokenCacheInvalidator_AllPlatformsIntegration(t *testing.T) {
-	// 测试所有平台的缓存键生成和删除
 	cache := &geminiTokenCacheStub{}
 	invalidator := NewCompositeTokenCacheInvalidator(cache)
 
@@ -292,7 +289,7 @@ func TestCompositeTokenCacheInvalidator_AllPlatformsIntegration(t *testing.T) {
 		{ID: 4, Platform: PlatformAnthropic, Type: AccountTypeOAuth},
 	}
 
-	// 新行为：Gemini 和 Antigravity 会同时删除基于 project_id 和 account_id 的键
+	//
 	expectedKeys := []string{
 		"gemini:gemini-proj",
 		"gemini:account:1",
@@ -310,7 +307,7 @@ func TestCompositeTokenCacheInvalidator_AllPlatformsIntegration(t *testing.T) {
 	require.Equal(t, expectedKeys, cache.deletedKeys)
 }
 
-// ========== GetCredentialAsInt64 测试 ==========
+// ========== GetCredentialAsInt64 ==========
 
 func TestAccount_GetCredentialAsInt64(t *testing.T) {
 	tests := []struct {
@@ -396,7 +393,7 @@ func TestAccount_GetCredentialAsInt64_NilAccount(t *testing.T) {
 	require.Equal(t, int64(0), result)
 }
 
-// ========== CheckTokenVersion 测试 ==========
+// ========== CheckTokenVersion ==========
 
 func TestCheckTokenVersion(t *testing.T) {
 	tests := []struct {
@@ -480,7 +477,7 @@ func TestCheckTokenVersion(t *testing.T) {
 			},
 			latestAccount: nil,
 			repoErr:       errors.New("db error"),
-			expectedStale: false, // 查询失败，默认允许缓存
+			expectedStale: false, // queryfailed，默认允许缓存
 		},
 		{
 			name: "repo_returns_nil",
@@ -490,14 +487,13 @@ func TestCheckTokenVersion(t *testing.T) {
 			},
 			latestAccount: nil,
 			repoErr:       nil,
-			expectedStale: false, // 查询返回 nil，默认允许缓存
+			expectedStale: false, // queryreturned nil，默认允许缓存
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// 由于 CheckTokenVersion 接受 AccountRepository 接口，而创建完整的 mock 很繁琐
-			// 这里我们直接测试函数的核心逻辑来验证行为
+			//
 
 			if tt.name == "nil_account" {
 				_, isStale := CheckTokenVersion(context.Background(), nil, nil)
@@ -505,11 +501,11 @@ func TestCheckTokenVersion(t *testing.T) {
 				return
 			}
 
-			// 模拟 CheckTokenVersion 的核心逻辑
+			//
 			account := tt.account
 			currentVersion := account.GetCredentialAsInt64("_token_version")
 
-			// 模拟 repo 查询
+			//
 			latestAccount := tt.latestAccount
 			if tt.repoErr != nil || latestAccount == nil {
 				require.Equal(t, tt.expectedStale, false)
@@ -518,19 +514,17 @@ func TestCheckTokenVersion(t *testing.T) {
 
 			latestVersion := latestAccount.GetCredentialAsInt64("_token_version")
 
-			// 情况1: 当前 account 没有版本号，但 DB 中已有版本号
+			//
 			if currentVersion == 0 && latestVersion > 0 {
 				require.Equal(t, tt.expectedStale, true)
 				return
 			}
 
-			// 情况2: 两边都没有版本号
 			if currentVersion == 0 && latestVersion == 0 {
 				require.Equal(t, tt.expectedStale, false)
 				return
 			}
 
-			// 情况3: 比较版本号
 			isStale := latestVersion > currentVersion
 			require.Equal(t, tt.expectedStale, isStale)
 		})

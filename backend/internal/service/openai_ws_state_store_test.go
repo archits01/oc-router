@@ -49,7 +49,7 @@ func TestOpenAIWSStateStore_SessionTurnStateTTL(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "turn_state_1", state)
 
-	// group 隔离
+	// group
 	_, ok = store.GetSessionTurnState(10, "session_hash_1")
 	require.False(t, ok)
 
@@ -66,7 +66,7 @@ func TestOpenAIWSStateStore_SessionConnTTL(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "conn_1", connID)
 
-	// group 隔离
+	// group
 	_, ok = store.GetSessionConn(10, "session_hash_conn_1")
 	require.False(t, ok)
 
@@ -117,7 +117,7 @@ func TestOpenAIWSStateStore_MaybeCleanupRemovesExpiredIncrementally(t *testing.T
 	remainingAfterFirst := len(store.responseToConn)
 	store.responseToConnMu.RUnlock()
 	require.Less(t, remainingAfterFirst, total, "单轮 cleanup 应至少有进展")
-	require.Greater(t, remainingAfterFirst, 0, "增量清理不要求单轮清空全部键")
+	require.Greater(t, remainingAfterFirst, 0, "增量cleanup不要求单轮清空全部键")
 
 	for i := 0; i < 8; i++ {
 		store.lastCleanupUnixNano.Store(time.Now().Add(-2 * openAIWSStateStoreCleanupInterval).UnixNano())
@@ -204,12 +204,12 @@ func TestOpenAIWSStateStore_RedisOpsUseShortTimeout(t *testing.T) {
 
 	accountID, getErr := store.GetResponseAccount(ctx, groupID, "resp_timeout_probe")
 	require.NoError(t, getErr)
-	require.Equal(t, int64(11), accountID, "本地缓存命中应优先返回已绑定账号")
+	require.Equal(t, int64(11), accountID, "本地缓存命中应优先returned已绑定账号")
 
 	require.NoError(t, store.DeleteResponseAccount(ctx, groupID, "resp_timeout_probe"))
 
-	require.True(t, probe.setHasDeadline, "SetSessionAccountID 应携带独立超时上下文")
-	require.True(t, probe.deleteHasDeadline, "DeleteSessionAccountID 应携带独立超时上下文")
+	require.True(t, probe.setHasDeadline, "SetSessionAccountID 应携带独立timeout上下文")
+	require.True(t, probe.deleteHasDeadline, "DeleteSessionAccountID 应携带独立timeout上下文")
 	require.False(t, probe.getHasDeadline, "GetSessionAccountID 本用例应由本地缓存命中，不触发 Redis 读取")
 	require.Greater(t, probe.setDeadlineDelta, 2*time.Second)
 	require.LessOrEqual(t, probe.setDeadlineDelta, 3*time.Second)
@@ -221,7 +221,7 @@ func TestOpenAIWSStateStore_RedisOpsUseShortTimeout(t *testing.T) {
 	accountID2, err2 := store2.GetResponseAccount(ctx, groupID, "resp_cache_only")
 	require.NoError(t, err2)
 	require.Equal(t, int64(123), accountID2)
-	require.True(t, probe2.getHasDeadline, "GetSessionAccountID 在缓存未命中时应携带独立超时上下文")
+	require.True(t, probe2.getHasDeadline, "GetSessionAccountID 在缓存未命中时应携带独立timeout上下文")
 	require.Greater(t, probe2.getDeadlineDelta, 2*time.Second)
 	require.LessOrEqual(t, probe2.getDeadlineDelta, 3*time.Second)
 }
@@ -231,5 +231,5 @@ func TestWithOpenAIWSStateStoreRedisTimeout_WithParentContext(t *testing.T) {
 	defer cancel()
 	require.NotNil(t, ctx)
 	_, ok := ctx.Deadline()
-	require.True(t, ok, "应附加短超时")
+	require.True(t, ok, "应附加短timeout")
 }

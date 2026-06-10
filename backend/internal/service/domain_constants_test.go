@@ -4,7 +4,7 @@ package service
 
 import "testing"
 
-// TestSettingKeyDefaultPlatformQuotas 验证新的系统层 JSON key 常量值正确。
+// TestSettingKeyDefaultPlatformQuotas
 func TestSettingKeyDefaultPlatformQuotas(t *testing.T) {
 	if SettingKeyDefaultPlatformQuotas != "default_platform_quotas" {
 		t.Errorf("SettingKeyDefaultPlatformQuotas = %q, want %q",
@@ -12,7 +12,7 @@ func TestSettingKeyDefaultPlatformQuotas(t *testing.T) {
 	}
 }
 
-// TestSettingKeyAuthSourcePlatformQuotas 验证新的 auth-source JSON key 函数返回值正确。
+// TestSettingKeyAuthSourcePlatformQuotas
 func TestSettingKeyAuthSourcePlatformQuotas(t *testing.T) {
 	if got := SettingKeyAuthSourcePlatformQuotas("email"); got != "auth_source_default_email_platform_quotas" {
 		t.Fatalf("got %q, want %q", got, "auth_source_default_email_platform_quotas")

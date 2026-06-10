@@ -336,9 +336,8 @@ func (r *userSubscriptionRepository) ResetMonthlyUsage(ctx context.Context, id i
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
 }
 
-// IncrementUsage 原子性地累加订阅用量。
-// 限额检查已在请求前由 BillingCacheService.CheckBillingEligibility 完成，
-// 此处仅负责记录实际消费，确保消费数据的完整性。
+// IncrementUsage
+//
 func (r *userSubscriptionRepository) IncrementUsage(ctx context.Context, id int64, costUSD float64) error {
 	const updateSQL = `
 		UPDATE user_subscriptions us
@@ -369,7 +368,7 @@ func (r *userSubscriptionRepository) IncrementUsage(ctx context.Context, id int6
 		return nil
 	}
 
-	// affected == 0：订阅不存在或已删除
+	// affected == 0：
 	return service.ErrSubscriptionNotFound
 }
 

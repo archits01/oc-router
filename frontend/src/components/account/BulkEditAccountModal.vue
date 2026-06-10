@@ -927,7 +927,7 @@
         </div>
       </div>
 
-      <!-- RPM Limit (仅全部为 Anthropic OAuth/SetupToken 时显示) -->
+      <!-- RPM Limit (仅All为 Anthropic OAuth/SetupToken 时显示) -->
       <div v-if="allAnthropicOAuthOrSetupToken" class="border-t border-gray-200 pt-4 dark:border-dark-600">
         <div class="mb-3 flex items-center justify-between">
           <label
@@ -1032,7 +1032,7 @@
             </div>
           </div>
 
-        <!-- 用户消息限速模式（独立于 RPM 开关，始终可见） -->
+        <!-- User消息限速模式（独立于 RPM 开关，始终可见） -->
         <div class="mt-4">
           <label class="input-label">{{ t('admin.accounts.quotaControl.rpmLimit.userMsgQueue') }}</label>
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -1216,7 +1216,7 @@ const allOpenAIAPIKey = computed(() => {
   )
 })
 
-// 是否全部为 Anthropic OAuth/SetupToken（RPM 配置仅在此条件下显示）
+// YesNoAll为 Anthropic OAuth/SetupToken（RPM 配置仅在此条件下显示）
 const allAnthropicOAuthOrSetupToken = computed(() => {
   return (
     targetSelectedPlatforms.value.length === 1 &&
@@ -1445,7 +1445,7 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
   }
 
   if (enableProxy.value) {
-    // 后端期望 proxy_id: 0 表示清除代理，而不是 null
+    // 后端期望 proxy_id: 0 表示清除代理，而不Yes null
     updates.proxy_id = proxyId.value === null ? 0 : proxyId.value
   }
 
@@ -1495,7 +1495,6 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
     // 统一使用 model_mapping 字段
     if (modelRestrictionMode.value === 'whitelist') {
       // 白名单模式：将模型转换为 model_mapping 格式（key=value）
-      // 空白名单表示“支持所有模型”，需显式发送空对象以覆盖已有限制。
       const mapping: Record<string, string> = {}
       for (const m of allowedModels.value) {
         mapping[m] = m
@@ -1503,7 +1502,6 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
       credentials.model_mapping = mapping
       credentialsChanged = true
     } else {
-      // 映射模式下空配置同样表示“支持所有模型”。
       const modelMapping = buildModelMappingObject()
       credentials.model_mapping = modelMapping ?? {}
       credentialsChanged = true
@@ -1567,9 +1565,9 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
         extra.rpm_sticky_buffer = bulkRpmStickyBuffer.value
       }
     } else {
-      // 关闭 RPM 限制 - 设置 base_rpm 为 0，并用空值覆盖关联字段
-      // 后端使用 JSONB || merge 语义，不会删除已有 key，
-      // 所以必须显式发送空值来重置（后端读取时会 fallback 到默认值）
+      // Close RPM 限制 - Settings base_rpm 为 0，并用空值覆盖关联字段
+      // 后端使用 JSONB || merge 语义，不会Delete已有 key，
+      // 所以必须显式发送空值来Reset（后端读取时会 fallback 到默认值）
       extra.base_rpm = 0
       extra.rpm_strategy = ''
       extra.rpm_sticky_buffer = 0
@@ -1577,7 +1575,7 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
     updates.extra = extra
   }
 
-  // UMQ mode（独立于 RPM 保存）
+  // UMQ mode（独立于 RPM Save）
   if (userMsgQueueMode.value !== null) {
     const umqExtra = ensureExtra()
     umqExtra.user_msg_queue_mode = userMsgQueueMode.value  // '' = 清除账号级覆盖
@@ -1593,7 +1591,7 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
 
 const mixedChannelConfirmed = ref(false)
 
-// 是否需要预检查：改了分组 + 全是单一的 antigravity 或 anthropic 平台
+// YesNo需要预检查：改了分组 + 全Yes单一的 antigravity 或 anthropic 平台
 // 多平台混合的情况由 submitBulkUpdate 的 409 catch 兜底
 const canPreCheck = () =>
   enableGroups.value &&
@@ -1609,7 +1607,7 @@ const handleClose = () => {
   emit('close')
 }
 
-// 预检查：提交前调接口检测，有风险就弹窗阻止，返回 false 表示需要用户确认
+// 预检查：Submit前调接口检测，有风险就弹窗阻止，Back false 表示需要UserConfirm
 const preCheckMixedChannelRisk = async (built: Record<string, unknown>): Promise<boolean> => {
   if (!canPreCheck()) return true
   if (mixedChannelConfirmed.value) return true
@@ -1677,7 +1675,7 @@ const handleSubmit = async () => {
 }
 
 const submitBulkUpdate = async (baseUpdates: Record<string, unknown>) => {
-  // 无论是预检查确认还是 409 兜底确认，只要 mixedChannelConfirmed 为 true 就带上 flag
+  // 无论Yes预检查Confirm还Yes 409 兜底Confirm，只要 mixedChannelConfirmed 为 true 就带上 flag
   const updates = mixedChannelConfirmed.value
     ? { ...baseUpdates, confirm_mixed_channel_risk: true }
     : baseUpdates
@@ -1708,7 +1706,7 @@ const submitBulkUpdate = async (baseUpdates: Record<string, unknown>) => {
       handleClose()
     }
   } catch (error: any) {
-    // 兜底：多平台混合场景下，预检查跳过，由后端 409 触发确认框
+    // 兜底：多平台混合场景下，预检查跳过，由后端 409 触发Confirm框
     if (error.status === 409 && error.error === 'mixed_channel_warning') {
       pendingUpdatesForConfirm.value = baseUpdates
       mixedChannelWarningMessage.value = error.message

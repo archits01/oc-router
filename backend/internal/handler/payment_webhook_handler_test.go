@@ -38,7 +38,7 @@ func TestWriteSuccessResponse(t *testing.T) {
 			wantContentType: "application/json",
 			checkJSON:       true,
 			wantJSONCode:    "SUCCESS",
-			wantJSONMessage: "成功",
+			wantJSONMessage: "success",
 		},
 		{
 			name:            "stripe returns empty 200",

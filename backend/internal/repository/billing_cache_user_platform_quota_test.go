@@ -72,7 +72,7 @@ func TestUserPlatformQuotaCache_NilLimitSetThenGet(t *testing.T) {
 	in := &service.UserPlatformQuotaCacheEntry{
 		DailyUsageUSD: 1.0,
 		SchemaVersion: service.UserPlatformQuotaCacheSchemaV1,
-		// DailyLimitUSD nil → 无限额
+		// DailyLimitUSD nil →
 	}
 	if err := c.SetUserPlatformQuotaCache(ctx, 1, "openai", in, time.Minute); err != nil {
 		t.Fatal(err)
@@ -100,7 +100,7 @@ func TestUserPlatformQuotaCache_IncrMissIsNoop(t *testing.T) {
 func TestUserPlatformQuotaCache_IncrHitAccumulates(t *testing.T) {
 	c, _ := newMiniRedisCache(t)
 	ctx := context.Background()
-	// SchemaVersion 必须显式设为 V1,否则 Lua 脚本会因 schema 不匹配而 return 0,跳过累加。
+	// SchemaVersion
 	_ = c.SetUserPlatformQuotaCache(ctx, 1, "openai", &service.UserPlatformQuotaCacheEntry{
 		Version:       1,
 		SchemaVersion: service.UserPlatformQuotaCacheSchemaV1,

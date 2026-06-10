@@ -1,6 +1,6 @@
 /**
- * Vitest 测试环境设置
- * 提供全局 mock 和测试工具
+ * Vitest test environment setup
+ * Provides global mocks and test utilities
  */
 import { config } from '@vue/test-utils'
 import { vi } from 'vitest'
@@ -44,7 +44,7 @@ if (typeof window !== 'undefined' && typeof window.localStorage.getItem !== 'fun
   })
 }
 
-// Mock requestIdleCallback (Safari < 15 不支持)
+// Mock requestIdleCallback (Safari < 15 does not support it)
 if (typeof globalThis.requestIdleCallback === 'undefined') {
   globalThis.requestIdleCallback = ((callback: IdleRequestCallback) => {
     return window.setTimeout(() => callback({ didTimeout: false, timeRemaining: () => 50 }), 1)
@@ -75,10 +75,9 @@ class MockResizeObserver {
 
 globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver
 
-// Vue Test Utils 全局配置
+// Vue Test Utils global config
 config.global.stubs = {
-  // 可以在这里添加全局 stub
+  // Global stubs can be added here
 }
 
-// 设置全局测试超时
 vi.setConfig({ testTimeout: 10000 })

@@ -133,7 +133,6 @@ func TestToUserErrorRequestDetail_WhitelistAndRedacts(t *testing.T) {
 		t.Fatal("expected non-nil detail")
 	}
 
-	// 基础字段正确映射
 	if out.ID != 999 {
 		t.Errorf("want ID=999, got %d", out.ID)
 	}
@@ -147,7 +146,6 @@ func TestToUserErrorRequestDetail_WhitelistAndRedacts(t *testing.T) {
 		t.Errorf("UpstreamStatusCode mismatch")
 	}
 
-	// 序列化后不含敏感字段
 	b, err := json.Marshal(out)
 	if err != nil {
 		t.Fatalf("json.Marshal failed: %v", err)

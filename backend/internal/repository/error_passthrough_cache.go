@@ -24,16 +24,15 @@ type errorPassthroughCache struct {
 	localMu    sync.RWMutex
 }
 
-// NewErrorPassthroughCache 创建错误透传规则缓存
+// NewErrorPassthroughCache
 func NewErrorPassthroughCache(rdb *redis.Client) service.ErrorPassthroughCache {
 	return &errorPassthroughCache{
 		rdb: rdb,
 	}
 }
 
-// Get 从缓存获取规则列表
+// Get
 func (c *errorPassthroughCache) Get(ctx context.Context) ([]*model.ErrorPassthroughRule, bool) {
-	// 先检查本地缓存
 	c.localMu.RLock()
 	if c.localCache != nil {
 		rules := c.localCache
@@ -42,7 +41,7 @@ func (c *errorPassthroughCache) Get(ctx context.Context) ([]*model.ErrorPassthro
 	}
 	c.localMu.RUnlock()
 
-	// 从 Redis 获取
+	//
 	data, err := c.rdb.Get(ctx, errorPassthroughCacheKey).Bytes()
 	if err != nil {
 		if err != redis.Nil {
@@ -57,7 +56,6 @@ func (c *errorPassthroughCache) Get(ctx context.Context) ([]*model.ErrorPassthro
 		return nil, false
 	}
 
-	// 更新本地缓存
 	c.localMu.Lock()
 	c.localCache = rules
 	c.localMu.Unlock()
@@ -65,7 +63,7 @@ func (c *errorPassthroughCache) Get(ctx context.Context) ([]*model.ErrorPassthro
 	return rules, true
 }
 
-// Set 设置缓存
+// Set
 func (c *errorPassthroughCache) Set(ctx context.Context, rules []*model.ErrorPassthroughRule) error {
 	data, err := json.Marshal(rules)
 	if err != nil {
@@ -76,7 +74,6 @@ func (c *errorPassthroughCache) Set(ctx context.Context, rules []*model.ErrorPas
 		return err
 	}
 
-	// 更新本地缓存
 	c.localMu.Lock()
 	c.localCache = rules
 	c.localMu.Unlock()
@@ -84,23 +81,22 @@ func (c *errorPassthroughCache) Set(ctx context.Context, rules []*model.ErrorPas
 	return nil
 }
 
-// Invalidate 使缓存失效
+// Invalidate
 func (c *errorPassthroughCache) Invalidate(ctx context.Context) error {
-	// 清除本地缓存
 	c.localMu.Lock()
 	c.localCache = nil
 	c.localMu.Unlock()
 
-	// 清除 Redis 缓存
+	//
 	return c.rdb.Del(ctx, errorPassthroughCacheKey).Err()
 }
 
-// NotifyUpdate 通知其他实例刷新缓存
+// NotifyUpdate
 func (c *errorPassthroughCache) NotifyUpdate(ctx context.Context) error {
 	return c.rdb.Publish(ctx, errorPassthroughPubSubKey, "refresh").Err()
 }
 
-// SubscribeUpdates 订阅缓存更新通知
+// SubscribeUpdates
 func (c *errorPassthroughCache) SubscribeUpdates(ctx context.Context, handler func()) {
 	go func() {
 		sub := c.rdb.Subscribe(ctx, errorPassthroughPubSubKey)
@@ -115,12 +111,11 @@ func (c *errorPassthroughCache) SubscribeUpdates(ctx context.Context, handler fu
 				if msg == nil {
 					return
 				}
-				// 清除本地缓存，下次访问时会从 Redis 或数据库重新加载
+				//
 				c.localMu.Lock()
 				c.localCache = nil
 				c.localMu.Unlock()
 
-				// 调用处理函数
 				handler()
 			}
 		}

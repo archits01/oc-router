@@ -204,8 +204,8 @@ watch(
 )
 
 function onClearAll() {
-  // 二次确认：一键清空全部平台的 daily/weekly/monthly 限额属于高风险批量操作，
-  // 误点后所有平台变为"无限额"，且本地无 undo 机制（需要逐个手动重填或取消保存）。
+  // 二次Confirm：一键清空All平台的 daily/weekly/monthly 限额属于高风险批量Actions，
+  // 误点后所有平台变为"无限额"，且本地无 undo 机制（需要逐个手动重填或CancelSave）。
   const confirmed = window.confirm(t('admin.users.platformQuota.clearAllConfirm'))
   if (!confirmed) return
   for (const row of quotas.value) {
@@ -217,9 +217,9 @@ function onClearAll() {
 
 async function onSave() {
   if (!props.user) return
-  // 校验所有 input：v-model.number 在用户输入"0."等中间状态时会写回 NaN，
-  // 之前的 normalizeLimit(NaN) 静默返回 null（"无限制"），把"有限额"配置悄悄改成"无限制"。
-  // 这里在 save 前显式检测 NaN，提示用户修正后再提交。
+  // 校验所有 input：v-model.number 在User输入"0."等中间Status时会写回 NaN，
+  // 之前的 normalizeLimit(NaN) 静默Back null（"无限制"），把"有限额"配置悄悄改成"无限制"。
+  // 这里在 save 前显式检测 NaN，提示User修正后再Submit。
   const invalid: string[] = []
   for (const row of quotas.value) {
     for (const win of ['daily', 'weekly', 'monthly'] as const) {
@@ -253,8 +253,8 @@ async function onSave() {
   }
 }
 
-// 仅在合法输入下返回数字：null/undefined/NaN/±Inf/负数 → null（视为"无限额"）。
-// 调用方负责在 NaN 路径上做单独的用户提示（见 onSave）。
+// 仅在合法输入下Back数字：null/undefined/NaN/±Inf/负数 → null（视为"无限额"）。
+// 调用方负责在 NaN 路径上做单独的User提示（见 onSave）。
 function normalizeLimit(v: number | null | undefined): number | null {
   if (v === null || v === undefined) return null
   if (typeof v === 'number' && Number.isFinite(v) && v >= 0) return v

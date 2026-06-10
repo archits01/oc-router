@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// fakeInsertRecorder 记录 BulkInsertInitial 调用，实现 UserPlatformQuotaRepository port。
+// fakeInsertRecorder
 type fakeInsertRecorder struct {
 	records []UserPlatformQuotaRecord
 	err     error
@@ -113,10 +113,10 @@ func TestSnapshotPlatformQuotaDefaults_NilRepoIsNoop(t *testing.T) {
 	}
 }
 
-// resolveSignupGrantPlan 测试：依赖完整的 AuthService 构造，需要 SettingService（含 settingRepoStub）。
-// settingRepoStub 已在 auth_service_register_test.go 中定义，同 package 可直接使用。
+// resolveSignupGrantPlan
+// settingRepoStub
 func TestResolveSignupGrantPlan_GlobalQuotaLoadedBeforeAuthSource(t *testing.T) {
-	// 全局 quota JSON key（新格式）
+	//
 	settings := map[string]string{
 		SettingKeyRegistrationEnabled: "true",
 		SettingKeyDefaultPlatformQuotas: `{
@@ -140,21 +140,21 @@ func TestResolveSignupGrantPlan_GlobalQuotaLoadedBeforeAuthSource(t *testing.T) 
 	}
 }
 
-// TestResolveSignupGrantPlan_DisabledAuthSourceStillCarriesGlobalQuota 验证 P1 约束：
-// !enabled 早退路径仍携带全局 quota（GetDefaultPlatformQuotas 在 ResolveAuthSourceGrantSettings 之前）。
+// TestResolveSignupGrantPlan_DisabledAuthSourceStillCarriesGlobalQuota
+// !enabled
 func TestResolveSignupGrantPlan_DisabledAuthSourceStillCarriesGlobalQuota(t *testing.T) {
 	settings := map[string]string{
 		SettingKeyRegistrationEnabled: "true",
-		// auth source 不配置（=> !enabled 路径）
+		// auth source => !enabled
 		SettingKeyDefaultPlatformQuotas: `{"anthropic": {"daily": 10, "weekly": 50, "monthly": 200}}`,
 	}
 	svc := newAuthService(nil, settings, nil, nil)
 	plan := svc.resolveSignupGrantPlan(context.Background(), "email")
-	// !enabled 路径：plan.PlatformQuotas 应已含全局层（不是 nil）
+	// !enabled
 	if plan.PlatformQuotas == nil {
 		t.Fatal("P1 violated: PlatformQuotas is nil even with global quota KVs set")
 	}
-	// P1 核心断言：disabled auth source 路径不能丢失全局 quota
+	// P1
 	if _, ok := plan.PlatformQuotas["anthropic"]; !ok {
 		t.Error("P1 violated: disabled auth source path dropped global platform quota")
 	}

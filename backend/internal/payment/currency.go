@@ -68,12 +68,12 @@ func CurrencyMinorUnit(currency string) int {
 	return paymentCurrencyAmountUnitFor(currency).apiMinorUnit
 }
 
-// CurrencyMaxFractionDigits 返回支付金额允许展示和输入的小数位数。
+// CurrencyMaxFractionDigits
 func CurrencyMaxFractionDigits(currency string) int {
 	return paymentCurrencyAmountUnitFor(currency).maxFractionDigits
 }
 
-// FormatAmountForCurrency 按币种允许的小数位格式化支付金额。
+// FormatAmountForCurrency
 func FormatAmountForCurrency(amount float64, currency string) string {
 	return decimal.NewFromFloat(amount).StringFixed(int32(CurrencyMaxFractionDigits(currency)))
 }

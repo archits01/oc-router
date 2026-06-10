@@ -65,9 +65,9 @@ type openAIWSAcquireRequest struct {
 	Headers         http.Header
 	ProxyURL        string
 	PreferredConnID string
-	// ForceNewConn: 强制本次获取新连接（避免复用导致连接内续链状态互相污染）。
+	// ForceNewConn:
 	ForceNewConn bool
-	// ForcePreferredConn: 强制本次只使用 PreferredConnID，禁止漂移到其它连接。
+	// ForcePreferredConn:
 	ForcePreferredConn bool
 }
 
@@ -551,7 +551,7 @@ type openAIWSPoolMetrics struct {
 
 type openAIWSConnPool struct {
 	cfg *config.Config
-	// 通过接口解耦底层 WS 客户端实现，默认使用 coder/websocket。
+	//
 	clientDialer openAIWSClientDialer
 
 	accounts sync.Map // key: int64(accountID), value: *openAIWSAccountPool
@@ -608,7 +608,7 @@ func (p *openAIWSConnPool) setClientDialerForTest(dialer openAIWSClientDialer) {
 	p.clientDialer = dialer
 }
 
-// Close 停止后台 worker 并关闭所有空闲连接，应在优雅关闭时调用。
+// Close
 func (p *openAIWSConnPool) Close() {
 	if p == nil {
 		return
@@ -618,7 +618,6 @@ func (p *openAIWSConnPool) Close() {
 			close(p.workerStopCh)
 		}
 		p.workerWg.Wait()
-		// 遍历所有账户池，关闭全部空闲连接。
 		p.accounts.Range(func(key, value any) bool {
 			ap, ok := value.(*openAIWSAccountPool)
 			if !ok || ap == nil {
@@ -1109,7 +1108,7 @@ func (p *openAIWSConnPool) getOrCreateAccountPool(accountID int64) *openAIWSAcco
 	return ap
 }
 
-// ensureAccountPoolLocked 兼容旧调用。
+// ensureAccountPoolLocked
 func (p *openAIWSConnPool) ensureAccountPoolLocked(accountID int64) *openAIWSAccountPool {
 	return p.getOrCreateAccountPool(accountID)
 }
@@ -1187,7 +1186,7 @@ func (p *openAIWSConnPool) cleanupAccountLocked(ap *openAIWSAccountPool, now tim
 				}
 				continue
 			}
-			// 有等待者的连接不能在清理阶段被淘汰，否则等待中的 acquire 会收到 closed 错误。
+			//
 			if conn.isLeased() || conn.waiters.Load() > 0 || p.isConnPinnedLocked(ap, conn.id) {
 				continue
 			}
@@ -1262,7 +1261,7 @@ func accountPoolLoadLocked(ap *openAIWSAccountPool) (inflight int, waiters int) 
 	return inflight, waiters
 }
 
-// AccountPoolLoad 返回指定账号连接池的并发与排队快照。
+// AccountPoolLoad
 func (p *openAIWSConnPool) AccountPoolLoad(accountID int64) (inflight int, waiters int, conns int) {
 	if p == nil || accountID <= 0 {
 		return 0, 0, 0
@@ -1577,7 +1576,7 @@ func (p *openAIWSConnPool) effectiveMaxConnsByAccount(account *Account) int {
 		return hardCap
 	}
 	if account.Concurrency <= 0 {
-		// 0/-1 等“无限制”并发场景下，仍由全局硬上限兜底。
+		// 0/-1 “”
 		return hardCap
 	}
 	factor := p.maxConnsFactorByAccount(account)

@@ -327,7 +327,7 @@
                 <Icon name="shield" size="xs" class="h-3.5 w-3.5 text-purple-500 dark:text-purple-400" />
                 <span class="font-medium text-purple-600 dark:text-purple-400">{{ getUserGroups(row).exclusive.length }}</span>
                 <span class="text-gray-500 dark:text-dark-400">{{ t('admin.users.exclusiveLabel') }}</span>
-                <!-- Hover tooltip（操作菜单未打开时显示） -->
+                <!-- Hover tooltip（Actions菜单未打开时显示） -->
                 <div
                   v-if="expandedGroupUserId !== row.id"
                   class="pointer-events-none absolute left-0 top-full z-50 mt-1.5 rounded bg-gray-900 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity duration-75 group-hover/ex:opacity-100 dark:bg-dark-600"
@@ -337,7 +337,7 @@
                     <span v-for="g in getUserGroups(row).exclusive" :key="g.id">{{ g.name }}</span>
                   </div>
                 </div>
-                <!-- 点击展开分组操作菜单 -->
+                <!-- 点击展开分组Actions菜单 -->
                 <div
                   v-if="expandedGroupUserId === row.id"
                   class="absolute left-0 top-full z-50 mt-1.5 min-w-[160px] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 text-xs shadow-xl dark:border-dark-600 dark:bg-dark-700"
@@ -442,7 +442,7 @@
             </button>
           </template>
 
-          <!-- 用量列自定义表头：列名 + 单个排序图标按钮，点击展开"今日/近30天"菜单。
+          <!-- 用量列自定义表头：列名 + 单个排序图标按钮，点击展开"今日/近30days"菜单。
                column.sortable=false，DataTable 内置点击逻辑不会触发；
                菜单项三态循环：desc → asc → off。 -->
           <template
@@ -483,7 +483,7 @@
                     <path d="M10 3l-4 5h8l-4-5zM10 17l4-5H6l4 5z" />
                   </svg>
                 </button>
-                <!-- 弹出菜单：今日 / 近30天，点击进行三态循环切换。 -->
+                <!-- 弹出菜单：今日 / 近30days，点击进行三态循环切换。 -->
                 <div
                   v-if="openUsageSortMenu === usageKey"
                   class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800"
@@ -876,15 +876,14 @@ const DEFAULT_HIDDEN_COLUMNS = [
   'balance_platform_quota'
 ]
 const REMOVED_COLUMNS = new Set(['last_login_at'])
-// 强制可见列：加载时会被强制移出 hiddenColumns，并在列设置 UI 上 disabled。
-// 当前没有列需要强制可见 —— last_active_at 已改为可被用户隐藏。
+// 强制可见列：加载时会被强制移出 hiddenColumns，并在列Settings UI 上 disabled。
+// 当前没有列需要强制可见 —— last_active_at 已改为可被User隐藏。
 const FORCED_VISIBLE_COLUMNS = new Set<string>()
 
 // localStorage keys for column settings
 const HIDDEN_COLUMNS_KEY = 'user-hidden-columns'
-// 列设置 schema 版本号。每次给 DEFAULT_HIDDEN_COLUMNS 新增列时 bump 一次，
+// 列Settings schema 版本号。每次给 DEFAULT_HIDDEN_COLUMNS 新增列时 bump 一次，
 // 并在 VERSION_NEW_HIDDEN_COLUMNS 中登记该版本新增的 key。
-// 这样老用户升级后这些新列会被自动隐藏一次，而不会影响他们对其它老列的偏好。
 const COLUMN_SETTINGS_VERSION_KEY = 'user-column-settings-version'
 const COLUMN_SETTINGS_VERSION = 3
 const VERSION_NEW_HIDDEN_COLUMNS: Record<number, string[]> = {
@@ -902,7 +901,7 @@ const loadSavedColumns = () => {
         .filter(key => !REMOVED_COLUMNS.has(key) && !FORCED_VISIBLE_COLUMNS.has(key))
         .forEach(key => hiddenColumns.add(key))
 
-      // 老用户升级：把每个未应用过的版本里新增的默认隐藏列自动追加到 hiddenColumns。
+      // 老User升级：把每个未应用过的版本里新增的默认隐藏列自动追加到 hiddenColumns。
       const storedVersion = Number(localStorage.getItem(COLUMN_SETTINGS_VERSION_KEY) ?? '1')
       if (storedVersion < COLUMN_SETTINGS_VERSION) {
         let mutated = false
@@ -943,7 +942,6 @@ const saveColumnsToStorage = () => {
 const isForcedVisibleColumn = (key: string) => FORCED_VISIBLE_COLUMNS.has(key)
 const toggleColumn = (key: string) => {
   // 强制可见列(如 last_active_at)在加载时会被恢复成可见，
-  // 这里阻止用户在当前会话隐藏它，避免"取消勾选 → 刷新又恢复"的反直觉行为。
   if (FORCED_VISIBLE_COLUMNS.has(key)) return
   const wasHidden = hiddenColumns.has(key)
   if (hiddenColumns.has(key)) {
@@ -1174,9 +1172,8 @@ const getPlatformUsage = (userId: number, platform: string) =>
   usageStats.value[userId]?.by_platform?.find((p) => p.platform === platform)
 
 // 用量列前端排序：DataTable 工作在 server-side-sort 模式，所有 sortable
-// 字段都会触发后端查询，而用量列数据是异步批量拉取后再合并到当前页，
-// 因此采用独立的前端排序状态对当前页 users 做本地排序。
-// 排序状态独立于后端 sortState 持久化；缺失数据按 0 处理（desc 沉底、asc 置顶）。
+// 因此采用独立的前端排序Status对当前页 users 做本地排序。
+// 排序Status独立于后端 sortState 持久化；缺失数据按 0 处理（desc 沉底、asc 置顶）。
 type UsageMetric = 'today' | 'total'
 type UsageSortState = { key: string; metric: UsageMetric; order: 'asc' | 'desc' } | null
 const USAGE_SORT_STORAGE_KEY = 'admin-users-usage-sort'
@@ -1212,7 +1209,7 @@ const isUsageSortActive = (key: string, metric: UsageMetric) =>
 const getUsageSortOrder = (key: string, metric: UsageMetric): 'asc' | 'desc' | null =>
   isUsageSortActive(key, metric) ? usageSort.value!.order : null
 
-// 三态循环：desc → asc → off。选完即关闭菜单（用户大多希望"选中即应用"，
+// 三态循环：desc → asc → off。选完即Close菜单（User大多希望"选中即应用"，
 // 想再切换 order 时重新打开菜单点同一项即可）。
 const toggleUsageSort = (key: string, metric: UsageMetric) => {
   const cur = usageSort.value
@@ -1225,8 +1222,8 @@ const toggleUsageSort = (key: string, metric: UsageMetric) => {
   openUsageSortMenu.value = null
 }
 
-// 列头排序按钮点击后弹出的"今日/近30天"选择菜单，同时只允许一个列展开。
-// 点击图标本身不触发排序，仅开关菜单；首次排序由用户在菜单内选择 metric 触发（默认 desc，详见 toggleUsageSort）。
+// 列头排序按钮点击后弹出的"今日/近30days"选择菜单，同时只允许一个列展开。
+// 点击图标本身不触发排序，仅开关菜单；首次排序由User在菜单内选择 metric 触发（默认 desc，详见 toggleUsageSort）。
 const openUsageSortMenu = ref<string | null>(null)
 const toggleUsageSortMenu = (key: string) => {
   openUsageSortMenu.value = openUsageSortMenu.value === key ? null : key
@@ -1338,7 +1335,7 @@ const loadUsersSecondaryData = async (
     tasks.push(
       (async () => {
         try {
-          // 无批量端点：对当前页用户逐个拉取，分块并发（每批 6），批间检查中止条件，避免大 pageSize 时请求洪峰
+          // 无批量端点：对当前页User逐个拉取，分块并发（每批 6），批间检查中止条件，避免大 pageSize 时请求洪峰
           const CHUNK = 6
           for (let i = 0; i < userIds.length; i += CHUNK) {
             if (signal?.aborted) return
@@ -1401,19 +1398,15 @@ const openActionMenu = (user: AdminUser, e: MouseEvent) => {
     let left, top
 
     if (viewportWidth < 768) {
-      // 居中显示,水平位置
       left = Math.max(padding, Math.min(
         rect.left + rect.width / 2 - menuWidth / 2,
         viewportWidth - menuWidth - padding
       ))
 
-      // 优先显示在按钮下方
       top = rect.bottom + 4
 
-      // 如果下方空间不够,显示在上方
       if (top + menuHeight > viewportHeight - padding) {
         top = rect.top - menuHeight - 4
-        // 如果上方也不够,就贴在视口顶部
         if (top < padding) {
           top = padding
         }
@@ -1487,7 +1480,6 @@ const balanceOperation = ref<'add' | 'subtract'>('add')
 const showBalanceHistoryModal = ref(false)
 const balanceHistoryUser = ref<AdminUser | null>(null)
 
-// 计算剩余天数
 const getDaysRemaining = (expiresAt: string): number => {
   const now = new Date()
   const expires = new Date(expiresAt)
@@ -1586,7 +1578,6 @@ const handleSearch = () => {
 }
 
 const handlePageChange = (page: number) => {
-  // 确保页码在有效范围内
   const validPage = Math.max(1, Math.min(page, pagination.pages || 1))
   pagination.page = validPage
   loadUsers()
@@ -1771,7 +1762,6 @@ const handleWithdrawFromHistory = () => {
   }
 }
 
-// 滚动时关闭菜单
 const handleScroll = () => {
   closeActionMenu()
 }

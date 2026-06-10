@@ -52,8 +52,8 @@ func (c apiKeyAuthCacheConfig) negativeEnabled() bool {
 	return c.negativeTTL > 0
 }
 
-// jitterTTL 为缓存 TTL 添加抖动，避免多个请求在同一时刻同时过期触发集中回源。
-// 这里直接使用 rand/v2 的顶层函数：并发安全，无需全局互斥锁。
+// jitterTTL
+//
 func (c apiKeyAuthCacheConfig) jitterTTL(ttl time.Duration) time.Duration {
 	if ttl <= 0 {
 		return ttl
@@ -238,13 +238,13 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 		},
 	}
 
-	// 填充 (user, group) RPM override —— snapshot 构建时查一次 DB，后续请求零 DB 往返。
+	// (user, group) RPM override —— snapshot
 	if apiKey.GroupID != nil && *apiKey.GroupID > 0 && s.userGroupRateRepo != nil {
 		override, err := s.userGroupRateRepo.GetRPMOverrideByUserAndGroup(ctx, apiKey.UserID, *apiKey.GroupID)
 		if err == nil && override != nil {
 			snapshot.User.UserGroupRPMOverride = override
 		}
-		// 查询失败或无 override 时留 nil，checkRPM 会回退到 DB 查询
+		//
 	}
 	if apiKey.Group != nil {
 		snapshot.Group = &APIKeyAuthGroupSnapshot{

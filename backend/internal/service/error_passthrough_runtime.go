@@ -4,7 +4,7 @@ import "github.com/gin-gonic/gin"
 
 const errorPassthroughServiceContextKey = "error_passthrough_service"
 
-// BindErrorPassthroughService 将错误透传服务绑定到请求上下文，供 service 层在非 failover 场景下复用规则。
+// BindErrorPassthroughService
 func BindErrorPassthroughService(c *gin.Context, svc *ErrorPassthroughService) {
 	if c == nil || svc == nil {
 		return
@@ -27,7 +27,7 @@ func getBoundErrorPassthroughService(c *gin.Context) *ErrorPassthroughService {
 	return svc
 }
 
-// applyErrorPassthroughRule 按规则改写错误响应；未命中时返回默认响应参数。
+// applyErrorPassthroughRule
 func applyErrorPassthroughRule(
 	c *gin.Context,
 	platform string,
@@ -61,12 +61,12 @@ func applyErrorPassthroughRule(
 		errMsg = *rule.CustomMessage
 	}
 
-	// 命中 skip_monitoring 时在 context 中标记，供 ops_error_logger 跳过记录。
+	//
 	if rule.SkipMonitoring {
 		c.Set(OpsSkipPassthroughKey, true)
 	}
 
-	// 与现有 failover 场景保持一致：命中规则时统一返回 upstream_error。
+	//
 	errType = "upstream_error"
 	return status, errType, errMsg, true
 }

@@ -13,7 +13,7 @@ import (
 	"entgo.io/ent/schema/index"
 )
 
-// UsageCleanupTask 定义使用记录清理任务的 schema。
+// UsageCleanupTask
 type UsageCleanupTask struct {
 	ent.Schema
 }

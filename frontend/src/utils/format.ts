@@ -17,7 +17,6 @@ export function formatRelativeTime(date: string | Date | null | undefined): stri
   const past = new Date(date)
   const diffMs = now.getTime() - past.getTime()
 
-  // 处理未来时间或无效日期
   if (diffMs < 0 || isNaN(diffMs)) return i18n.global.t('common.time.never')
 
   const diffSecs = Math.floor(diffMs / 1000)
@@ -53,8 +52,8 @@ export function formatNumber(num: number | null | undefined): string {
 }
 
 /**
- * 格式化货币金额
- * @param amount 金额
+ * 格式化货币Amount
+ * @param amount Amount
  * @param currency 货币代码，默认 USD
  * @returns 格式化后的字符串，如 "$1.25"
  */
@@ -177,7 +176,7 @@ export function parseDateTimeLocalInput(value: string): number | null {
 /**
  * 格式化 OpenAI reasoning effort（用于使用记录展示）
  * @param effort 原始 effort（如 "low" / "medium" / "high" / "xhigh"）
- * @returns 格式化后的字符串（Low / Medium / High / Xhigh），无值返回 "-"
+ * @returns 格式化后的字符串（Low / Medium / High / Xhigh），无值Back "-"
  */
 export function formatReasoningEffort(effort: string | null | undefined): string {
   const raw = (effort ?? '').toString().trim()
@@ -229,8 +228,8 @@ export function formatNumberLocaleString(num: number): string {
 }
 
 /**
- * 格式化金额（固定小数位，不带货币符号）
- * @param amount 金额
+ * 格式化Amount（固定小数位，不带货币符号）
+ * @param amount Amount
  * @param fractionDigits 小数位数，默认 4
  * @returns 格式化后的字符串，如 "1.2345"
  */
@@ -281,7 +280,6 @@ export function formatCountdown(targetDate: string | Date | null | undefined): s
   const target = new Date(targetDate)
   const diffMs = target.getTime() - now.getTime()
 
-  // 如果目标时间已过或无效
   if (diffMs <= 0 || isNaN(diffMs)) return null
 
   const diffMins = Math.floor(diffMs / (1000 * 60))
@@ -292,21 +290,21 @@ export function formatCountdown(targetDate: string | Date | null | undefined): s
   const remainingMins = diffMins % 60
 
   if (diffDays > 0) {
-    // 超过1天：显示 "Xd Yh"
+    // 超过1days：显示 "Xd Yh"
     return i18n.global.t('common.time.countdown.daysHours', { d: diffDays, h: remainingHours })
   }
   if (diffHours > 0) {
-    // 小于1天：显示 "Xh Ym"
+    // 小于1days：显示 "Xh Ym"
     return i18n.global.t('common.time.countdown.hoursMinutes', { h: diffHours, m: remainingMins })
   }
-  // 小于1小时：显示 "Ym"
+  // 小于1hours：显示 "Ym"
   return i18n.global.t('common.time.countdown.minutes', { m: diffMins })
 }
 
 /**
  * 格式化倒计时并带后缀（如 "2h 41m 后解除"）
  * @param targetDate 目标日期字符串或 Date 对象
- * @returns 完整的倒计时字符串，如 "2h 41m to lift", "2小时41分钟后解除"
+ * @returns 完整的倒计时字符串，如 "2h 41m to lift", "2hours41分钟后解除"
  */
 export function formatCountdownWithSuffix(targetDate: string | Date | null | undefined): string | null {
   const countdown = formatCountdown(targetDate)
@@ -317,7 +315,7 @@ export function formatCountdownWithSuffix(targetDate: string | Date | null | und
 /**
  * 格式化为相对时间 + 具体时间组合
  * @param date 日期字符串或 Date 对象
- * @returns 组合时间字符串，如 "5 天前 · 2026-01-27 15:25"
+ * @returns 组合时间字符串，如 "5 days前 · 2026-01-27 15:25"
  */
 export function formatRelativeWithDateTime(date: string | Date | null | undefined): string {
   if (!date) return ''
@@ -325,7 +323,6 @@ export function formatRelativeWithDateTime(date: string | Date | null | undefine
   const relativeTime = formatRelativeTime(date)
   const dateTime = formatDateTime(date)
 
-  // 如果是 "从未" 或空字符串，只返回相对时间
   if (!dateTime || relativeTime === i18n.global.t('common.time.never')) {
     return relativeTime
   }

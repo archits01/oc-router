@@ -158,7 +158,6 @@ func (s *OpsService) UpdateRuntimeLogConfig(ctx context.Context, req *OpsRuntime
 		return nil, err
 	}
 	if err := s.settingRepo.Set(ctx, SettingKeyOpsRuntimeLogConfig, string(encoded)); err != nil {
-		// 存储失败时回滚到旧配置，避免内存状态与持久化状态不一致。
 		_ = applyOpsRuntimeLogConfig(oldCfg)
 		s.auditRuntimeLogConfigFailure(operatorID, oldCfg, &next, "persist_failed: "+err.Error())
 		return nil, err
@@ -196,7 +195,7 @@ func (s *OpsService) ResetRuntimeLogConfig(ctx context.Context, operatorID int64
 		return nil, err
 	}
 
-	// 清理 runtime 覆盖配置，回退到 env/yaml baseline。
+	//
 	if err := s.settingRepo.Delete(ctx, SettingKeyOpsRuntimeLogConfig); err != nil && !errors.Is(err, ErrSettingNotFound) {
 		_ = applyOpsRuntimeLogConfig(oldCfg)
 		s.auditRuntimeLogConfigFailure(operatorID, oldCfg, resetCfg, "reset_persist_failed: "+err.Error())

@@ -154,7 +154,7 @@ describe('ApiKey 创建流程', () => {
     expect(wrapper.find('.created-key').exists()).toBe(false)
   })
 
-  it('名称为空时不提交', async () => {
+  it('名称为空时不Submit', async () => {
     const wrapper = mount(ApiKeyCreateTestComponent)
 
     await wrapper.find('form').trigger('submit')
@@ -163,7 +163,7 @@ describe('ApiKey 创建流程', () => {
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
-  it('创建过程中按钮被禁用', async () => {
+  it('创建过程中按钮被Disable', async () => {
     let resolveCreate: (v: any) => void
     mockCreate.mockImplementation(
       () => new Promise((resolve) => { resolveCreate = resolve })

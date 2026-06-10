@@ -6,16 +6,15 @@ import (
 	"log/slog"
 )
 
-// 渠道监控聚合层：把 latest + availability 拼成 admin/user 视图所需的 summary / detail。
-// 所有方法都遵守"失败仅日志，返回零值"的原则，避免 N+1 查询失败拖垮列表渲染。
+// + availability
+// ""+1
 
-// BatchMonitorStatusSummary 批量聚合多个监控的 latest + 7d 可用率（admin/user list 用，消除 N+1）。
-// 失败时返回空 map，错误仅日志，不影响列表渲染。
+// BatchMonitorStatusSummary + 7d +1）。
 //
-// 参数：
-//   - ids: 要聚合的 monitor ID 列表
-//   - primaryByID: monitor ID -> primary model（用于读 7d 可用率与 latest 状态）
-//   - extrasByID: monitor ID -> extra models 列表（用于读 latest 状态填充 ExtraModels）
+//
+//   - ids:
+//   - primaryByID: monitor ID -> primary model（
+//   - extrasByID: monitor ID -> extra models
 func (s *ChannelMonitorService) BatchMonitorStatusSummary(
 	ctx context.Context,
 	ids []int64,
@@ -48,13 +47,13 @@ func (s *ChannelMonitorService) BatchMonitorStatusSummary(
 	return out
 }
 
-// ListUserView 用户只读视图：列出所有 enabled 监控的概览。
-// 使用批量聚合接口避免 N+1：
+// ListUserView
+// +1：
 //
-//	1 次查 monitors；
-//	1 次批量 latest（含 ping_latency_ms）；
-//	1 次批量 7d availability；
-//	1 次批量 timeline（主模型最近 N 条）。
+//	1
+//	1
+//	1
+//	1
 func (s *ChannelMonitorService) ListUserView(ctx context.Context) ([]*UserMonitorView, error) {
 	monitors, err := s.repo.ListEnabled(ctx)
 	if err != nil {
@@ -77,7 +76,7 @@ func (s *ChannelMonitorService) ListUserView(ctx context.Context) ([]*UserMonito
 	return views, nil
 }
 
-// collectMonitorIndexes 把 monitors 列表按 ID 展开为聚合查询所需的三个索引结构。
+// collectMonitorIndexes
 func collectMonitorIndexes(monitors []*ChannelMonitor) ([]int64, map[int64]string, map[int64][]string) {
 	ids := make([]int64, 0, len(monitors))
 	primaryByID := make(map[int64]string, len(monitors))
@@ -90,7 +89,7 @@ func collectMonitorIndexes(monitors []*ChannelMonitor) ([]int64, map[int64]strin
 	return ids, primaryByID, extrasByID
 }
 
-// batchLatest 批量取 latest per model，失败仅日志（与现有 BatchMonitorStatusSummary 一致，不阻断列表渲染）。
+// batchLatest
 func (s *ChannelMonitorService) batchLatest(ctx context.Context, ids []int64) map[int64][]*ChannelMonitorLatest {
 	latestMap, err := s.repo.ListLatestForMonitorIDs(ctx, ids)
 	if err != nil {
@@ -100,7 +99,7 @@ func (s *ChannelMonitorService) batchLatest(ctx context.Context, ids []int64) ma
 	return latestMap
 }
 
-// batchTimeline 批量取每个 monitor 主模型最近 monitorTimelineMaxPoints 条历史。
+// batchTimeline
 func (s *ChannelMonitorService) batchTimeline(
 	ctx context.Context,
 	ids []int64,
@@ -114,7 +113,7 @@ func (s *ChannelMonitorService) batchTimeline(
 	return timelineMap
 }
 
-// pickLatest 从 latest 切片中挑出指定 model 对应项，未命中返回 nil。
+// pickLatest
 func pickLatest(rows []*ChannelMonitorLatest, model string) *ChannelMonitorLatest {
 	if model == "" {
 		return nil
@@ -127,8 +126,8 @@ func pickLatest(rows []*ChannelMonitorLatest, model string) *ChannelMonitorLates
 	return nil
 }
 
-// GetUserDetail 用户只读视图：单个监控详情（每个模型 7d/15d/30d 可用率与平均延迟）。
-// 不暴露 api_key。
+// GetUserDetail
+//
 func (s *ChannelMonitorService) GetUserDetail(ctx context.Context, id int64) (*UserMonitorDetail, error) {
 	m, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -157,7 +156,7 @@ func (s *ChannelMonitorService) GetUserDetail(ctx context.Context, id int64) (*U
 	}, nil
 }
 
-// collectAvailabilityWindows 一次性查询 7/15/30 天三个窗口，按模型组织。
+// collectAvailabilityWindows
 func (s *ChannelMonitorService) collectAvailabilityWindows(ctx context.Context, monitorID int64) (map[int]map[string]*ChannelMonitorAvailability, error) {
 	out := make(map[int]map[string]*ChannelMonitorAvailability, 3)
 	windows := []int{monitorAvailability7Days, monitorAvailability15Days, monitorAvailability30Days}
@@ -171,9 +170,9 @@ func (s *ChannelMonitorService) collectAvailabilityWindows(ctx context.Context, 
 	return out, nil
 }
 
-// ---------- 纯函数 helper（无 IO，可在 batch / 单 monitor / detail 路径复用）----------
+// ----------
 
-// indexLatestByModel 把 latest 切片按 model 索引（小工具，避免在 hot path 重复写）。
+// indexLatestByModel
 func indexLatestByModel(rows []*ChannelMonitorLatest) map[string]*ChannelMonitorLatest {
 	m := make(map[string]*ChannelMonitorLatest, len(rows))
 	for _, r := range rows {
@@ -182,7 +181,7 @@ func indexLatestByModel(rows []*ChannelMonitorLatest) map[string]*ChannelMonitor
 	return m
 }
 
-// indexAvailabilityByModel 把 availability 切片按 model 索引。
+// indexAvailabilityByModel
 func indexAvailabilityByModel(rows []*ChannelMonitorAvailability) map[string]*ChannelMonitorAvailability {
 	m := make(map[string]*ChannelMonitorAvailability, len(rows))
 	for _, r := range rows {
@@ -191,8 +190,8 @@ func indexAvailabilityByModel(rows []*ChannelMonitorAvailability) map[string]*Ch
 	return m
 }
 
-// buildStatusSummary 由 latest + availability 字典构造 MonitorStatusSummary。
-// 不做任何 IO，纯组装，便于在 batch 与单 monitor 路径复用。
+// buildStatusSummary + availability
+//
 func buildStatusSummary(
 	latestByModel map[string]*ChannelMonitorLatest,
 	availByModel map[string]*ChannelMonitorAvailability,
@@ -220,8 +219,8 @@ func buildStatusSummary(
 	return summary
 }
 
-// buildUserViewFromSummary 用预聚合好的 MonitorStatusSummary + 主模型 latest + timeline 装填 UserMonitorView（无 IO）。
-// primaryLatest 可能为 nil（该监控尚无历史）；timelineEntries 可能为空。
+// buildUserViewFromSummary + + timeline
+// primaryLatest
 func buildUserViewFromSummary(
 	m *ChannelMonitor,
 	summary MonitorStatusSummary,
@@ -246,7 +245,7 @@ func buildUserViewFromSummary(
 	return view
 }
 
-// buildTimelinePoints 把 history entry 裁剪为 timeline 点（去除 message/ID/Model，减小响应体）。
+// buildTimelinePoints
 func buildTimelinePoints(entries []*ChannelMonitorHistoryEntry) []UserMonitorTimelinePoint {
 	out := make([]UserMonitorTimelinePoint, 0, len(entries))
 	for _, e := range entries {
@@ -260,8 +259,8 @@ func buildTimelinePoints(entries []*ChannelMonitorHistoryEntry) []UserMonitorTim
 	return out
 }
 
-// mergeModelDetails 合并 latest + availability 三个窗口为 ModelDetail 列表。
-// 复用 indexLatestByModel，避免在多处重复写 build map 逻辑。
+// mergeModelDetails + availability
+//
 func mergeModelDetails(
 	m *ChannelMonitor,
 	latest []*ChannelMonitorLatest,

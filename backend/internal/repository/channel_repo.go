@@ -16,12 +16,12 @@ type channelRepository struct {
 	db *sql.DB
 }
 
-// NewChannelRepository 创建渠道数据访问实例
+// NewChannelRepository
 func NewChannelRepository(db *sql.DB) service.ChannelRepository {
 	return &channelRepository{db: db}
 }
 
-// runInTx 在事务中执行 fn，成功 commit，失败 rollback。
+// runInTx
 func (r *channelRepository) runInTx(ctx context.Context, fn func(tx *sql.Tx) error) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -57,21 +57,18 @@ func (r *channelRepository) Create(ctx context.Context, channel *service.Channel
 			return fmt.Errorf("insert channel: %w", err)
 		}
 
-		// 设置分组关联
 		if len(channel.GroupIDs) > 0 {
 			if err := setGroupIDsTx(ctx, tx, channel.ID, channel.GroupIDs); err != nil {
 				return err
 			}
 		}
 
-		// 设置模型定价
 		if len(channel.ModelPricing) > 0 {
 			if err := replaceModelPricingTx(ctx, tx, channel.ID, channel.ModelPricing); err != nil {
 				return err
 			}
 		}
 
-		// 设置账号统计定价规则
 		if len(channel.AccountStatsPricingRules) > 0 {
 			if err := replaceAccountStatsPricingRulesTx(ctx, tx, channel.ID, channel.AccountStatsPricingRules); err != nil {
 				return err
@@ -145,21 +142,18 @@ func (r *channelRepository) Update(ctx context.Context, channel *service.Channel
 			return service.ErrChannelNotFound
 		}
 
-		// 更新分组关联
 		if channel.GroupIDs != nil {
 			if err := setGroupIDsTx(ctx, tx, channel.ID, channel.GroupIDs); err != nil {
 				return err
 			}
 		}
 
-		// 更新模型定价
 		if channel.ModelPricing != nil {
 			if err := replaceModelPricingTx(ctx, tx, channel.ID, channel.ModelPricing); err != nil {
 				return err
 			}
 		}
 
-		// 更新账号统计定价规则
 		if channel.AccountStatsPricingRules != nil {
 			if err := replaceAccountStatsPricingRulesTx(ctx, tx, channel.ID, channel.AccountStatsPricingRules); err != nil {
 				return err
@@ -200,21 +194,20 @@ func (r *channelRepository) List(ctx context.Context, params pagination.Paginati
 
 	whereClause := strings.Join(where, " AND ")
 
-	// 计数
 	var total int64
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM channels c WHERE %s", whereClause)
 	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("count channels: %w", err)
 	}
 
-	pageSize := params.Limit() // 约束在 [1, 100]
+	pageSize := params.Limit() // constrained to [1, 100]
 	page := params.Page
 	if page < 1 {
 		page = 1
 	}
 	offset := (page - 1) * pageSize
 
-	// 查询 channel 列表
+	//
 	dataQuery := fmt.Sprintf(
 		`SELECT c.id, c.name, c.description, c.status, c.model_mapping, c.billing_model_source, c.restrict_models, c.features, c.features_config, c.apply_pricing_to_account_stats, c.created_at, c.updated_at
 		 FROM channels c WHERE %s ORDER BY %s LIMIT $%d OFFSET $%d`,
@@ -245,7 +238,7 @@ func (r *channelRepository) List(ctx context.Context, params pagination.Paginati
 		return nil, nil, fmt.Errorf("iterate channels: %w", err)
 	}
 
-	// 批量加载分组 ID 和模型定价（避免 N+1）
+	// +1）
 	if len(channelIDs) > 0 {
 		groupMap, err := r.batchLoadGroupIDs(ctx, channelIDs)
 		if err != nil {
@@ -336,19 +329,16 @@ func (r *channelRepository) ListAll(ctx context.Context) ([]service.Channel, err
 		return channels, nil
 	}
 
-	// 批量加载分组 ID
 	groupMap, err := r.batchLoadGroupIDs(ctx, channelIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	// 批量加载模型定价
 	pricingMap, err := r.batchLoadModelPricing(ctx, channelIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	// 批量加载账号统计定价规则
 	statsRulesMap, err := r.batchLoadAccountStatsPricingRules(ctx, channelIDs)
 	if err != nil {
 		return nil, err
@@ -363,9 +353,9 @@ func (r *channelRepository) ListAll(ctx context.Context) ([]service.Channel, err
 	return channels, nil
 }
 
-// --- 批量加载辅助方法 ---
+// ---
 
-// batchLoadGroupIDs 批量加载多个渠道的分组 ID
+// batchLoadGroupIDs
 func (r *channelRepository) batchLoadGroupIDs(ctx context.Context, channelIDs []int64) (map[int64][]int64, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT channel_id, group_id FROM channel_groups
@@ -407,7 +397,7 @@ func (r *channelRepository) ExistsByNameExcluding(ctx context.Context, name stri
 	return exists, err
 }
 
-// --- 分组关联 ---
+// ---
 
 func (r *channelRepository) GetGroupIDs(ctx context.Context, channelID int64) ([]int64, error) {
 	rows, err := r.db.QueryContext(ctx,
@@ -474,8 +464,8 @@ func (r *channelRepository) GetGroupsInOtherChannels(ctx context.Context, channe
 	return conflicting, nil
 }
 
-// marshalModelMapping 将 model mapping 序列化为嵌套 JSON 字节
-// 格式：{"platform": {"src": "dst"}, ...}
+// marshalModelMapping
+// {"platform": {"src": "dst"}, ...}
 func marshalModelMapping(m map[string]map[string]string) ([]byte, error) {
 	if len(m) == 0 {
 		return []byte("{}"), nil
@@ -487,7 +477,7 @@ func marshalModelMapping(m map[string]map[string]string) ([]byte, error) {
 	return data, nil
 }
 
-// unmarshalModelMapping 将 JSON 字节反序列化为嵌套 model mapping
+// unmarshalModelMapping
 func unmarshalModelMapping(data []byte) map[string]map[string]string {
 	if len(data) == 0 {
 		return nil
@@ -521,7 +511,7 @@ func unmarshalFeaturesConfig(data []byte) map[string]any {
 	return m
 }
 
-// GetGroupPlatforms 批量查询分组 ID 对应的平台
+// GetGroupPlatforms
 func (r *channelRepository) GetGroupPlatforms(ctx context.Context, groupIDs []int64) (map[int64]string, error) {
 	if len(groupIDs) == 0 {
 		return make(map[int64]string), nil

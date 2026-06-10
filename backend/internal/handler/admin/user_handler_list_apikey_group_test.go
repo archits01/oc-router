@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// listUsersFilterStub 捕获传入 ListUsers 的 filters，其余 AdminService 方法走 baseline stub。
+// listUsersFilterStub
 type listUsersFilterStub struct {
 	service.AdminService
 	captured service.UserListFilters

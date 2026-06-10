@@ -360,7 +360,7 @@ const loadStats = async (force = false) => {
   }
 }
 
-// 失效模型统计缓存:仅标记需要重取,保留旧数据直到新数据到达(避免刷新时图表闪空)。
+// 失效模型统计缓存:仅标记需要重取,保留旧数据直到新数据到达(避免Refresh时图表闪空)。
 const invalidateModelStatsCache = () => {
   loadedModelSources.requested = false
   loadedModelSources.upstream = false

@@ -1,18 +1,16 @@
-// Package httpclient 提供共享 HTTP 客户端池
+// Package httpclient
 //
-// 性能优化说明：
-// 原实现在多个服务中重复创建 http.Client：
-// 1. proxy_probe_service.go: 每次探测创建新客户端
-// 2. pricing_service.go: 每次请求创建新客户端
-// 3. turnstile_service.go: 每次验证创建新客户端
-// 4. github_release_service.go: 每次请求创建新客户端
-// 5. claude_usage_service.go: 每次请求创建新客户端
 //
-// 新实现使用统一的客户端池：
-// 1. 相同配置复用同一 http.Client 实例
-// 2. 复用 Transport 连接池，减少 TCP/TLS 握手开销
-// 3. 支持 HTTP/HTTPS/SOCKS5/SOCKS5H 代理
-// 4. 代理配置失败时直接返回错误，不会回退到直连（避免 IP 关联风险）
+// 1. proxy_probe_service.go:
+// 2. pricing_service.go:
+// 3. turnstile_service.go:
+// 4. github_release_service.go:
+// 5. claude_usage_service.go:
+//
+// 1.
+// 2.
+// 3.
+// 4.
 package httpclient
 
 import (
@@ -28,40 +26,37 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
 )
 
-// Transport 连接池默认配置
+// Transport
 const (
-	defaultMaxIdleConns        = 100              // 最大空闲连接数
-	defaultMaxIdleConnsPerHost = 10               // 每个主机最大空闲连接数
-	defaultIdleConnTimeout     = 90 * time.Second // 空闲连接超时时间（建议小于上游 LB 超时）
-	defaultDialTimeout         = 5 * time.Second  // TCP 连接超时（含代理握手），代理不通时快速失败
-	defaultTLSHandshakeTimeout = 5 * time.Second  // TLS 握手超时
-	validatedHostTTL           = 30 * time.Second // DNS Rebinding 校验缓存 TTL
+	defaultMaxIdleConns        = 100              // max idle connections
+	defaultMaxIdleConnsPerHost = 10               // max idle connections per host
+	defaultIdleConnTimeout     = 90 * time.Second // idle connection timeout (should be less than upstream LB timeout)
+	defaultDialTimeout         = 5 * time.Second  // TCP connection timeout (including proxy handshake), fast fail when proxy is unreachable
+	defaultTLSHandshakeTimeout = 5 * time.Second  // TLS handshake timeout
+	validatedHostTTL           = 30 * time.Second // DNS Rebinding validation cache TTL
 )
 
-// Options 定义共享 HTTP 客户端的构建参数
+// Options
 type Options struct {
-	ProxyURL              string        // 代理 URL（支持 http/https/socks5/socks5h）
-	Timeout               time.Duration // 请求总超时时间
-	ResponseHeaderTimeout time.Duration // 等待响应头超时时间
-	InsecureSkipVerify    bool          // 是否跳过 TLS 证书验证（已禁用，不允许设置为 true）
-	ValidateResolvedIP    bool          // 是否校验解析后的 IP（防止 DNS Rebinding）
-	AllowPrivateHosts     bool          // 允许私有地址解析（与 ValidateResolvedIP 一起使用）
+	ProxyURL              string        // proxy URL (supports http/https/socks5/socks5h)
+	Timeout               time.Duration // total request timeout
+	ResponseHeaderTimeout time.Duration // response header wait timeout
+	InsecureSkipVerify    bool          // skip TLS certificate verification (disabled, must not be set to true)
+	ValidateResolvedIP    bool          // validate resolved IP (prevent DNS Rebinding)
+	AllowPrivateHosts     bool          // allow private address resolution (used with ValidateResolvedIP)
 
-	// 可选的连接池参数（不设置则使用默认值）
-	MaxIdleConns        int // 最大空闲连接总数（默认 100）
-	MaxIdleConnsPerHost int // 每主机最大空闲连接（默认 10）
-	MaxConnsPerHost     int // 每主机最大连接数（默认 0 无限制）
+	MaxIdleConns        int // max total idle connections (default 100)
+	MaxIdleConnsPerHost int // max idle connections per host (default 10)
+	MaxConnsPerHost     int // max connections per host (default 0, unlimited)
 }
 
-// sharedClients 存储按配置参数缓存的 http.Client 实例
+// sharedClients
 var sharedClients sync.Map
 
-// 允许测试替换校验函数，生产默认指向真实实现。
 var validateResolvedIP = urlvalidator.ValidateResolvedIP
 
-// GetClient 返回共享的 HTTP 客户端实例
-// 性能优化：相同配置复用同一客户端，避免重复创建 Transport
-// 安全说明：代理配置失败时直接返回错误，不会回退到直连，避免 IP 关联风险
+// GetClient
+//
 func GetClient(opts Options) (*http.Client, error) {
 	key := buildClientKey(opts)
 	if cached, ok := sharedClients.Load(key); ok {
@@ -99,7 +94,6 @@ func buildClient(opts Options) (*http.Client, error) {
 }
 
 func buildTransport(opts Options) (*http.Transport, error) {
-	// 使用自定义值或默认值
 	maxIdleConns := opts.MaxIdleConns
 	if maxIdleConns <= 0 {
 		maxIdleConns = defaultMaxIdleConns
@@ -116,13 +110,12 @@ func buildTransport(opts Options) (*http.Transport, error) {
 		TLSHandshakeTimeout:   defaultTLSHandshakeTimeout,
 		MaxIdleConns:          maxIdleConns,
 		MaxIdleConnsPerHost:   maxIdleConnsPerHost,
-		MaxConnsPerHost:       opts.MaxConnsPerHost, // 0 表示无限制
+		MaxConnsPerHost:       opts.MaxConnsPerHost, // 0 means unlimited
 		IdleConnTimeout:       defaultIdleConnTimeout,
 		ResponseHeaderTimeout: opts.ResponseHeaderTimeout,
 	}
 
 	if opts.InsecureSkipVerify {
-		// 安全要求：禁止跳过证书验证，避免中间人攻击。
 		return nil, fmt.Errorf("insecure_skip_verify is not allowed; install a trusted certificate instead")
 	}
 
@@ -157,7 +150,7 @@ func buildClientKey(opts Options) string {
 
 type validatedTransport struct {
 	base           http.RoundTripper
-	validatedHosts sync.Map // map[string]time.Time, value 为过期时间
+	validatedHosts sync.Map // map[string]time.Time, value is expiration time
 	now            func() time.Time
 }
 

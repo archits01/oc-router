@@ -98,7 +98,6 @@ func TestSystemOperationLockService_RenewLeaseContinuesAfterTransientFailure(t *
 	require.NotNil(t, initial.LockedUntil)
 	initialLockedUntil := *initial.LockedUntil
 
-	// 首次续租失败后，下一轮应继续尝试并成功更新锁过期时间。
 	require.Eventually(t, func() bool {
 		updated, _ := repo.GetByScopeAndKeyHash(context.Background(), systemOperationLockScope, keyHash)
 		if updated == nil || updated.LockedUntil == nil {
@@ -144,7 +143,7 @@ func TestSystemOperationLockService_RecoverAfterLeaseExpired(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, lock1)
 
-	// 模拟实例异常：停止续租，不调用 Release。
+	//
 	lock1.stopOnce.Do(func() {
 		close(lock1.stopCh)
 	})

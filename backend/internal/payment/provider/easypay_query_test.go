@@ -65,7 +65,7 @@ func TestEasyPayQueryOrderStatusMapping(t *testing.T) {
 		},
 		{
 			name:        "query failure with missing status is pending",
-			body:        `{"code":0,"msg":"订单不存在"}`,
+			body:        `{"code":0,"msg":"订单does not exist"}`,
 			wantStatus:  payment.ProviderStatusPending,
 			wantTradeNo: orderID,
 		},

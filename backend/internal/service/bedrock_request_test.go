@@ -13,12 +13,12 @@ func TestPrepareBedrockRequestBody_BasicFields(t *testing.T) {
 	result, err := PrepareBedrockRequestBody([]byte(input), "us.anthropic.claude-opus-4-6-v1", "")
 	require.NoError(t, err)
 
-	// anthropic_version 应被注入
+	// anthropic_version
 	assert.Equal(t, "bedrock-2023-05-31", gjson.GetBytes(result, "anthropic_version").String())
-	// model 和 stream 应被移除
+	// model
 	assert.False(t, gjson.GetBytes(result, "model").Exists())
 	assert.False(t, gjson.GetBytes(result, "stream").Exists())
-	// max_tokens 应保留
+	// max_tokens
 	assert.Equal(t, int64(1024), gjson.GetBytes(result, "max_tokens").Int())
 }
 
@@ -29,7 +29,7 @@ func TestPrepareBedrockRequestBody_OutputFormatInlineSchema(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.False(t, gjson.GetBytes(result, "output_format").Exists())
-		// schema 应内联到最后一条 user message 的 content 数组末尾
+		// schema
 		contentArr := gjson.GetBytes(result, "messages.0.content").Array()
 		require.Len(t, contentArr, 2)
 		assert.Equal(t, "text", contentArr[1].Get("type").String())
@@ -85,14 +85,14 @@ func TestRemoveCustomFieldFromTools(t *testing.T) {
 
 	tools := gjson.GetBytes(result, "tools").Array()
 	require.Len(t, tools, 3)
-	// custom 应被移除
+	// custom
 	assert.False(t, tools[0].Get("custom").Exists())
-	// name/description 应保留
+	// name/description
 	assert.Equal(t, "tool1", tools[0].Get("name").String())
 	assert.Equal(t, "desc1", tools[0].Get("description").String())
-	// 没有 custom 的工具不受影响
+	//
 	assert.Equal(t, "tool2", tools[1].Get("name").String())
-	// 第三个工具的 custom 也应被移除
+	//
 	assert.False(t, tools[2].Get("custom").Exists())
 	assert.Equal(t, "tool3", tools[2].Get("name").String())
 }
@@ -100,7 +100,7 @@ func TestRemoveCustomFieldFromTools(t *testing.T) {
 func TestRemoveCustomFieldFromTools_NoTools(t *testing.T) {
 	input := `{"messages":[{"role":"user","content":"hi"}]}`
 	result := removeCustomFieldFromTools([]byte(input))
-	// 无 tools 时不改变原始数据
+	//
 	assert.JSONEq(t, input, string(result))
 }
 
@@ -111,10 +111,10 @@ func TestSanitizeBedrockCacheControl_RemoveScope(t *testing.T) {
 	}`
 	result := sanitizeBedrockCacheControl([]byte(input), "us.anthropic.claude-opus-4-6-v1")
 
-	// scope 应被移除
+	// scope
 	assert.False(t, gjson.GetBytes(result, "system.0.cache_control.scope").Exists())
 	assert.False(t, gjson.GetBytes(result, "messages.0.content.0.cache_control.scope").Exists())
-	// type 应保留
+	// type
 	assert.Equal(t, "ephemeral", gjson.GetBytes(result, "system.0.cache_control.type").String())
 	assert.Equal(t, "ephemeral", gjson.GetBytes(result, "messages.0.content.0.cache_control.type").String())
 }
@@ -123,7 +123,7 @@ func TestSanitizeBedrockCacheControl_TTL_OldModel(t *testing.T) {
 	input := `{
 		"system": [{"type":"text","text":"sys","cache_control":{"type":"ephemeral","ttl":"5m"}}]
 	}`
-	// 旧模型（Claude 3.5）不支持 ttl
+	//
 	result := sanitizeBedrockCacheControl([]byte(input), "anthropic.claude-3-5-sonnet-20241022-v2:0")
 
 	assert.False(t, gjson.GetBytes(result, "system.0.cache_control.ttl").Exists())
@@ -134,7 +134,7 @@ func TestSanitizeBedrockCacheControl_TTL_Claude45_Supported(t *testing.T) {
 	input := `{
 		"system": [{"type":"text","text":"sys","cache_control":{"type":"ephemeral","ttl":"5m"}}]
 	}`
-	// Claude 4.5+ 支持 "5m" 和 "1h"
+	// Claude 4.5+ "5m" "1h"
 	result := sanitizeBedrockCacheControl([]byte(input), "us.anthropic.claude-sonnet-4-5-20250929-v1:0")
 
 	assert.True(t, gjson.GetBytes(result, "system.0.cache_control.ttl").Exists())
@@ -145,7 +145,7 @@ func TestSanitizeBedrockCacheControl_TTL_Claude45_UnsupportedValue(t *testing.T)
 	input := `{
 		"system": [{"type":"text","text":"sys","cache_control":{"type":"ephemeral","ttl":"10m"}}]
 	}`
-	// Claude 4.5 不支持 "10m"
+	// Claude 4.5 "10m"
 	result := sanitizeBedrockCacheControl([]byte(input), "us.anthropic.claude-sonnet-4-5-20250929-v1:0")
 
 	assert.False(t, gjson.GetBytes(result, "system.0.cache_control.ttl").Exists())
@@ -164,7 +164,7 @@ func TestSanitizeBedrockCacheControl_TTL_Claude46(t *testing.T) {
 func TestSanitizeBedrockCacheControl_NoCacheControl(t *testing.T) {
 	input := `{"system":[{"type":"text","text":"sys"}],"messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}]}`
 	result := sanitizeBedrockCacheControl([]byte(input), "us.anthropic.claude-opus-4-6-v1")
-	// 无 cache_control 时不改变原始数据
+	//
 	assert.JSONEq(t, input, string(result))
 }
 
@@ -183,13 +183,11 @@ func TestIsBedrockClaude45OrNewer(t *testing.T) {
 		{"anthropic.claude-3-5-sonnet-20241022-v2:0", false},
 		{"anthropic.claude-3-opus-20240229-v1:0", false},
 		{"anthropic.claude-3-haiku-20240307-v1:0", false},
-		// 未来版本应自动支持
 		{"us.anthropic.claude-sonnet-5-0-v1", true},
 		{"us.anthropic.claude-opus-4-7-v1", true},
-		// 旧版本
 		{"anthropic.claude-opus-4-1-v1", false},
 		{"anthropic.claude-sonnet-4-0-v1", false},
-		// 非 Claude 模型
+		//
 		{"amazon.nova-pro-v1", false},
 		{"meta.llama3-70b", false},
 	}
@@ -201,7 +199,7 @@ func TestIsBedrockClaude45OrNewer(t *testing.T) {
 }
 
 func TestPrepareBedrockRequestBody_FullIntegration(t *testing.T) {
-	// 模拟一个完整的 Claude Code 请求
+	//
 	input := `{
 		"model": "claude-opus-4-6",
 		"stream": true,
@@ -222,33 +220,32 @@ func TestPrepareBedrockRequestBody_FullIntegration(t *testing.T) {
 	result, err := PrepareBedrockRequestBody([]byte(input), "us.anthropic.claude-opus-4-6-v1", betaHeader)
 	require.NoError(t, err)
 
-	// 基本字段
 	assert.Equal(t, "bedrock-2023-05-31", gjson.GetBytes(result, "anthropic_version").String())
 	assert.False(t, gjson.GetBytes(result, "model").Exists())
 	assert.False(t, gjson.GetBytes(result, "stream").Exists())
 	assert.Equal(t, int64(16384), gjson.GetBytes(result, "max_tokens").Int())
 
-	// anthropic_beta 应包含所有 beta tokens
+	// anthropic_beta
 	betaArr := gjson.GetBytes(result, "anthropic_beta").Array()
 	require.Len(t, betaArr, 2)
 	assert.Equal(t, "context-1m-2025-08-07", betaArr[0].String())
 	assert.Equal(t, "compact-2026-01-12", betaArr[1].String())
 
-	// output_format 应被移除，schema 内联到最后一条 user message
+	// output_format
 	assert.False(t, gjson.GetBytes(result, "output_format").Exists())
 	assert.False(t, gjson.GetBytes(result, "output_config").Exists())
-	// content 数组：原始 text block + 内联 schema block
+	// content +
 	contentArr := gjson.GetBytes(result, "messages.0.content").Array()
 	require.Len(t, contentArr, 2)
 	assert.Equal(t, "hello", contentArr[0].Get("text").String())
 	assert.Contains(t, contentArr[1].Get("text").String(), `"result":"string"`)
 
-	// tools 中的 custom 应被移除
+	// tools
 	assert.False(t, gjson.GetBytes(result, "tools.0.custom").Exists())
 	assert.Equal(t, "bash", gjson.GetBytes(result, "tools.0.name").String())
 	assert.Equal(t, "read", gjson.GetBytes(result, "tools.1.name").String())
 
-	// cache_control: scope 应被移除，ttl 在 Claude 4.6 上保留合法值
+	// cache_control: scope
 	assert.False(t, gjson.GetBytes(result, "system.0.cache_control.scope").Exists())
 	assert.Equal(t, "ephemeral", gjson.GetBytes(result, "system.0.cache_control.type").String())
 	assert.Equal(t, "5m", gjson.GetBytes(result, "system.0.cache_control.ttl").String())
@@ -317,7 +314,7 @@ func TestFilterBedrockBetaTokens(t *testing.T) {
 		tokens := []string{"advanced-tool-use-2025-11-20"}
 		result := filterBedrockBetaTokens(tokens)
 		assert.Contains(t, result, "tool-search-tool-2025-10-19")
-		// tool-examples 自动关联
+		// tool-examples
 		assert.Contains(t, result, "tool-examples-2025-10-29")
 	})
 
@@ -527,7 +524,7 @@ func TestResolveBedrockModelID(t *testing.T) {
 		assert.Equal(t, "eu.anthropic.claude-opus-4-8-v1", modelID)
 	})
 
-	t.Run("默认 Fable 5 映射使用官方 Bedrock 模型 ID", func(t *testing.T) {
+	t.Run("默认 Fable 5 映射使用官方 Bedrock model ID", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformAnthropic,
 			Type:     AccountTypeBedrock,
@@ -591,7 +588,7 @@ func TestAutoInjectBedrockBetaTokens(t *testing.T) {
 	t.Run("no auto-inject for thinking (interleaved-thinking not supported)", func(t *testing.T) {
 		body := []byte(`{"thinking":{"type":"enabled","budget_tokens":10000},"messages":[{"role":"user","content":"hi"}]}`)
 		result := autoInjectBedrockBetaTokens(nil, body, "us.anthropic.claude-opus-4-6-v1")
-		// interleaved-thinking-2025-05-14 已从白名单移除，不应自动注入
+		// interleaved-thinking-2025-05-14
 		assert.Empty(t, result)
 	})
 
@@ -622,7 +619,7 @@ func TestAutoInjectBedrockBetaTokens(t *testing.T) {
 	t.Run("inject tool-search-tool directly for pure tool search (no programmatic/inputExamples)", func(t *testing.T) {
 		body := []byte(`{"tools":[{"type":"tool_search_tool_regex_20251119","name":"search"}],"messages":[{"role":"user","content":"hi"}]}`)
 		result := autoInjectBedrockBetaTokens(nil, body, "us.anthropic.claude-sonnet-4-6")
-		// 纯 tool search 场景直接注入 Bedrock 特定头，不走 advanced-tool-use 转换
+		//
 		assert.Contains(t, result, "tool-search-tool-2025-10-19")
 		assert.NotContains(t, result, "advanced-tool-use-2025-11-20")
 	})
@@ -630,7 +627,7 @@ func TestAutoInjectBedrockBetaTokens(t *testing.T) {
 	t.Run("inject advanced-tool-use when tool search combined with programmatic calling", func(t *testing.T) {
 		body := []byte(`{"tools":[{"type":"tool_search_tool_regex_20251119","name":"search"},{"name":"bash","allowed_callers":["code_execution_20250825"]}],"messages":[{"role":"user","content":"hi"}]}`)
 		result := autoInjectBedrockBetaTokens(nil, body, "us.anthropic.claude-sonnet-4-6")
-		// 混合场景使用 advanced-tool-use（后续由 filter 转换为 tool-search-tool）
+		//
 		assert.Contains(t, result, "advanced-tool-use-2025-11-20")
 	})
 
@@ -659,7 +656,7 @@ func TestAutoInjectBedrockBetaTokens(t *testing.T) {
 		result := autoInjectBedrockBetaTokens(existing, body, "us.anthropic.claude-opus-4-6-v1")
 		assert.Contains(t, result, "context-1m-2025-08-07")
 		assert.Contains(t, result, "compact-2026-01-12")
-		// interleaved-thinking 不再自动注入
+		// interleaved-thinking
 		assert.NotContains(t, result, "interleaved-thinking-2025-05-14")
 	})
 }
@@ -684,7 +681,7 @@ func TestPrepareBedrockRequestBody_AutoBetaInjection(t *testing.T) {
 		input := `{"messages":[{"role":"user","content":"hi"}],"max_tokens":100,"thinking":{"type":"enabled","budget_tokens":10000}}`
 		result, err := PrepareBedrockRequestBody([]byte(input), "us.anthropic.claude-opus-4-6-v1", "")
 		require.NoError(t, err)
-		// interleaved-thinking 已从白名单移除，不应自动注入
+		// interleaved-thinking
 		assert.False(t, gjson.GetBytes(result, "anthropic_beta").Exists())
 	})
 
@@ -698,7 +695,7 @@ func TestPrepareBedrockRequestBody_AutoBetaInjection(t *testing.T) {
 			names[i] = v.String()
 		}
 		assert.Contains(t, names, "context-1m-2025-08-07")
-		// interleaved-thinking 不再自动注入
+		// interleaved-thinking
 		assert.NotContains(t, names, "interleaved-thinking-2025-05-14")
 	})
 }

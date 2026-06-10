@@ -355,14 +355,14 @@ LIMIT $` + itoa(len(args)+1) + ` OFFSET $` + itoa(len(args)+2)
 			v := int16(requestType.Int64)
 			item.RequestType = &v
 		}
-		// Key 名称：优先关联到的 ak.name（已软删的 key name 仍保留）；
-		// 关联不到（api_key_id 为空 / 历史硬删）时回退错误记录里快照的 deleted_key_name。
+		// Key
+		//
 		if apiKeyName != "" {
 			item.APIKeyName = apiKeyName
 		} else {
 			item.APIKeyName = deletedKeyName
 		}
-		// 已删除：ak.deleted_at 非空（软删），或仅命中 deleted_key_name 兜底。
+		//
 		item.APIKeyDeleted = apiKeyDeletedAt.Valid || (apiKeyName == "" && deletedKeyName != "")
 		out = append(out, &item)
 	}
@@ -584,13 +584,13 @@ LIMIT 1`
 		v := deletedKeyOwnerUserID.Int64
 		out.DeletedKeyOwnerUserID = &v
 	}
-	// Key 名称：优先关联到的 ak.name；关联不到时回退快照的 deleted_key_name。
+	// Key
 	if detailAPIKeyName != "" {
 		out.APIKeyName = detailAPIKeyName
 	} else {
 		out.APIKeyName = out.DeletedKeyName
 	}
-	// 已删除：ak.deleted_at 非空（软删），或仅命中 deleted_key_name 兜底。
+	//
 	out.APIKeyDeleted = detailAPIKeyDeletedAt.Valid || (detailAPIKeyName == "" && out.DeletedKeyName != "")
 
 	// Normalize upstream_errors to empty string when stored as JSON null.
@@ -602,9 +602,9 @@ LIMIT 1`
 	return &out, nil
 }
 
-// LookupDeletedKeyAudit 按明文 key 反查最近一条已删除 key 审计。
-// 同一 key 可能有多条历史(反复创建/删除),取 deleted_at 最近一条(id 作同毫秒 tiebreaker)。
-// 未命中返回 (nil, nil)。
+// LookupDeletedKeyAudit
+// (),(id )。
+// (nil, nil)。
 func (r *opsRepository) LookupDeletedKeyAudit(ctx context.Context, key string) (*service.DeletedKeyAuditResult, error) {
 	var res service.DeletedKeyAuditResult
 	err := r.db.QueryRowContext(ctx, `
@@ -896,8 +896,8 @@ INSERT INTO ops_system_log_cleanup_audits (
 
 var likePatternReplacer = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
-// escapeLikePattern 转义 LIKE/ILIKE 通配符（\ % _），避免用户输入被当作通配符。
-// Postgres 默认以反斜杠为转义符，无需额外 ESCAPE 子句。
+// escapeLikePattern \ % _），
+// Postgres
 func escapeLikePattern(s string) string {
 	return likePatternReplacer.Replace(s)
 }
@@ -1018,7 +1018,7 @@ func buildOpsErrorLogsWhere(filter *service.OpsErrorLogFilter) (string, []any) {
 		args = append(args, *filter.UserID)
 		n := itoa(len(args))
 		if filter.MatchDeletedKeyOwner {
-			// 用户侧:把「删 key 后认证失败」(user_id=NULL,靠 deleted_key_owner 归因)的记录也纳入。
+			// 「」(user_id=NULL,)
 			clauses = append(clauses, "(e.user_id = $"+n+" OR e.deleted_key_owner_user_id = $"+n+")")
 		} else {
 			clauses = append(clauses, "e.user_id = $"+n)

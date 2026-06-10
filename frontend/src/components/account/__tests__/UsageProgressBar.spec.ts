@@ -68,7 +68,7 @@ describe('UsageProgressBar', () => {
     expect(wrapper.text()).not.toContain('usage.resetNow')
   })
 
-  it('resetsAt 已过期且利用率大于 0 时显示「待刷新」', () => {
+  it('resetsAt 已Expired且利用率大于 0 时显示「待Refresh」', () => {
     const wrapper = mount(UsageProgressBar, {
       props: {
         label: '5h',
@@ -83,7 +83,7 @@ describe('UsageProgressBar', () => {
     expect(wrapper.text()).not.toContain('usage.resetNow')
   })
 
-  it('resetsAt 已过期且利用率为 0 时仍显示「现在」', () => {
+  it('resetsAt 已Expired且利用率为 0 时仍显示「现在」', () => {
     const wrapper = mount(UsageProgressBar, {
       props: {
         label: '5h',

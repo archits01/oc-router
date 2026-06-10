@@ -15,7 +15,7 @@ import (
 
 const defaultClaudeUsageURL = "https://api.anthropic.com/api/oauth/usage"
 
-// 默认 User-Agent，与用户抓包的请求一致
+//
 const defaultUsageUserAgent = "claude-code/2.1.7"
 
 type claudeUsageService struct {
@@ -24,8 +24,8 @@ type claudeUsageService struct {
 	httpUpstream      service.HTTPUpstream
 }
 
-// NewClaudeUsageFetcher 创建 Claude 用量获取服务
-// httpUpstream: 可选，如果提供则支持 TLS 指纹伪装
+// NewClaudeUsageFetcher
+// httpUpstream:
 func NewClaudeUsageFetcher(httpUpstream service.HTTPUpstream) service.ClaudeUsageFetcher {
 	return &claudeUsageService{
 		usageURL:     defaultClaudeUsageURL,
@@ -33,7 +33,7 @@ func NewClaudeUsageFetcher(httpUpstream service.HTTPUpstream) service.ClaudeUsag
 	}
 }
 
-// FetchUsage 简单版本，不支持 TLS 指纹（向后兼容）
+// FetchUsage
 func (s *claudeUsageService) FetchUsage(ctx context.Context, accessToken, proxyURL string) (*service.ClaudeUsageResponse, error) {
 	return s.FetchUsageWithOptions(ctx, &service.ClaudeUsageFetchOptions{
 		AccessToken: accessToken,
@@ -41,25 +41,24 @@ func (s *claudeUsageService) FetchUsage(ctx context.Context, accessToken, proxyU
 	})
 }
 
-// FetchUsageWithOptions 完整版本，支持 TLS 指纹和自定义 User-Agent
+// FetchUsageWithOptions
 func (s *claudeUsageService) FetchUsageWithOptions(ctx context.Context, opts *service.ClaudeUsageFetchOptions) (*service.ClaudeUsageResponse, error) {
 	if opts == nil {
 		return nil, fmt.Errorf("options is nil")
 	}
 
-	// 创建请求
 	req, err := http.NewRequestWithContext(ctx, "GET", s.usageURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request failed: %w", err)
 	}
 
-	// 设置请求头（与抓包一致，但不设置 Accept-Encoding，让 Go 自动处理压缩）
+	//
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+opts.AccessToken)
 	req.Header.Set("anthropic-beta", "oauth-2025-04-20")
 
-	// 设置 User-Agent（优先使用缓存的 Fingerprint，否则使用默认值）
+	//
 	userAgent := defaultUsageUserAgent
 	if opts.Fingerprint != nil && opts.Fingerprint.UserAgent != "" {
 		userAgent = opts.Fingerprint.UserAgent
@@ -68,14 +67,14 @@ func (s *claudeUsageService) FetchUsageWithOptions(ctx context.Context, opts *se
 
 	var resp *http.Response
 
-	// 如果有 TLS Profile 且有 HTTPUpstream，使用 DoWithTLS
+	//
 	if opts.TLSProfile != nil && s.httpUpstream != nil {
 		resp, err = s.httpUpstream.DoWithTLS(req, opts.ProxyURL, opts.AccountID, 0, opts.TLSProfile)
 		if err != nil {
 			return nil, fmt.Errorf("request with TLS fingerprint failed: %w", err)
 		}
 	} else {
-		// 不启用 TLS 指纹，使用普通 HTTP 客户端
+		//
 		client, err := httpclient.GetClient(httpclient.Options{
 			ProxyURL:           opts.ProxyURL,
 			Timeout:            30 * time.Second,

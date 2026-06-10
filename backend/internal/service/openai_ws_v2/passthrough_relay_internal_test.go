@@ -286,7 +286,7 @@ func TestParseUsageAndEnrichCoverage(t *testing.T) {
 		"response.completed",
 		nil,
 	)
-	require.Equal(t, 0, state.usage.InputTokens, "部分字段解析失败时不应累加 usage")
+	require.Equal(t, 0, state.usage.InputTokens, "部分字段parsefailed时不应累加 usage")
 	require.Equal(t, 0, state.usage.OutputTokens)
 	require.Equal(t, 0, state.usage.CacheReadInputTokens)
 
@@ -338,7 +338,7 @@ func TestParseUsageAndAccumulateAcceptsChatUsageAliases(t *testing.T) {
 func TestEmitTurnCompleteCoverage(t *testing.T) {
 	t.Parallel()
 
-	// 非 terminal 事件不应触发。
+	//
 	called := 0
 	emitTurnComplete(func(turn RelayTurnResult) {
 		called++
@@ -350,7 +350,7 @@ func TestEmitTurnCompleteCoverage(t *testing.T) {
 	})
 	require.Equal(t, 0, called)
 
-	// 缺少 response_id 时不应触发。
+	//
 	emitTurnComplete(func(turn RelayTurnResult) {
 		called++
 	}, &relayState{requestModel: "gpt-5"}, observedUpstreamEvent{
@@ -359,7 +359,7 @@ func TestEmitTurnCompleteCoverage(t *testing.T) {
 	})
 	require.Equal(t, 0, called)
 
-	// terminal 且 response_id 存在，应该触发；state=nil 时 model 为空串。
+	// terminal =nil
 	var got RelayTurnResult
 	emitTurnComplete(func(turn RelayTurnResult) {
 		called++
@@ -429,17 +429,15 @@ func TestRelayTurnTimingHelpersCoverage(t *testing.T) {
 	require.NotNil(t, timing)
 	require.Equal(t, now, timing.startAt)
 
-	// 再次获取返回同一条 timing
+	//
 	timing2 := openAIWSRelayGetOrInitTurnTiming(state, "resp_a", now.Add(5*time.Second))
 	require.NotNil(t, timing2)
 	require.Equal(t, now, timing2.startAt)
 
-	// 删除存在键
 	deleted, ok := openAIWSRelayDeleteTurnTiming(state, "resp_a")
 	require.True(t, ok)
 	require.Equal(t, now, deleted.startAt)
 
-	// 删除不存在键
 	_, ok = openAIWSRelayDeleteTurnTiming(state, "resp_a")
 	require.False(t, ok)
 }
@@ -455,7 +453,7 @@ func TestObserveUpstreamMessage_ResponseIDFallbackPolicy(t *testing.T) {
 		return now
 	}
 
-	// 非 terminal：仅有顶层 id，不应把 event id 当成 response_id。
+	//
 	observed := observeUpstreamMessage(
 		state,
 		[]byte(`{"type":"response.output_text.delta","id":"evt_123","delta":"hi"}`),
@@ -466,7 +464,7 @@ func TestObserveUpstreamMessage_ResponseIDFallbackPolicy(t *testing.T) {
 	require.False(t, observed.terminal)
 	require.Equal(t, "", observed.responseID)
 
-	// terminal：允许兜底用顶层 id（用于兼容少数字段变体）。
+	// terminal：
 	observed = observeUpstreamMessage(
 		state,
 		[]byte(`{"type":"response.completed","id":"resp_fallback","response":{"usage":{"input_tokens":1,"output_tokens":1}}}`),

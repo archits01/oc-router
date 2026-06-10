@@ -21,42 +21,40 @@ import (
 	"go.uber.org/zap"
 )
 
-// openaiCCRawAllowedHeaders 是 CC 直转路径专用的客户端 header 透传白名单。
+// openaiCCRawAllowedHeaders
 //
-// **关键**：不能复用 openaiAllowedHeaders——后者含 Codex 客户端专属 header
+// ****：——
 // （originator / session_id / x-codex-turn-state / x-codex-turn-metadata / conversation_id），
-// 这些在 ChatGPT OAuth 上游是必需的，但透传给 DeepSeek/Kimi/GLM 等第三方
-// OpenAI 兼容上游会造成：
-//   - 完全忽略（多数友好厂商）——隐性污染上游统计
-//   - 400 "unknown parameter"（严格上游）——可见错误
 //
-// 这里仅放行通用 HTTP header；content-type / authorization / accept 由上下文
-// 显式设置，不依赖透传。
+// OpenAI
+//   - ——
+//   - 400 "unknown parameter"（——
 //
-// 参见决策记录：
+//
+//
 // pensieve/short-term/maxims/dont-reuse-shared-headers-whitelist-across-different-upstream-trust-domains
 var openaiCCRawAllowedHeaders = map[string]bool{
 	"accept-language": true,
 	"user-agent":      true,
 }
 
-// forwardAsRawChatCompletions 直转客户端的 Chat Completions 请求到上游
-// `{base_url}/v1/chat/completions`，**不**做 CC↔Responses 协议转换。
+// forwardAsRawChatCompletions
+// `{base_url}/v1/chat/completions`，****↔Responses
 //
-// 适用场景：account.platform=openai && account.type=apikey && 上游已被探测确认
-// 不支持 /v1/responses 端点（如 DeepSeek/Kimi/GLM/Qwen 等第三方 OpenAI 兼容上游）。
+// =openai && account.type=apikey &&
 //
-// 与 ForwardAsChatCompletions 的关键差异：
 //
-//   - 不调用 apicompat.ChatCompletionsToResponses，body 仅做模型 ID 改写
-//   - 上游 URL 拼到 /v1/chat/completions 而非 /v1/responses
-//   - 流式响应 SSE 直接透传给客户端（上游 chunk 已是 CC 格式）
-//   - 非流式响应 JSON 直接透传，仅按需提取 usage
-//   - 不应用 codex OAuth transform（APIKey 路径无 OAuth）
-//   - 不注入 prompt_cache_key（OAuth 专属机制）
 //
-// 调用入口：openai_gateway_chat_completions.go::ForwardAsChatCompletions
-// 在函数顶部按 openai_compat.ShouldUseResponsesAPI 分流。
+//
+//   -
+//   -
+//   -
+//   -
+//   -
+//   -
+//
+//
+//
 func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 	ctx context.Context,
 	c *gin.Context,
@@ -145,7 +143,7 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		upstreamReq.Header.Set("Accept", "application/json")
 	}
 
-	// 透传白名单中的客户端 header。详见 openaiCCRawAllowedHeaders 的设计说明。
+	//
 	for key, values := range c.Request.Header {
 		lowerKey := strings.ToLower(key)
 		if openaiCCRawAllowedHeaders[lowerKey] {
@@ -225,12 +223,11 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 	return s.bufferRawChatCompletions(c, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
 }
 
-// streamRawChatCompletions 透传上游 CC SSE 流到客户端，并提取 usage（包括
-// 末尾 [DONE] 之前的 chunk 中的 usage 字段，按 OpenAI CC 协议）。
+// streamRawChatCompletions
+// [DONE]
 //
-// usage 字段仅在客户端请求 stream_options.include_usage=true 时出现于上游响应中。
-// 网关会对上游强制打开 include_usage 以保证计费完整，并原样向下游透传 usage，
-// 让级联代理或下游计费系统也能拿到完整用量。
+// usage =true
+//
 func (s *OpenAIGatewayService) streamRawChatCompletions(
 	c *gin.Context,
 	resp *http.Response,
@@ -380,8 +377,8 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 	}, nil
 }
 
-// ensureOpenAIChatStreamUsage 确保 raw Chat Completions 流式请求会让上游返回 usage。
-// usage 也会继续向下游透传，支持级联代理和下游计费系统。
+// ensureOpenAIChatStreamUsage
+// usage
 func ensureOpenAIChatStreamUsage(body []byte) ([]byte, error) {
 	updated, err := sjson.SetBytes(body, "stream_options.include_usage", true)
 	if err != nil {
@@ -401,9 +398,9 @@ func isOpenAIChatUsageOnlyStreamChunk(payload string) bool {
 	return choices.Exists() && choices.IsArray() && len(choices.Array()) == 0
 }
 
-// extractCCStreamUsage 从单个 CC 流式 chunk 的 payload 中提取 usage 字段。
-// CC 协议中 usage 仅出现在末尾 chunk（且仅当 include_usage 生效时），
-// 但上游可能在多个 chunk 中重复——总是用最新值。
+// extractCCStreamUsage
+// CC
+// ——
 func extractCCStreamUsage(payload string) *OpenAIUsage {
 	usageResult := gjson.Get(payload, "usage")
 	if !usageResult.Exists() || !usageResult.IsObject() {
@@ -419,7 +416,7 @@ func extractCCStreamUsage(payload string) *OpenAIUsage {
 	return &u
 }
 
-// bufferRawChatCompletions 透传上游 CC 非流式 JSON 响应。
+// bufferRawChatCompletions
 func (s *OpenAIGatewayService) bufferRawChatCompletions(
 	c *gin.Context,
 	resp *http.Response,
@@ -476,14 +473,14 @@ func (s *OpenAIGatewayService) bufferRawChatCompletions(
 	}, nil
 }
 
-// buildOpenAIChatCompletionsURL 拼接上游 Chat Completions 端点 URL。
+// buildOpenAIChatCompletionsURL
 //
-//   - base 已是 /chat/completions：原样返回
-//   - base 以 /v1 结尾：追加 /chat/completions
-//   - base 以其他版本段结尾（如 /v4）：追加 /chat/completions
-//   - 其他情况：追加 /v1/chat/completions
+//   - base
+//   - base
+//   - base
+//   -
 //
-// 与 buildOpenAIResponsesURL 是姐妹函数。
+//
 func buildOpenAIChatCompletionsURL(base string) string {
 	return buildOpenAIEndpointURL(base, "/v1/chat/completions")
 }

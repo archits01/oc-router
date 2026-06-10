@@ -15,7 +15,7 @@ func newTestValidator() *ClaudeCodeValidator {
 	return NewClaudeCodeValidator()
 }
 
-// validClaudeCodeBody 构造一个完整有效的 Claude Code 请求体
+// validClaudeCodeBody
 func validClaudeCodeBody() map[string]any {
 	return map[string]any{
 		"model": "claude-sonnet-4-20250514",
@@ -59,7 +59,7 @@ func TestValidate_ClaudeCLIUserAgent(t *testing.T) {
 func TestValidate_NonMessagesPath_UAOnly(t *testing.T) {
 	v := newTestValidator()
 
-	// 非 messages 路径只检查 UA
+	//
 	req := httptest.NewRequest("GET", "/v1/models", nil)
 	req.Header.Set("User-Agent", "claude-cli/1.0.0")
 
@@ -74,7 +74,7 @@ func TestValidate_NonMessagesPath_InvalidUA(t *testing.T) {
 	req.Header.Set("User-Agent", "curl/7.64.1")
 
 	result := v.Validate(req, nil)
-	require.False(t, result, "UA 不匹配时应返回 false")
+	require.False(t, result, "UA mismatch时应returned false")
 }
 
 func TestValidate_MessagesPath_FullValid(t *testing.T) {
@@ -87,7 +87,7 @@ func TestValidate_MessagesPath_FullValid(t *testing.T) {
 	req.Header.Set("anthropic-version", "2023-06-01")
 
 	result := v.Validate(req, validClaudeCodeBody())
-	require.True(t, result, "完整有效请求应通过")
+	require.True(t, result, "完整valid请求应通过")
 }
 
 func TestValidate_MessagesPath_MissingHeaders(t *testing.T) {
@@ -113,7 +113,7 @@ func TestValidate_MessagesPath_MissingHeaders(t *testing.T) {
 			req.Header.Del(tt.missingHeader)
 
 			result := v.Validate(req, body)
-			require.False(t, result, "缺少 %s 应返回 false", tt.missingHeader)
+			require.False(t, result, "缺少 %s 应returned false", tt.missingHeader)
 		})
 	}
 }
@@ -128,8 +128,8 @@ func TestValidate_MessagesPath_InvalidMetadataUserID(t *testing.T) {
 		{"缺少 metadata", nil},
 		{"缺少 user_id", map[string]any{"other": "value"}},
 		{"空 user_id", map[string]any{"user_id": ""}},
-		{"格式错误", map[string]any{"user_id": "invalid-format"}},
-		{"hex 长度不足", map[string]any{"user_id": "user_abc_account__session_uuid"}},
+		{"格式error", map[string]any{"user_id": "invalid-format"}},
+		{"hex length不足", map[string]any{"user_id": "user_abc_account__session_uuid"}},
 	}
 
 	for _, tt := range tests {
@@ -182,7 +182,7 @@ func TestValidate_MessagesPath_InvalidSystemPrompt(t *testing.T) {
 	}
 
 	result := v.Validate(req, body)
-	require.False(t, result, "无关系统提示词应返回 false")
+	require.False(t, result, "无关系统提示词应returned false")
 }
 
 func TestValidate_MaxTokensOneHaikuBypass(t *testing.T) {
@@ -190,13 +190,13 @@ func TestValidate_MaxTokensOneHaikuBypass(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/v1/messages", nil)
 	req.Header.Set("User-Agent", "claude-cli/1.0.0")
-	// 不设置 X-App 等头，通过 context 标记为 haiku 探测请求
+	//
 	ctx := context.WithValue(req.Context(), ctxkey.IsMaxTokensOneHaikuRequest, true)
 	req = req.WithContext(ctx)
 
-	// 即使 body 不包含 system prompt，也应通过
+	//
 	result := v.Validate(req, map[string]any{"model": "claude-3-haiku", "max_tokens": 1})
-	require.True(t, result, "max_tokens=1+haiku 探测请求应绕过严格验证")
+	require.True(t, result, "max_tokens=1+haiku 探测请求应绕过严格validation")
 }
 
 func TestSystemPromptSimilarity(t *testing.T) {
@@ -241,7 +241,7 @@ func TestDiceCoefficient(t *testing.T) {
 	}{
 		{"相同字符串", "hello", "hello", 1.0, 0.001},
 		{"完全不同", "abc", "xyz", 0.0, 0.001},
-		{"空字符串", "", "hello", 0.0, 0.001},
+		{"empty string", "", "hello", 0.0, 0.001},
 		{"单字符", "a", "b", 0.0, 0.001},
 	}
 
@@ -256,14 +256,14 @@ func TestDiceCoefficient(t *testing.T) {
 func TestIsClaudeCodeClient_Context(t *testing.T) {
 	ctx := context.Background()
 
-	// 默认应为 false
+	//
 	require.False(t, IsClaudeCodeClient(ctx))
 
-	// 设置为 true
+	//
 	ctx = SetClaudeCodeClient(ctx, true)
 	require.True(t, IsClaudeCodeClient(ctx))
 
-	// 设置为 false
+	//
 	ctx = SetClaudeCodeClient(ctx, false)
 	require.False(t, IsClaudeCodeClient(ctx))
 }
@@ -278,5 +278,5 @@ func TestValidate_NilBody_MessagesPath(t *testing.T) {
 	req.Header.Set("anthropic-version", "2023-06-01")
 
 	result := v.Validate(req, nil)
-	require.False(t, result, "nil body 的 messages 请求应返回 false")
+	require.False(t, result, "nil body 的 messages 请求应returned false")
 }

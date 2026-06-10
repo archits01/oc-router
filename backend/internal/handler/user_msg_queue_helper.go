@@ -13,15 +13,15 @@ import (
 	"go.uber.org/zap"
 )
 
-// UserMsgQueueHelper 用户消息串行队列 Handler 层辅助
-// 复用 ConcurrencyHelper 的退避 + SSE ping 模式
+// UserMsgQueueHelper
+// + SSE ping
 type UserMsgQueueHelper struct {
 	queueService *service.UserMessageQueueService
 	pingFormat   SSEPingFormat
 	pingInterval time.Duration
 }
 
-// NewUserMsgQueueHelper 创建用户消息串行队列辅助
+// NewUserMsgQueueHelper
 func NewUserMsgQueueHelper(
 	queueService *service.UserMessageQueueService,
 	pingFormat SSEPingFormat,
@@ -37,8 +37,8 @@ func NewUserMsgQueueHelper(
 	}
 }
 
-// AcquireWithWait 等待获取串行锁，流式请求期间发送 SSE ping
-// 返回的 releaseFunc 内部使用 sync.Once，确保只执行一次释放
+// AcquireWithWait
+//
 func (h *UserMsgQueueHelper) AcquireWithWait(
 	c *gin.Context,
 	accountID int64,
@@ -51,17 +51,16 @@ func (h *UserMsgQueueHelper) AcquireWithWait(
 	ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
 	defer cancel()
 
-	// 先尝试立即获取
 	result, err := h.queueService.TryAcquire(ctx, accountID)
 	if err != nil {
-		return nil, err // fail-open 已在 service 层处理
+		return nil, err // fail-open already handled at service layer
 	}
 
 	if result.Acquired {
-		// 获取成功，执行 RPM 自适应延迟
+		//
 		if err := h.queueService.EnforceDelay(ctx, accountID, baseRPM); err != nil {
 			if ctx.Err() != nil {
-				// 延迟期间 context 取消，释放锁
+				//
 				bgCtx, bgCancel := context.WithTimeout(context.Background(), 5*time.Second)
 				_ = h.queueService.Release(bgCtx, accountID, result.RequestID)
 				bgCancel()
@@ -72,11 +71,10 @@ func (h *UserMsgQueueHelper) AcquireWithWait(
 		return h.makeReleaseFunc(accountID, result.RequestID, reqLog), nil
 	}
 
-	// 需要等待：指数退避轮询
 	return h.waitForLockWithPing(c, ctx, accountID, baseRPM, isStream, streamStarted, reqLog)
 }
 
-// waitForLockWithPing 等待获取锁，流式请求期间发送 SSE ping
+// waitForLockWithPing
 func (h *UserMsgQueueHelper) waitForLockWithPing(
 	c *gin.Context,
 	ctx context.Context,
@@ -132,7 +130,7 @@ func (h *UserMsgQueueHelper) waitForLockWithPing(
 				return nil, err
 			}
 			if result.Acquired {
-				// 获取成功，执行 RPM 自适应延迟
+				//
 				if delayErr := h.queueService.EnforceDelay(ctx, accountID, baseRPM); delayErr != nil {
 					if ctx.Err() != nil {
 						bgCtx, bgCancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -150,7 +148,7 @@ func (h *UserMsgQueueHelper) waitForLockWithPing(
 	}
 }
 
-// makeReleaseFunc 创建锁释放函数（使用 sync.Once 确保只执行一次）
+// makeReleaseFunc
 func (h *UserMsgQueueHelper) makeReleaseFunc(accountID int64, requestID string, reqLog *zap.Logger) func() {
 	var once sync.Once
 	return func() {
@@ -169,8 +167,7 @@ func (h *UserMsgQueueHelper) makeReleaseFunc(accountID int64, requestID string, 
 	}
 }
 
-// ThrottleWithPing 软性限速模式：施加 RPM 自适应延迟，流式期间发送 SSE ping
-// 不获取串行锁，不阻塞并发。返回后即可转发请求。
+// ThrottleWithPing
 func (h *UserMsgQueueHelper) ThrottleWithPing(
 	c *gin.Context,
 	accountID int64,
@@ -193,7 +190,7 @@ func (h *UserMsgQueueHelper) ThrottleWithPing(
 		zap.Duration("delay", delay),
 	)
 
-	// 延迟期间发送 SSE ping（复用 waitForLockWithPing 的 ping 逻辑）
+	//
 	needPing := isStream && h.pingFormat != ""
 	var flusher http.Flusher
 	if needPing {
@@ -218,7 +215,7 @@ func (h *UserMsgQueueHelper) ThrottleWithPing(
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-pingCh:
-			// SSE ping 逻辑（与 waitForLockWithPing 一致）
+			// SSE ping
 			if !*streamStarted {
 				c.Header("Content-Type", "text/event-stream")
 				c.Header("Cache-Control", "no-cache")

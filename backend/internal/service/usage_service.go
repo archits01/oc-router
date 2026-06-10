@@ -16,7 +16,7 @@ var (
 	ErrUsageLogNotFound = infraerrors.NotFound("USAGE_LOG_NOT_FOUND", "usage log not found")
 )
 
-// CreateUsageLogRequest 创建使用日志请求
+// CreateUsageLogRequest
 type CreateUsageLogRequest struct {
 	UserID                int64   `json:"user_id"`
 	APIKeyID              int64   `json:"api_key_id"`
@@ -40,7 +40,7 @@ type CreateUsageLogRequest struct {
 	DurationMs            *int    `json:"duration_ms"`
 }
 
-// UsageStats 使用统计
+// UsageStats
 type UsageStats struct {
 	TotalRequests            int64   `json:"total_requests"`
 	TotalInputTokens         int64   `json:"total_input_tokens"`
@@ -54,7 +54,7 @@ type UsageStats struct {
 	AverageDurationMs        float64 `json:"average_duration_ms"`
 }
 
-// UsageService 使用统计服务
+// UsageService
 type UsageService struct {
 	usageRepo            UsageLogRepository
 	userRepo             UserRepository
@@ -62,7 +62,7 @@ type UsageService struct {
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 }
 
-// NewUsageService 创建使用统计服务实例
+// NewUsageService
 func NewUsageService(usageRepo UsageLogRepository, userRepo UserRepository, entClient *dbent.Client, authCacheInvalidator APIKeyAuthCacheInvalidator) *UsageService {
 	return &UsageService{
 		usageRepo:            usageRepo,
@@ -72,9 +72,8 @@ func NewUsageService(usageRepo UsageLogRepository, userRepo UserRepository, entC
 	}
 }
 
-// Create 创建使用日志
+// Create
 func (s *UsageService) Create(ctx context.Context, req CreateUsageLogRequest) (*UsageLog, error) {
-	// 使用数据库事务保证「使用日志插入」与「扣费」的原子性，避免重复扣费或漏扣风险。
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return nil, fmt.Errorf("begin transaction: %w", err)
@@ -86,13 +85,11 @@ func (s *UsageService) Create(ctx context.Context, req CreateUsageLogRequest) (*
 		txCtx = dbent.NewTxContext(ctx, tx)
 	}
 
-	// 验证用户存在
 	_, err = s.userRepo.GetByID(txCtx, req.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 
-	// 创建使用日志
 	usageLog := &UsageLog{
 		UserID:                req.UserID,
 		APIKeyID:              req.APIKeyID,
@@ -121,7 +118,6 @@ func (s *UsageService) Create(ctx context.Context, req CreateUsageLogRequest) (*
 		return nil, fmt.Errorf("create usage log: %w", err)
 	}
 
-	// 扣除用户余额
 	balanceUpdated := false
 	if inserted && req.ActualCost > 0 {
 		if err := s.userRepo.UpdateBalance(txCtx, req.UserID, -req.ActualCost); err != nil {
@@ -148,7 +144,7 @@ func (s *UsageService) invalidateUsageCaches(ctx context.Context, userID int64, 
 	s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
 }
 
-// GetByID 根据ID获取使用日志
+// GetByID
 func (s *UsageService) GetByID(ctx context.Context, id int64) (*UsageLog, error) {
 	log, err := s.usageRepo.GetByID(ctx, id)
 	if err != nil {
@@ -157,7 +153,7 @@ func (s *UsageService) GetByID(ctx context.Context, id int64) (*UsageLog, error)
 	return log, nil
 }
 
-// ListByUser 获取用户的使用日志列表
+// ListByUser
 func (s *UsageService) ListByUser(ctx context.Context, userID int64, params pagination.PaginationParams) ([]UsageLog, *pagination.PaginationResult, error) {
 	logs, pagination, err := s.usageRepo.ListByUser(ctx, userID, params)
 	if err != nil {
@@ -166,7 +162,7 @@ func (s *UsageService) ListByUser(ctx context.Context, userID int64, params pagi
 	return logs, pagination, nil
 }
 
-// ListByAPIKey 获取API Key的使用日志列表
+// ListByAPIKey
 func (s *UsageService) ListByAPIKey(ctx context.Context, apiKeyID int64, params pagination.PaginationParams) ([]UsageLog, *pagination.PaginationResult, error) {
 	logs, pagination, err := s.usageRepo.ListByAPIKey(ctx, apiKeyID, params)
 	if err != nil {
@@ -175,7 +171,7 @@ func (s *UsageService) ListByAPIKey(ctx context.Context, apiKeyID int64, params 
 	return logs, pagination, nil
 }
 
-// ListByAccount 获取账号的使用日志列表
+// ListByAccount
 func (s *UsageService) ListByAccount(ctx context.Context, accountID int64, params pagination.PaginationParams) ([]UsageLog, *pagination.PaginationResult, error) {
 	logs, pagination, err := s.usageRepo.ListByAccount(ctx, accountID, params)
 	if err != nil {
@@ -184,7 +180,7 @@ func (s *UsageService) ListByAccount(ctx context.Context, accountID int64, param
 	return logs, pagination, nil
 }
 
-// GetStatsByUser 获取用户的使用统计
+// GetStatsByUser
 func (s *UsageService) GetStatsByUser(ctx context.Context, userID int64, startTime, endTime time.Time) (*UsageStats, error) {
 	stats, err := s.usageRepo.GetUserStatsAggregated(ctx, userID, startTime, endTime)
 	if err != nil {
@@ -205,7 +201,7 @@ func (s *UsageService) GetStatsByUser(ctx context.Context, userID int64, startTi
 	}, nil
 }
 
-// GetStatsByAPIKey 获取API Key的使用统计
+// GetStatsByAPIKey
 func (s *UsageService) GetStatsByAPIKey(ctx context.Context, apiKeyID int64, startTime, endTime time.Time) (*UsageStats, error) {
 	stats, err := s.usageRepo.GetAPIKeyStatsAggregated(ctx, apiKeyID, startTime, endTime)
 	if err != nil {
@@ -226,7 +222,7 @@ func (s *UsageService) GetStatsByAPIKey(ctx context.Context, apiKeyID int64, sta
 	}, nil
 }
 
-// GetStatsByAccount 获取账号的使用统计
+// GetStatsByAccount
 func (s *UsageService) GetStatsByAccount(ctx context.Context, accountID int64, startTime, endTime time.Time) (*UsageStats, error) {
 	stats, err := s.usageRepo.GetAccountStatsAggregated(ctx, accountID, startTime, endTime)
 	if err != nil {
@@ -247,7 +243,7 @@ func (s *UsageService) GetStatsByAccount(ctx context.Context, accountID int64, s
 	}, nil
 }
 
-// GetStatsByModel 获取模型的使用统计
+// GetStatsByModel
 func (s *UsageService) GetStatsByModel(ctx context.Context, modelName string, startTime, endTime time.Time) (*UsageStats, error) {
 	stats, err := s.usageRepo.GetModelStatsAggregated(ctx, modelName, startTime, endTime)
 	if err != nil {
@@ -268,7 +264,7 @@ func (s *UsageService) GetStatsByModel(ctx context.Context, modelName string, st
 	}, nil
 }
 
-// GetDailyStats 获取每日使用统计（最近N天）
+// GetDailyStats
 func (s *UsageService) GetDailyStats(ctx context.Context, userID int64, days int) ([]map[string]any, error) {
 	endTime := time.Now()
 	startTime := endTime.AddDate(0, 0, -days)
@@ -281,7 +277,7 @@ func (s *UsageService) GetDailyStats(ctx context.Context, userID int64, days int
 	return stats, nil
 }
 
-// Delete 删除使用日志（管理员功能，谨慎使用）
+// Delete
 func (s *UsageService) Delete(ctx context.Context, id int64) error {
 	if err := s.usageRepo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("delete usage log: %w", err)

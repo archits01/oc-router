@@ -228,7 +228,6 @@ func TestGetUserGroupRateMultiplier_UsesCacheAndSingleflight(t *testing.T) {
 	}
 	require.Equal(t, int64(1), repo.calls.Load())
 
-	// 再次读取应命中缓存，不再回源。
 	got := svc.getUserGroupRateMultiplier(context.Background(), 101, 202, 1.2)
 	require.Equal(t, rate, got)
 	require.Equal(t, int64(1), repo.calls.Load())
@@ -288,7 +287,7 @@ func TestGetUserGroupRateMultiplier_CacheHitAndNilRepo(t *testing.T) {
 	require.Equal(t, int64(0), fallback)
 	require.Equal(t, int64(0), repo.calls.Load())
 
-	// 无 repo 时直接返回分组默认倍率
+	//
 	svc2 := &GatewayService{
 		userGroupRateCache: gocache.New(time.Minute, time.Minute),
 	}
@@ -503,12 +502,11 @@ func TestGetAvailableModels_UsesShortCacheAndSupportsInvalidation(t *testing.T) 
 	require.Equal(t, []string{"claude-3-5-haiku", "claude-3-5-sonnet"}, models1)
 	require.Equal(t, int64(1), repo.listByGroupCalls.Load())
 
-	// TTL 内再次请求应命中缓存，不回源。
+	// TTL
 	models2 := svc.GetAvailableModels(context.Background(), &groupID, PlatformAnthropic)
 	require.Equal(t, models1, models2)
 	require.Equal(t, int64(1), repo.listByGroupCalls.Load())
 
-	// 更新仓储数据，但缓存未失效前应继续返回旧值。
 	repo.byGroup[groupID] = []Account{
 		{
 			ID:       3,
@@ -674,7 +672,7 @@ func TestInvalidateAvailableModelsCache_ByDimensions(t *testing.T) {
 	})
 
 	t.Run("invalidate_platform_only", func(t *testing.T) {
-		// 重建数据后仅按 platform 失效
+		//
 		svc.modelsListCache.Set(modelsListCacheKey(&group9, PlatformAnthropic), []string{"a"}, time.Minute)
 		svc.modelsListCache.Set(modelsListCacheKey(&group9, PlatformGemini), []string{"b"}, time.Minute)
 		svc.modelsListCache.Set(modelsListCacheKey(&group10, PlatformAnthropic), []string{"c"}, time.Minute)

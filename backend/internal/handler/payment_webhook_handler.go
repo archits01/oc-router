@@ -61,7 +61,7 @@ func (h *PaymentWebhookHandler) StripeWebhook(c *gin.Context) {
 	h.handleNotify(c, payment.TypeStripe)
 }
 
-// AirwallexWebhook 处理空中云汇 Webhook 事件。
+// AirwallexWebhook
 // POST /api/v1/payment/webhook/airwallex
 func (h *PaymentWebhookHandler) AirwallexWebhook(c *gin.Context) {
 	h.handleNotify(c, payment.TypeAirwallex)
@@ -198,12 +198,12 @@ type wxpaySuccessResponse struct {
 // WeChat Pay webhook success response constants.
 const (
 	wxpaySuccessCode    = "SUCCESS"
-	wxpaySuccessMessage = "成功"
+	wxpaySuccessMessage = "success"
 )
 
-// writeSuccessResponse 返回各支付服务商要求的成功响应。
-// 微信支付需要 JSON {"code":"SUCCESS","message":"成功"}；
-// Stripe 和空中云汇接受空 200，其它服务商接受纯文本 "success"。
+// writeSuccessResponse
+// {"code":"SUCCESS","message":""}；
+// Stripe "success"。
 func writeSuccessResponse(c *gin.Context, providerKey string) {
 	switch providerKey {
 	case payment.TypeWxpay:

@@ -60,7 +60,7 @@ func TestParseGatewayRequest_SystemNull(t *testing.T) {
 	body := []byte(`{"model":"claude-3","system":null}`)
 	parsed, err := ParseGatewayRequest(NewRequestBodyRef(body), "")
 	require.NoError(t, err)
-	// 显式传入 system:null 也应视为“字段已存在”，避免默认 system 被注入。
+	// “”，
 	require.True(t, parsed.HasSystem)
 	require.Equal(t, []byte("null"), parsed.SystemRaw())
 }
@@ -77,7 +77,7 @@ func TestParseGatewayRequest_InvalidStreamType(t *testing.T) {
 	require.Error(t, err)
 }
 
-// ============ Gemini 原生格式解析测试 ============
+// ============ Gemini ============
 
 func TestParseGatewayRequest_GeminiContents(t *testing.T) {
 	body := []byte(`{
@@ -124,7 +124,7 @@ func TestParseGatewayRequest_GeminiWithModel(t *testing.T) {
 }
 
 func TestParseGatewayRequest_GeminiIgnoresAnthropicFields(t *testing.T) {
-	// Gemini 格式下 system/messages 字段应被忽略
+	// Gemini
 	body := []byte(`{
 		"system": "should be ignored",
 		"messages": [{"role": "user", "content": "ignored"}],
@@ -153,7 +153,7 @@ func TestParseGatewayRequest_GeminiNoContents(t *testing.T) {
 }
 
 func TestParseGatewayRequest_AnthropicIgnoresGeminiFields(t *testing.T) {
-	// Anthropic 格式下 contents/systemInstruction 字段应被忽略
+	// Anthropic
 	body := []byte(`{
 		"system": "real system",
 		"messages": [{"role": "user", "content": "real content"}],
@@ -377,10 +377,10 @@ func TestFilterThinkingBlocksForRetry_RemovesRedactedThinkingAndKeepsValidConten
 }
 
 func TestFilterThinkingBlocksForRetry_DropsThinkingBlockWithEmptyContent(t *testing.T) {
-	// 跨模型场景：其他模型回过的 assistant 历史里携带了 type=thinking 但 thinking 字段为空，
-	// 喂给开启 extended thinking 的 claude 时上游会报：
+	// =thinking
+	//
 	//   "messages.1.content.0.thinking: each thinking block must contain thinking"
-	// 重试应当把空 thinking 块丢弃，并保留其它有效内容。
+	//
 	input := []byte(`{
 		"thinking":{"type":"enabled","budget_tokens":1024},
 		"messages":[
@@ -628,26 +628,26 @@ func TestFilterSignatureSensitiveBlocksForRetry_DowngradesTools(t *testing.T) {
 	require.Contains(t, content1["text"], "tool_result")
 }
 
-// ============ Group 6b: context_management.edits 清理测试 ============
+// ============ Group 6b: context_management.edits ============
 
-// removeThinkingDependentContextStrategies — 边界用例
+// removeThinkingDependentContextStrategies —
 
 func TestRemoveThinkingDependentContextStrategies_NoContextManagement(t *testing.T) {
 	input := []byte(`{"thinking":{"type":"enabled"},"messages":[]}`)
 	out := removeThinkingDependentContextStrategies(input)
-	require.Equal(t, input, out, "无 context_management 字段时应原样返回")
+	require.Equal(t, input, out, "无 context_management 字段时应原样returned")
 }
 
 func TestRemoveThinkingDependentContextStrategies_EmptyEdits(t *testing.T) {
 	input := []byte(`{"context_management":{"edits":[]},"messages":[]}`)
 	out := removeThinkingDependentContextStrategies(input)
-	require.Equal(t, input, out, "edits 为空数组时应原样返回")
+	require.Equal(t, input, out, "edits 为空数组时应原样returned")
 }
 
 func TestRemoveThinkingDependentContextStrategies_NoClearThinkingEntry(t *testing.T) {
 	input := []byte(`{"context_management":{"edits":[{"type":"other_strategy"}]},"messages":[]}`)
 	out := removeThinkingDependentContextStrategies(input)
-	require.Equal(t, input, out, "edits 中无 clear_thinking_20251015 时应原样返回")
+	require.Equal(t, input, out, "edits 中无 clear_thinking_20251015 时应原样returned")
 }
 
 func TestRemoveThinkingDependentContextStrategies_RemovesSingleEntry(t *testing.T) {
@@ -659,7 +659,7 @@ func TestRemoveThinkingDependentContextStrategies_RemovesSingleEntry(t *testing.
 	cm, ok := req["context_management"].(map[string]any)
 	require.True(t, ok)
 	_, hasEdits := cm["edits"]
-	require.False(t, hasEdits, "所有 edits 均为 clear_thinking_20251015 时应删除 edits 键")
+	require.False(t, hasEdits, "所有 edits 均为 clear_thinking_20251015 时应delete edits 键")
 }
 
 func TestRemoveThinkingDependentContextStrategies_MixedEntries(t *testing.T) {
@@ -678,11 +678,11 @@ func TestRemoveThinkingDependentContextStrategies_MixedEntries(t *testing.T) {
 	require.Equal(t, "other_strategy", edit0["type"])
 }
 
-// FilterThinkingBlocksForRetry — 包含 context_management 的场景
+// FilterThinkingBlocksForRetry —
 
 func TestFilterThinkingBlocksForRetry_RemovesClearThinkingStrategy_FastPath(t *testing.T) {
-	// 快速路径：messages 中无 thinking 块，仅有顶层 thinking 字段
-	// 这条路径曾因提前 return 跳过 removeThinkingDependentContextStrategies 而存在 bug
+	//
+	//
 	input := []byte(`{
 		"thinking":{"type":"enabled","budget_tokens":1024},
 		"context_management":{"edits":[{"type":"clear_thinking_20251015"}]},
@@ -701,11 +701,11 @@ func TestFilterThinkingBlocksForRetry_RemovesClearThinkingStrategy_FastPath(t *t
 	cm, ok := req["context_management"].(map[string]any)
 	require.True(t, ok)
 	_, hasEdits := cm["edits"]
-	require.False(t, hasEdits, "fast path 下 clear_thinking_20251015 应被移除，edits 键应被删除")
+	require.False(t, hasEdits, "fast path 下 clear_thinking_20251015 应被移除，edits 键应被delete")
 }
 
 func TestFilterThinkingBlocksForRetry_RemovesClearThinkingStrategy_WithThinkingBlocks(t *testing.T) {
-	// 完整路径：messages 中有 thinking 块（非 fast path）
+	//
 	input := []byte(`{
 		"thinking":{"type":"enabled","budget_tokens":1024},
 		"context_management":{"edits":[{"type":"clear_thinking_20251015"},{"type":"keep_this"}]},
@@ -735,7 +735,7 @@ func TestFilterThinkingBlocksForRetry_RemovesClearThinkingStrategy_WithThinkingB
 }
 
 func TestFilterThinkingBlocksForRetry_NoContextManagement_Unaffected(t *testing.T) {
-	// 无 context_management 时不应报错，且 thinking 正常被移除
+	//
 	input := []byte(`{
 		"thinking":{"type":"enabled"},
 		"messages":[{"role":"user","content":[{"type":"text","text":"Hi"}]}]
@@ -751,7 +751,7 @@ func TestFilterThinkingBlocksForRetry_NoContextManagement_Unaffected(t *testing.
 	require.False(t, hasCM)
 }
 
-// FilterSignatureSensitiveBlocksForRetry — 包含 context_management 的场景
+// FilterSignatureSensitiveBlocksForRetry —
 
 func TestFilterSignatureSensitiveBlocksForRetry_RemovesClearThinkingStrategy(t *testing.T) {
 	input := []byte(`{
@@ -811,7 +811,7 @@ func TestFilterSignatureSensitiveBlocksForRetry_PreservesNonThinkingStrategies(t
 }
 
 func TestFilterSignatureSensitiveBlocksForRetry_NoThinkingField_ContextManagementUntouched(t *testing.T) {
-	// 没有顶层 thinking 字段时，context_management 不应被修改
+	//
 	input := []byte(`{
 		"context_management":{"edits":[{"type":"clear_thinking_20251015"}]},
 		"messages":[
@@ -832,15 +832,15 @@ func TestFilterSignatureSensitiveBlocksForRetry_NoThinkingField_ContextManagemen
 	require.Len(t, edits, 1, "无顶层 thinking 时 context_management 不应被修改")
 }
 
-// ============ Group 7: ParseGatewayRequest 补充单元测试 ============
+// ============ Group 7: ParseGatewayRequest ============
 
-// Task 7.1 — 类型校验边界测试
+// Task 7.1 —
 func TestParseGatewayRequest_TypeValidation(t *testing.T) {
 	tests := []struct {
 		name      string
 		body      string
 		wantErr   bool
-		errSubstr string // 期望的错误信息子串（为空则不检查）
+		errSubstr string // 期望的errorinfo子串（为空则不检查）
 	}{
 		{
 			name:      "model 为 int",
@@ -861,9 +861,9 @@ func TestParseGatewayRequest_TypeValidation(t *testing.T) {
 			errSubstr: "invalid model field type",
 		},
 		{
-			name:      "model 为 null — gjson Null 类型触发类型校验错误",
+			name:      "model 为 null — gjson Null 类型触发类型校验error",
 			body:      `{"model":null}`,
-			wantErr:   true, // gjson: Exists()=true, Type=Null != String → 返回错误
+			wantErr:   true, // gjson: Exists()=true, Type=Null != String → returnederror
 			errSubstr: "invalid model field type",
 		},
 		{
@@ -879,9 +879,9 @@ func TestParseGatewayRequest_TypeValidation(t *testing.T) {
 			errSubstr: "invalid stream field type",
 		},
 		{
-			name:      "stream 为 null — gjson Null 类型触发类型校验错误",
+			name:      "stream 为 null — gjson Null 类型触发类型校验error",
 			body:      `{"stream":null}`,
-			wantErr:   true, // gjson: Exists()=true, Type=Null != True && != False → 返回错误
+			wantErr:   true, // gjson: Exists()=true, Type=Null != True && != False → returnederror
 			errSubstr: "invalid stream field type",
 		},
 		{
@@ -907,7 +907,7 @@ func TestParseGatewayRequest_TypeValidation(t *testing.T) {
 	}
 }
 
-// Task 7.2 — 可选字段缺失测试
+// Task 7.2 —
 func TestParseGatewayRequest_OptionalFieldsMissing(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -922,7 +922,7 @@ func TestParseGatewayRequest_OptionalFieldsMissing(t *testing.T) {
 		wantMessagesLen int
 	}{
 		{
-			name:            "完全空 JSON — 所有字段零值",
+			name:            "完全空 JSON — 所有字段zero值",
 			body:            `{}`,
 			wantModel:       "",
 			wantStream:      false,
@@ -976,14 +976,12 @@ func TestParseGatewayRequest_OptionalFieldsMissing(t *testing.T) {
 	}
 }
 
-// Task 7.3 — Gemini 协议分支测试
-// 已有测试覆盖：
-// - TestParseGatewayRequest_GeminiSystemInstruction: 正常 systemInstruction+contents
-// - TestParseGatewayRequest_GeminiNoContents: 缺失 contents
-// - TestParseGatewayRequest_GeminiContents: 正常 contents（无 systemInstruction）
-// 因此跳过。
+// Task 7.3 — Gemini
+// - TestParseGatewayRequest_GeminiSystemInstruction: +contents
+// - TestParseGatewayRequest_GeminiNoContents:
+// - TestParseGatewayRequest_GeminiContents:
 
-// Task 7.4 — max_tokens 边界测试
+// Task 7.4 — max_tokens
 func TestParseGatewayRequest_MaxTokensBoundary(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -1031,10 +1029,10 @@ func TestParseGatewayRequest_MaxTokensBoundary(t *testing.T) {
 	}
 }
 
-// ============ Task 7.5: Benchmark 测试 ============
+// ============ Task 7.5: Benchmark ============
 
-// parseGatewayRequestOld 是基于完整 json.Unmarshal 的旧实现，用于 benchmark 对比基线。
-// 核心路径：先 Unmarshal 到 map[string]any，再逐字段提取。
+// parseGatewayRequestOld
+// [string]any，
 func parseGatewayRequestOld(body []byte, protocol string) (*ParsedRequest, error) {
 	parsed := &ParsedRequest{
 		Body: NewRequestBodyRef(body),
@@ -1091,12 +1089,12 @@ func parseGatewayRequestOld(body []byte, protocol string) (*ParsedRequest, error
 	return parsed, nil
 }
 
-// buildSmallJSON 构建 ~500B 的小型测试 JSON
+// buildSmallJSON ~500B
 func buildSmallJSON() []byte {
 	return []byte(`{"model":"claude-sonnet-4-5","stream":true,"max_tokens":4096,"metadata":{"user_id":"user-abc123"},"thinking":{"type":"enabled","budget_tokens":2048},"system":"You are a helpful assistant.","messages":[{"role":"user","content":"What is the meaning of life?"},{"role":"assistant","content":"The meaning of life is a philosophical question."},{"role":"user","content":"Can you elaborate?"}]}`)
 }
 
-// buildLargeJSON 构建 ~50KB 的大型测试 JSON（大量 messages）
+// buildLargeJSON ~50KB
 func buildLargeJSON() []byte {
 	var b strings.Builder
 	b.WriteString(`{"model":"claude-sonnet-4-5","stream":true,"max_tokens":8192,"metadata":{"user_id":"user-xyz789"},"system":[{"type":"text","text":"You are a detailed assistant.","cache_control":{"type":"ephemeral"}}],"messages":[`)

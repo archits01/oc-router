@@ -118,7 +118,7 @@ describe('StripePaymentView', () => {
     window.localStorage.clear()
   })
 
-  it('本地恢复快照缺失时使用订单接口返回的 Stripe 币种展示金额', async () => {
+  it('本地恢复快照缺失时使用订单接口Back的 Stripe 币种展示Amount', async () => {
     getOrder.mockResolvedValue({
       data: orderFactory({ currency: 'HKD', pay_amount: 103 }),
     })
