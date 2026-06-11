@@ -194,7 +194,7 @@
         <!-- Name + Balance -->
         <div class="min-w-0 flex-1">
           <div class="truncate text-sm font-medium text-text">{{ displayName }}</div>
-          <div class="font-mono text-xs text-text-dim">${{ user.balance?.toFixed(2) || '0.00' }}</div>
+          <div v-if="!isAdmin" class="font-mono text-xs text-text-dim">${{ user.balance?.toFixed(2) || '0.00' }}</div>
         </div>
         <!-- Logout on hover -->
         <button
